@@ -39,6 +39,12 @@ def run_extract() -> None:
     run_extraction()
 
 
+def run_schema_diff_cmd() -> None:
+    from model_ai.extractor.schema_differ import run_schema_diff
+
+    run_schema_diff()
+
+
 def main() -> None:
     ensure_supported_python()
 
@@ -67,6 +73,14 @@ def main() -> None:
         help="Ekstrak metadata terstruktur dari chunks Supabase dan simpan ke output.json.",
     )
 
+    subparsers.add_parser(
+        "schema-diff",
+        help=(
+            "Jalankan free extraction via LLM lalu bandingkan terhadap output.json. "
+            "Simpan laporan diff ke data/schema_diff_<timestamp>.json dan .md."
+        ),
+    )
+
     args = parser.parse_args()
 
     if args.command == "setup":
@@ -80,6 +94,10 @@ def main() -> None:
 
     if args.command == "extract":
         run_extract()
+        return
+
+    if args.command == "schema-diff":
+        run_schema_diff_cmd()
         return
 
 
