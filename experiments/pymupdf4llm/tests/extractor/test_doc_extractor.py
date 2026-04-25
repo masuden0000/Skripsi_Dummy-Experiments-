@@ -1,10 +1,7 @@
-import textwrap
-from pathlib import Path
-
 import pytest
 
-from model_ai.extractor.doc_extractor import build_sources, load_prompt, render_prompt
-from model_ai.extractor.models import Source
+from model_ai.extractor.doc_extractor import build_sources, render_prompt
+from model_ai.extractor.models import PageCountExtracted, Source, TypographyExtracted
 
 
 SAMPLE_CHUNKS = [
@@ -49,58 +46,6 @@ def test_build_sources_empty_chunks_returns_empty_list():
     assert build_sources([]) == []
 
 
-def test_load_prompt_single_query(tmp_path: Path):
-    prompt_file = tmp_path / "test.md"
-    prompt_file.write_text(
-        textwrap.dedent("""\
-            ---
-            query: "font huruf ukuran tipografi"
-            ---
-
-            # Task
-
-            ## Context
-            {context}
-
-            ## Output
-            Ekstrak font.
-        """)
-    )
-    queries, template, top_k = load_prompt(prompt_file)
-    assert queries == ["font huruf ukuran tipografi"]
-    assert "{context}" in template
-    assert "# Task" in template
-    assert top_k == 0  # no override → gunakan global config
-
-
-def test_load_prompt_multiple_queries(tmp_path: Path):
-    prompt_file = tmp_path / "multi.md"
-    prompt_file.write_text(
-        textwrap.dedent("""\
-            ---
-            queries:
-              - "query satu"
-              - "query dua"
-            top_k: 10
-            ---
-
-            # Task
-            {context}
-        """)
-    )
-    queries, template, top_k = load_prompt(prompt_file)
-    assert queries == ["query satu", "query dua"]
-    assert top_k == 10
-    assert "{context}" in template
-
-
-def test_load_prompt_missing_query_raises(tmp_path: Path):
-    prompt_file = tmp_path / "bad.md"
-    prompt_file.write_text("---\ntitle: no query here\n---\nbody")
-    with pytest.raises(ValueError, match="wajib punya field"):
-        load_prompt(prompt_file)
-
-
 def test_render_prompt_joins_chunk_contents():
     template = "## Context\n{context}\n"
     chunks = [
@@ -118,3 +63,14 @@ def test_render_prompt_with_no_chunks_yields_empty_context():
     result = render_prompt(template, [])
     assert "{context}" not in result
     assert result == "## Context\n\n"
+
+
+def test_typography_extracted_normalizes_legacy_heading_font_size_string():
+    extracted = TypographyExtracted(font_size_heading_pt="12pt (sama dengan body, bold untuk BAB)")
+    assert extracted.font_size_heading_pt == 12
+    assert extracted.font_size_heading_description == "12pt (sama dengan body, bold untuk BAB)"
+
+
+def test_page_count_extracted_maps_legacy_catatan_key():
+    extracted = PageCountExtracted(catatan="Lampiran tidak dihitung dalam batas 10 halaman")
+    assert extracted.definisi_halaman_inti == "Lampiran tidak dihitung dalam batas 10 halaman"
