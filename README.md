@@ -1,120 +1,89 @@
-# Skripsi_Dummy-Experiments
+# Skripsi Dummy Project 1 (AI)
 
-Repository untuk eksperimen PyMuPDF4LLM + RAG dengan backend Supabase dan frontend interaktif.
+Repository ini berisi pipeline end-to-end untuk:
 
-## Update Terbaru
+- ekstraksi PDF menjadi markdown + chunks,
+- ingest chunks ke Supabase (dengan embedding),
+- ekstraksi metadata dokumen berbasis RAG + LLM,
+- schema diff (structured vs free extraction),
+- translasi style ke python-docx dan generator DOCX proposal.
 
-### Structured Extractor Output
-- **JSON Output Tracking**: Pipeline `experiments/pymupdf4llm` sekarang menyimpan output terstruktur seperti `output.json` dan `data/output_chunks.json` untuk validasi hasil ekstraksi
-- **Reference Comparison**: Disiapkan file pembanding seperti `data/hasil_ekstraksi_claude.json` agar hasil parser bisa dicek field yang beda atau masih miss
-- **Metadata Expansion**: Skema ekstraksi sekarang mengakomodasi detail format dokumen, numbering, caption, dan batas halaman dengan lebih eksplisit
+## Lokasi Aplikasi
 
-### ✅ Security & Configuration
-- **Environment Management**: Menambahkan `.gitignore` untuk file sensitif (`.env`, `.pdf`, `.venv`)
-- **Template Environment**: Membuat `.env.example` sebagai template konfigurasi aman tanpa secret values
-- **Secret Management**: Menonaktifkan API keys lama dan menyiapkan placeholder untuk regenerasi
-
-### ✅ Python Version Support
-- **Runtime Validation**: Menambahkan function `ensure_supported_python()` di `manage.py`
-- **Version Constraint**: Project mendukung Python 3.11 hingga 3.13 saja
-  - Reject Python < 3.11 (legacy)
-  - Reject Python >= 3.14 (belum tested)
-- **Early Error Detection**: Validasi dilakukan saat startup untuk fail fast
-
-### ✅ Dependency Management
-- **Version Pinning**: Menambahkan version constraint ke semua dependencies di `requirements.txt`
-  - `langchain-text-splitters>=0.3,<0.4`
-  - `langchain-core>=0.3,<0.4`
-  - `langchain-google-genai>=2.1,<3`
-  - `python-dotenv>=1.0,<2`
-  - `pydantic>=2.10,<3`
-  - `supabase>=2.9,<3`
-- **Reproducibility**: Memastikan consistency di berbagai environment
-
-### ✅ Import Logic Refactor
-- **chat_server.py**: Ganti `try/except ImportError` dengan `if __package__` untuk relative/absolute import
-- **extractor.py**: Konsisten dengan pattern import yang lebih robust
-- **Result**: Better module discovery dan lebih mudah di-debug
-
-### ✅ Environment Loading
-- **Explicit Load**: Tambahkan `load_dotenv(dotenv_path=ENV_FILE)` di `chat_server.py` untuk explicit .env handling
-- **Consistent Path**: Menggunakan `APP_DIR / ".env"` untuk path loading yang reliable
-
-### ✅ Modular Refactor (model_ai)
-- **Struktur Baru**: Memecah modul AI ke subpackage terpisah agar lebih maintainable:
-   - `model_ai/loader/` untuk extraction, chunk building, dan Supabase ingest
-   - `model_ai/rag/` untuk RAG service dan simple LLM flow
-   - `model_ai/ui/` untuk server chat
-   - `model_ai/dev/` untuk script inspeksi/dev helper
-- **Cleanup Legacy**: Menghapus file modul lama yang duplikatif di root `model_ai/`
-
-### ✅ Chunk Quality Improvements
-- **Page Range Accuracy**: Memperbaiki urutan chunk dan rentang halaman di `data/output_chunks.json`
-- **OCR Artifact Cleanup**: Mengurangi artefak strikethrough/noise hasil OCR pada konten chunk
-- **Output Refresh**: Regenerasi `data/output.md` agar sinkron dengan pipeline terbaru
+Seluruh source utama ada di folder `app/`.
 
 ## Quick Start
 
-1. Clone repository:
-   ```bash
-   git clone https://github.com/masuden0000/Skripsi_Dummy-Experiments-.git
-   cd Skripsi_Dummy-Experiments-
-   ```
+1. Buat virtual environment dan aktifkan:
 
-2. Setup environment:
-   ```bash
-   cp experiments/pymupdf4llm/.env.example experiments/pymupdf4llm/.env
-   # Edit .env dengan nilai API keys dan Supabase credentials Anda
-   ```
-
-3. Create virtual environment:
-   ```bash
-   python -m venv .venv
-   source .venv/Scripts/activate  # Windows
-   # atau: source .venv/bin/activate  # Linux/macOS
-   ```
-
-4. Install dependencies:
-   ```bash
-   cd experiments/pymupdf4llm
-   pip install -r requirements.txt
-   ```
-
-5. Run setup dan RAG server:
-   ```bash
-   python manage.py --setup
-   python manage.py --chat
-   ```
-
-## Project Structure
-
-```
-experiments/
-├── pdftext/              # PDF text extraction experiments
-├── pymupdf4llm/          # Main RAG system
-│   ├── model_ai/         # Core AI logic (LLM, RAG, embeddings)
-│   ├── frontend/         # Web UI (HTML, CSS, JS)
-│   ├── data/             # Processed chunks and embeddings
-│   ├── manage.py         # CLI entry point
-│   └── requirements.txt   # Python dependencies
+```bash
+python -m venv .venv
+source .venv/Scripts/activate
 ```
 
-## Python Support
+2. Install dependency:
 
-- ✅ Python 3.11
-- ✅ Python 3.12
-- ✅ Python 3.13
-- ❌ Python 3.14+ (not tested yet)
-- ❌ Python < 3.11 (legacy)
+```bash
+cd app
+pip install -r requirements.txt
+```
 
-## Requirements
+3. Siapkan environment di `app/.env` sesuai kebutuhan project (`GROQ_API_KEY`, `GOOGLE_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, dll).
 
-- Google AI API Key (Gemini)
-- Supabase project (for embeddings storage)
-- Python 3.11 or higher
+4. Jalankan pipeline utama:
 
-## Notes
+```bash
+python manage.py setup
+python manage.py extract
+python manage.py docx --type proposal
+```
 
-- Jangan commit `.env` file, selalu gunakan `.env.example` sebagai template
-- Cache Python (`__pycache__`, `.pyc`) di-ignore dari repository
-- PDF files diabaikan dari version control
+## Command CLI
+
+Semua command dijalankan dari folder `app/`:
+
+- `python manage.py setup`
+	- Ekstrak PDF -> `output.md` + `output_chunks.json`, lalu ingest ke Supabase.
+- `python manage.py setup --skip-ingest`
+	- Hanya build chunk lokal tanpa upsert ke Supabase.
+- `python manage.py extract`
+	- Ekstraksi metadata terstruktur ke `data/output.json` + upsert metadata ke Supabase.
+- `python manage.py schema-diff`
+	- Jalankan free extraction dan bandingkan dengan `output.json`, hasil diff disimpan ke `data/schema_diff_<timestamp>.json/.md`.
+- `python manage.py docx --type proposal`
+	- Generate dokumen DOCX proposal dari metadata + chunks.
+- `python manage.py docx-style-map`
+	- Jalankan pipeline mapping style DOCX (catalog, retrieval, candidate, validasi, apply plan).
+
+## Struktur Ringkas
+
+```text
+app/
+|-- data/
+|   |-- output.md
+|   |-- output_chunks.json
+|   |-- output.json
+|   `-- docx_mapping_*.json
+|-- infra/
+|-- model_ai/
+|   |-- loader/
+|   |-- extractor/
+|   |-- docx/
+|   `-- visualisasi/
+|-- testing ekstraksi/
+|-- manage.py
+`-- requirements.txt
+```
+
+## Catatan Perubahan Terbaru
+
+- Prompt extractor sudah dipusatkan ke `model_ai/extractor/prompts/*.md` via registry di `model_ai/extractor/prompts.py`.
+- Ditambahkan modul `model_ai/extractor/schema_differ.py` + command `schema-diff`.
+- Pipeline DOCX diperkuat dengan:
+	- `model_ai/docx/generator.py`,
+	- `model_ai/docx/metadata_loader.py`,
+	- `model_ai/docx/style_mapping_pipeline.py`,
+	- `model_ai/docx/instructional_placeholder_builder.py`.
+- Ditambahkan utilitas evaluasi translasi di folder `testing ekstraksi/`.
+- Ditambahkan halaman visualisasi pipeline di `model_ai/visualisasi/`.
+

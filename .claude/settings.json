@@ -1,7 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "mcp__plugin_claude-mem_mcp-search__get_observations"
+      "mcp__plugin_claude-mem_mcp-search__get_observations",
+      "Bash(python -m pytest tests/extractor/test_schema_differ.py -v)",
+      "Read(//c/Users/hudar/.config/superpowers/worktrees/Project 1 \\(AI\\)/docx-pipeline/experiments/pymupdf4llm/model_ai/docx/**)",
+      "Read(//c/Users/hudar/.config/superpowers/worktrees/Project 1 \\(AI\\)/docx-pipeline/experiments/pymupdf4llm/**)",
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(python -m pytest tests/docx/test_docx_adapter.py -v)",
+      "Bash(python -c \"from model_ai.docx.docx_adapter import apply_base_styles, apply_page_layout, apply_page_numbering; print\\('All functions imported successfully'\\)\")",
+      "Bash(python -m pytest tests/docx/test_content_model.py -v)",
+      "Bash(python -c ':*)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest tests/ -q --tb=short)",
+      "Bash(python -m pytest tests/ -q --tb=no)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\hudar\\.config\\superpowers\\worktrees\\Project 1 (AI)\\docx-pipeline\\experiments\\pymupdf4llm\\tests\\docx",
+      "C:\\Users\\hudar\\.config\\superpowers\\worktrees\\Project 1 (AI)\\docx-pipeline\\experiments\\pymupdf4llm\\model_ai\\docx",
+      "C:\\Users\\hudar\\.config\\superpowers\\worktrees\\Project 1 (AI)\\docx-pipeline\\experiments\\pymupdf4llm"
     ]
   }
 }

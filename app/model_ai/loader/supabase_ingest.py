@@ -1,0 +1,197 @@
+"""
+Fungsi: Mengirim chunk dan metadata ke Supabase (vector/data store) untuk retrieval.
+
+Digunakan oleh: manage.py
+
+Tujuan: Menyimpan hasil preprocessing ke storage terpusat yang dipakai query RAG.
+"""
+import json
+from pathlib import Path
+
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from pydantic import BaseModel
+from supabase import Client, create_client
+
+from model_ai.config import get_config
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai oleh fungsi-fungsi di modul ini dan modul terkait saat import runtime.
+# Blok konstanta `APP_DIR` untuk menyimpan konfigurasi/registry yang dipakai berulang.
+# ---------------------------------------------------------------------------
+APP_DIR = Path(__file__).resolve().parents[2]
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai oleh fungsi-fungsi di modul ini dan modul terkait saat import runtime.
+# Blok konstanta `CHUNKS_FILE` untuk menyimpan konfigurasi/registry yang dipakai berulang.
+# ---------------------------------------------------------------------------
+CHUNKS_FILE = APP_DIR / "data" / "output_chunks.json"
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai oleh fungsi-fungsi di modul ini dan modul terkait saat import runtime.
+# Blok konstanta `CONFIG` untuk menyimpan konfigurasi/registry yang dipakai berulang.
+# ---------------------------------------------------------------------------
+CONFIG = get_config()
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai oleh fungsi-fungsi di modul ini dan modul terkait saat import runtime.
+# Blok konstanta `EMBEDDING_MODEL_NAME` untuk menyimpan konfigurasi/registry yang dipakai berulang.
+# ---------------------------------------------------------------------------
+EMBEDDING_MODEL_NAME = CONFIG.embedding_model_name
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai oleh fungsi-fungsi di modul ini dan modul terkait saat import runtime.
+# Blok konstanta `EMBEDDING_DIMENSION` untuk menyimpan konfigurasi/registry yang dipakai berulang.
+# ---------------------------------------------------------------------------
+EMBEDDING_DIMENSION = 768
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai oleh fungsi-fungsi di modul ini dan modul terkait saat import runtime.
+# Blok konstanta `BATCH_SIZE` untuk menyimpan konfigurasi/registry yang dipakai berulang.
+# ---------------------------------------------------------------------------
+BATCH_SIZE = 20
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
+# Mendefinisikan class `PageRange` untuk kebutuhan modul `supabase_ingest`.
+# ---------------------------------------------------------------------------
+class PageRange(BaseModel):
+    start: int
+    end: int
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
+# Mendefinisikan class `ChunkRecord` untuk kebutuhan modul `supabase_ingest`.
+# ---------------------------------------------------------------------------
+class ChunkRecord(BaseModel):
+    chunk_index: int
+    content: str
+    chunk_parent: str
+    chunk_prev: int | None
+    chunk_next: int | None
+    page: PageRange
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
+# Menjalankan fungsi `load_chunks` sebagai bagian alur `supabase_ingest`.
+# ---------------------------------------------------------------------------
+def load_chunks(path: Path) -> list[ChunkRecord]:
+    if not path.exists():
+        raise FileNotFoundError(f"File chunk tidak ditemukan: {path}")
+
+    with path.open("r", encoding="utf-8") as file:
+        raw_chunks = json.load(file)
+
+    if not isinstance(raw_chunks, list):
+        raise TypeError("output_chunks.json harus berisi array of objects.")
+
+    return [ChunkRecord.model_validate(item) for item in raw_chunks]
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal modul ingest dan caller retrieval lain.
+# Menjalankan fungsi `build_supabase_client` sebagai bagian alur `supabase_ingest`.
+# ---------------------------------------------------------------------------
+def build_supabase_client() -> Client:
+    return create_client(
+        CONFIG.supabase_url,
+        CONFIG.supabase_service_role_key.get_secret_value(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal modul ingest dan caller retrieval lain.
+# Menjalankan fungsi `build_embedder` sebagai bagian alur `supabase_ingest`.
+# ---------------------------------------------------------------------------
+def build_embedder() -> GoogleGenerativeAIEmbeddings:
+    return GoogleGenerativeAIEmbeddings(
+        model=EMBEDDING_MODEL_NAME,
+        google_api_key=CONFIG.google_api_key.get_secret_value(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal modul ingest dan caller retrieval lain.
+# Menjalankan fungsi `format_vector` sebagai bagian alur `supabase_ingest`.
+# ---------------------------------------------------------------------------
+def format_vector(values: list[float]) -> str:
+    return "[" + ",".join(f"{value:.8f}" for value in values) + "]"
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
+# Menjalankan fungsi `batched` sebagai bagian alur `supabase_ingest`.
+# ---------------------------------------------------------------------------
+def batched(items: list[ChunkRecord], size: int) -> list[list[ChunkRecord]]:
+    return [items[index : index + size] for index in range(0, len(items), size)]
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
+# Menjalankan fungsi `build_rows` sebagai bagian alur `supabase_ingest`.
+# ---------------------------------------------------------------------------
+def build_rows(chunks: list[ChunkRecord], embeddings: list[list[float]]) -> list[dict]:
+    source_file = CHUNKS_FILE.name
+    rows: list[dict] = []
+
+    for chunk, embedding in zip(chunks, embeddings, strict=True):
+        rows.append(
+            {
+                "source_file": source_file,
+                "chunk_index": chunk.chunk_index,
+                "content": chunk.content,
+                "chunk_parent": chunk.chunk_parent,
+                "chunk_prev": chunk.chunk_prev,
+                "chunk_next": chunk.chunk_next,
+                "page_start": chunk.page.start,
+                "page_end": chunk.page.end,
+                "embedding": format_vector(embedding),
+            }
+        )
+
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: manage.py
+# Menjalankan fungsi `upsert_embeddings` sebagai bagian alur `supabase_ingest`.
+# ---------------------------------------------------------------------------
+def upsert_embeddings() -> int:
+    chunks = load_chunks(CHUNKS_FILE)
+    if not chunks:
+        return 0
+
+    client = build_supabase_client()
+    embedder = build_embedder()
+
+    total_rows = 0
+    for chunk_batch in batched(chunks, BATCH_SIZE):
+        contents = [chunk.content for chunk in chunk_batch]
+        embeddings = embedder.embed_documents(
+            contents,
+            output_dimensionality=EMBEDDING_DIMENSION,
+        )
+        rows = build_rows(chunk_batch, embeddings)
+        client.table("document_chunks").upsert(
+            rows,
+            on_conflict="source_file,chunk_index",
+        ).execute()
+        total_rows += len(rows)
+
+    return total_rows
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: manage.py; model_ai/loader/pdf_extractor.py
+# Menjalankan fungsi `main` sebagai bagian alur `supabase_ingest`.
+# ---------------------------------------------------------------------------
+def main() -> None:
+    try:
+        total_rows = upsert_embeddings()
+        print(
+            f"Berhasil upsert {total_rows} chunk dari {CHUNKS_FILE.name} ke tabel document_chunks."
+        )
+    except Exception as exc:
+        print(f"Error saat mengirim embedding ke Supabase: {exc}")
+        raise SystemExit(1) from exc
+
+
+if __name__ == "__main__":
+    main()

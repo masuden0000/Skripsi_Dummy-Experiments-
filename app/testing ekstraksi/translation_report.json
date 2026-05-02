@@ -1,0 +1,2130 @@
+{
+  "generated_at": "2026-05-02T05:49:37.567277+00:00",
+  "inputs": {
+    "output_json": "C:\\Users\\hudar\\Documents\\[1] Huda Rasyad Wicaksono\\[3] Project\\[1] Project Website\\Skripsi (Dummy)\\Project 1 (AI)\\app\\data\\output.json",
+    "python_docx_dictionary": "C:\\Users\\hudar\\Documents\\[1] Huda Rasyad Wicaksono\\[3] Project\\[1] Project Website\\Skripsi (Dummy)\\Project 1 (AI)\\app\\data\\python_docx_full_dictionary.yaml",
+    "report": "C:\\Users\\hudar\\Documents\\[1] Huda Rasyad Wicaksono\\[3] Project\\[1] Project Website\\Skripsi (Dummy)\\Project 1 (AI)\\app\\testing ekstraksi\\translation_report.json"
+  },
+  "summary": {
+    "total_fields": 61,
+    "catalog_entries": 149,
+    "retrieval_mode": "lexical",
+    "accepted": 8,
+    "rejected": 0,
+    "unmapped": 39,
+    "needs_review": 14,
+    "retrieve_failed": 0
+  },
+  "results": [
+    {
+      "source_field": "document_type",
+      "source_value": "Panduan PKM-KC",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "source_document",
+      "source_value": "file.pdf",
+      "final_status": "needs_review",
+      "target_path": "document.save",
+      "target_kind": "property",
+      "normalized_value": "file.pdf",
+      "confidence": 0.8,
+      "llm_status": "needs_review",
+      "llm_reason": "Terjemahan dari source_field 'source_document' ke target python-docx",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::document.save",
+          "path": "document.save",
+          "text": "section=document\nkind=property\npath=document.save\ndescription=Persists the document to a path or file‑like object.",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "typography.font_family",
+      "source_value": "Times New Roman",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas antara typography.font_family dan target python-docx",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "method::document.add_section",
+          "path": "document.add_section",
+          "text": "section=document\nkind=method\npath=document.add_section\nsignature=add_section(start_type: WD_SECTION_START = WD_SECTION_START.NEW_PAGE) -> Section\ndescription=Adds a new section at the end of the document.  The start_type argument determines the type of section break and must be a member of `WD_SECTION_START`.",
+          "score": 0.2
+        },
+        {
+          "chunk_id": "method::table.add_row",
+          "path": "table.add_row",
+          "text": "section=table\nkind=method\npath=table.add_row\nsignature=add_row() -> _Row\ndescription=Append a new row to the bottom of the table",
+          "score": 0.2
+        }
+      ]
+    },
+    {
+      "source_field": "typography.font_size_body_pt",
+      "source_value": 12,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "typography.font_size_heading_pt",
+      "source_value": 12,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "typography.heading_bold",
+      "source_value": true,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.first_page_header",
+          "path": "section.first_page_header",
+          "text": "section=section\nkind=property\npath=section.first_page_header\ntype=_Header\ndescription=Header used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.first_page_footer",
+          "path": "section.first_page_footer",
+          "text": "section=section\nkind=property\npath=section.first_page_footer\ntype=_Footer\ndescription=Footer used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::footer.is_linked_to_previous",
+          "path": "footer.is_linked_to_previous",
+          "text": "section=footer\nkind=property\npath=footer.is_linked_to_previous\ndescription=Inherit footer from prior section when True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "typography.heading_all_caps",
+      "source_value": false,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "page_layout.margin_top_cm",
+      "source_value": 3.0,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas antara source_field dan target_path",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "page_layout.margin_bottom_cm",
+      "source_value": 3.0,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas antara source_field dan target_path",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "page_layout.margin_left_cm",
+      "source_value": 4.0,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas antara source_field dan target_path",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "page_layout.margin_right_cm",
+      "source_value": 3.0,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas antara source_field dan target_path",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "page_layout.paper_size",
+      "source_value": "A4",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "page_layout.orientation",
+      "source_value": "Portrait",
+      "final_status": "accepted",
+      "target_path": "section.orientation",
+      "target_kind": "property",
+      "normalized_value": "PORTRAIT",
+      "confidence": 1.0,
+      "llm_status": "mapped",
+      "llm_reason": "Terdapat padanan jelas antara source_field dan target_path",
+      "validator_reason": "target_path ada di dictionary dan nilai lolos validasi tipe dasar.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.orientation",
+          "path": "section.orientation",
+          "text": "section=section\nkind=property\npath=section.orientation\ntype=enum\nenum=WD_ORIENTATION\nenum_members=PORTRAIT, LANDSCAPE\ndescription=Page orientation for the section.  Values are members of `WD_ORIENTATION` (PORTRAIT, LANDSCAPE).",
+          "score": 0.6666666666666666
+        },
+        {
+          "chunk_id": "enumeration::WD_ORIENTATION",
+          "path": "enumerations.WD_ORIENTATION",
+          "text": "section=enumerations\nkind=enumeration\npath=enumerations.WD_ORIENTATION\ntype=enum\nenum=WD_ORIENTATION\nenum_members=PORTRAIT, LANDSCAPE\ndescription=Allowed members for WD_ORIENTATION.",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "page_layout.columns",
+      "source_value": 1,
+      "final_status": "needs_review",
+      "target_path": "table.columns",
+      "target_kind": "property",
+      "normalized_value": 1,
+      "confidence": 0.8,
+      "llm_status": "needs_review",
+      "llm_reason": "The source field 'page_layout.columns' seems to be related to the number of columns in a table, which is similar to 'table.columns' or 'document.add_table' with 'cols' parameter.",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "method::document.add_table",
+          "path": "document.add_table",
+          "text": "section=document\nkind=method\npath=document.add_table\nsignature=add_table(rows: int, cols: int, style: str | TableStyle | None = None) -> Table\ndescription=Appends a table with the specified number of rows and columns and returns it.  A style may optionally be applied.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "method::header.add_table",
+          "path": "header.add_table",
+          "text": "section=header\nkind=method\npath=header.add_table\nsignature=add_table(rows: int, cols: int, width: Length) -> Table\ndescription=Append a table of specified rows and columns",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "method::footer.add_table",
+          "path": "footer.add_table",
+          "text": "section=footer\nkind=method\npath=footer.add_table\nsignature=add_table(rows: int, cols: int, width: Length) -> Table\ndescription=Append a table of specified rows and columns",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::table.columns",
+          "path": "table.columns",
+          "text": "section=table\nkind=property\npath=table.columns\ntype=_Columns\ndescription=Sequence of columns in the table",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::row.grid_cols_before",
+          "path": "row.grid_cols_before",
+          "text": "section=row\nkind=property\npath=row.grid_cols_before\ntype=int\ndescription=Count of omitted grid columns before first cell",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::row.grid_cols_after",
+          "path": "row.grid_cols_after",
+          "text": "section=row\nkind=property\npath=row.grid_cols_after\ntype=int\ndescription=Count of omitted grid columns after last cell",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "spacing.line_spacing",
+      "source_value": 1.15,
+      "final_status": "accepted",
+      "target_path": "paragraph_format.line_spacing",
+      "target_kind": "property",
+      "normalized_value": 1.15,
+      "confidence": 1.0,
+      "llm_status": "mapped",
+      "llm_reason": "exact match",
+      "validator_reason": "target_path ada di dictionary dan nilai lolos validasi tipe dasar.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::paragraph_format.line_spacing",
+          "path": "paragraph_format.line_spacing",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.line_spacing\ntype=Length | float | None\ndescription=Spacing between baselines of successive lines",
+          "score": 0.5
+        },
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::section.gutter",
+          "path": "section.gutter",
+          "text": "section=section\nkind=property\npath=section.gutter\ntype=Length | None\ndescription=Extra spacing added to inner margin for binding",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::paragraph.paragraph_format",
+          "path": "paragraph.paragraph_format",
+          "text": "section=paragraph\nkind=property\npath=paragraph.paragraph_format\ntype=ParagraphFormat\ndescription=Formatting properties such as indentation and spacing",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::paragraph_format.line_spacing_rule",
+          "path": "paragraph_format.line_spacing_rule",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.line_spacing_rule\ntype=enum | None\nenum=WD_LINE_SPACING\nenum_members=SINGLE, ONE_POINT_FIVE, DOUBLE, EXACTLY, MULTIPLE, AT_LEAST\ndescription=Interpretation of line_spacing; member of WD_LINE_SPACING",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "spacing.line_spacing_rule",
+      "source_value": "MULTIPLE",
+      "final_status": "accepted",
+      "target_path": "paragraph_format.line_spacing_rule",
+      "target_kind": "property",
+      "normalized_value": "MULTIPLE",
+      "confidence": 1.0,
+      "llm_status": "mapped",
+      "llm_reason": "exact match with enum member",
+      "validator_reason": "target_path ada di dictionary dan nilai lolos validasi tipe dasar.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::paragraph_format.line_spacing_rule",
+          "path": "paragraph_format.line_spacing_rule",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.line_spacing_rule\ntype=enum | None\nenum=WD_LINE_SPACING\nenum_members=SINGLE, ONE_POINT_FIVE, DOUBLE, EXACTLY, MULTIPLE, AT_LEAST\ndescription=Interpretation of line_spacing; member of WD_LINE_SPACING",
+          "score": 0.6666666666666666
+        },
+        {
+          "chunk_id": "property::section.gutter",
+          "path": "section.gutter",
+          "text": "section=section\nkind=property\npath=section.gutter\ntype=Length | None\ndescription=Extra spacing added to inner margin for binding",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph.paragraph_format",
+          "path": "paragraph.paragraph_format",
+          "text": "section=paragraph\nkind=property\npath=paragraph.paragraph_format\ntype=ParagraphFormat\ndescription=Formatting properties such as indentation and spacing",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph_format.line_spacing",
+          "path": "paragraph_format.line_spacing",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.line_spacing\ntype=Length | float | None\ndescription=Spacing between baselines of successive lines",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "enumeration::WD_LINE_SPACING",
+          "path": "enumerations.WD_LINE_SPACING",
+          "text": "section=enumerations\nkind=enumeration\npath=enumerations.WD_LINE_SPACING\ntype=enum\nenum=WD_LINE_SPACING\nenum_members=SINGLE, ONE_POINT_FIVE, DOUBLE, EXACTLY, MULTIPLE, AT_LEAST\ndescription=Allowed members for WD_LINE_SPACING.",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "spacing.paragraph_alignment",
+      "source_value": "JUSTIFY",
+      "final_status": "accepted",
+      "target_path": "paragraph.alignment",
+      "target_kind": "property",
+      "normalized_value": "JUSTIFY",
+      "confidence": 1.0,
+      "llm_status": "mapped",
+      "llm_reason": "exact match",
+      "validator_reason": "target_path ada di dictionary dan nilai lolos validasi tipe dasar.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.gutter",
+          "path": "section.gutter",
+          "text": "section=section\nkind=property\npath=section.gutter\ntype=Length | None\ndescription=Extra spacing added to inner margin for binding",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph.alignment",
+          "path": "paragraph.alignment",
+          "text": "section=paragraph\nkind=property\npath=paragraph.alignment\ntype=enum | None\nenum=WD_PARAGRAPH_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT, JUSTIFY, DISTRIBUTE, JUSTIFY_MED, JUSTIFY_HI, JUSTIFY_LOW, THAI_JUSTIFY\ndescription=Horizontal alignment (justification); member of WD_PARAGRAPH_ALIGNMENT or None.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph.paragraph_format",
+          "path": "paragraph.paragraph_format",
+          "text": "section=paragraph\nkind=property\npath=paragraph.paragraph_format\ntype=ParagraphFormat\ndescription=Formatting properties such as indentation and spacing",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph_format.alignment",
+          "path": "paragraph_format.alignment",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.alignment\ntype=enum | None\nenum=WD_PARAGRAPH_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT, JUSTIFY, DISTRIBUTE, JUSTIFY_MED, JUSTIFY_HI, JUSTIFY_LOW, THAI_JUSTIFY\ndescription=Paragraph justification (WD_PARAGRAPH_ALIGNMENT)",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph_format.line_spacing",
+          "path": "paragraph_format.line_spacing",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.line_spacing\ntype=Length | float | None\ndescription=Spacing between baselines of successive lines",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "enumeration::WD_PARAGRAPH_ALIGNMENT",
+          "path": "enumerations.WD_PARAGRAPH_ALIGNMENT",
+          "text": "section=enumerations\nkind=enumeration\npath=enumerations.WD_PARAGRAPH_ALIGNMENT\ntype=enum\nenum=WD_PARAGRAPH_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT, JUSTIFY, DISTRIBUTE, JUSTIFY_MED, JUSTIFY_HI, JUSTIFY_LOW, THAI_JUSTIFY\ndescription=Allowed members for WD_PARAGRAPH_ALIGNMENT.",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "spacing.first_line_indent_cm",
+      "source_value": null,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "source_value is null",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.gutter",
+          "path": "section.gutter",
+          "text": "section=section\nkind=property\npath=section.gutter\ntype=Length | None\ndescription=Extra spacing added to inner margin for binding",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph.paragraph_format",
+          "path": "paragraph.paragraph_format",
+          "text": "section=paragraph\nkind=property\npath=paragraph.paragraph_format\ntype=ParagraphFormat\ndescription=Formatting properties such as indentation and spacing",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph_format.line_spacing",
+          "path": "paragraph_format.line_spacing",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.line_spacing\ntype=Length | float | None\ndescription=Spacing between baselines of successive lines",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "spacing.references_hanging_indent",
+      "source_value": true,
+      "final_status": "needs_review",
+      "target_path": "paragraph.paragraph_format",
+      "target_kind": "property",
+      "normalized_value": true,
+      "confidence": 0.5,
+      "llm_status": "needs_review",
+      "llm_reason": "The source field spacing.references_hanging_indent seems related to paragraph formatting, but the exact mapping is unclear.",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.gutter",
+          "path": "section.gutter",
+          "text": "section=section\nkind=property\npath=section.gutter\ntype=Length | None\ndescription=Extra spacing added to inner margin for binding",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.first_page_header",
+          "path": "section.first_page_header",
+          "text": "section=section\nkind=property\npath=section.first_page_header\ntype=_Header\ndescription=Header used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.first_page_footer",
+          "path": "section.first_page_footer",
+          "text": "section=section\nkind=property\npath=section.first_page_footer\ntype=_Footer\ndescription=Footer used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::footer.is_linked_to_previous",
+          "path": "footer.is_linked_to_previous",
+          "text": "section=footer\nkind=property\npath=footer.is_linked_to_previous\ndescription=Inherit footer from prior section when True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph.paragraph_format",
+          "path": "paragraph.paragraph_format",
+          "text": "section=paragraph\nkind=property\npath=paragraph.paragraph_format\ntype=ParagraphFormat\ndescription=Formatting properties such as indentation and spacing",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::paragraph_format.line_spacing",
+          "path": "paragraph_format.line_spacing",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.line_spacing\ntype=Length | float | None\ndescription=Spacing between baselines of successive lines",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_proposal.halaman_sampul",
+      "source_value": false,
+      "final_status": "needs_review",
+      "target_path": "header.is_linked_to_previous",
+      "target_kind": "property",
+      "normalized_value": false,
+      "confidence": 0.5,
+      "llm_status": "needs_review",
+      "llm_reason": "Tidak ada padanan yang jelas, namun nilai boolean dapat dipetakan ke beberapa target",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_proposal.halaman_pengesahan",
+      "source_value": false,
+      "final_status": "needs_review",
+      "target_path": "header.is_linked_to_previous",
+      "target_kind": "property",
+      "normalized_value": false,
+      "confidence": 0.5,
+      "llm_status": "needs_review",
+      "llm_reason": "Tidak ada padanan yang jelas, namun target_path yang paling mirip adalah header.is_linked_to_previous",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_proposal.ringkasan",
+      "source_value": false,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.5,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas untuk field ringkasan dengan nilai false",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_proposal.sections",
+      "source_value": [
+        {
+          "type": "daftar_isi",
+          "required": true,
+          "number": null,
+          "title": "DAFTAR ISI",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_gambar",
+          "required": false,
+          "number": null,
+          "title": "DAFTAR GAMBAR",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_tabel",
+          "required": false,
+          "number": null,
+          "title": "DAFTAR TABEL",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_lampiran",
+          "required": false,
+          "number": null,
+          "title": "DAFTAR LAMPIRAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": true,
+          "number": 1,
+          "title": "PENDAHULUAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": true,
+          "number": 2,
+          "title": "TINJAUAN PUSTAKA",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": true,
+          "number": 3,
+          "title": "TAHAP PELAKSANAAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": true,
+          "number": 4,
+          "title": "BIAYA DAN JADWAL KEGIATAN",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_pustaka",
+          "required": true,
+          "number": null,
+          "title": "DAFTAR PUSTAKA",
+          "is_major_section": true
+        }
+      ],
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.5,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas antara source_field dan target_path",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.08823529411764706
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.08823529411764706
+        },
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.058823529411764705
+        },
+        {
+          "chunk_id": "property::section.first_page_header",
+          "path": "section.first_page_header",
+          "text": "section=section\nkind=property\npath=section.first_page_header\ntype=_Header\ndescription=Header used on the first page when different_first_page_header_footer is True",
+          "score": 0.058823529411764705
+        },
+        {
+          "chunk_id": "property::section.first_page_footer",
+          "path": "section.first_page_footer",
+          "text": "section=section\nkind=property\npath=section.first_page_footer\ntype=_Footer\ndescription=Footer used on the first page when different_first_page_header_footer is True",
+          "score": 0.058823529411764705
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.058823529411764705
+        },
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.058823529411764705
+        },
+        {
+          "chunk_id": "property::cell.grid_span",
+          "path": "cell.grid_span",
+          "text": "section=cell\nkind=property\npath=cell.grid_span\ntype=int\ndescription=Number of layout grid cells spanned horizontally",
+          "score": 0.058823529411764705
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_proposal.max_halaman_inti",
+      "source_value": 10,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "document_structure_proposal.format_nama_file",
+      "source_value": "namaketua_namapt_PKM-KC.pdf",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "document_structure_laporan_kemajuan.halaman_sampul",
+      "source_value": false,
+      "final_status": "needs_review",
+      "target_path": "header.is_linked_to_previous",
+      "target_kind": "property",
+      "normalized_value": false,
+      "confidence": 0.5,
+      "llm_status": "needs_review",
+      "llm_reason": "Tidak ada padanan yang jelas, namun target_path yang paling mirip adalah header.is_linked_to_previous karena memiliki tipe boolean",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_laporan_kemajuan.halaman_pengesahan",
+      "source_value": false,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.5,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas untuk field document_structure_laporan_kemajuan.halaman_pengesahan dengan nilai false",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_laporan_kemajuan.ringkasan",
+      "source_value": false,
+      "final_status": "needs_review",
+      "target_path": "header.is_linked_to_previous",
+      "target_kind": "property",
+      "normalized_value": false,
+      "confidence": 0.8,
+      "llm_status": "needs_review",
+      "llm_reason": "The source field 'document_structure_laporan_kemajuan.ringkasan' is likely related to the 'header.is_linked_to_previous' field, which has a similar description and is a boolean type.",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_laporan_kemajuan.sections",
+      "source_value": [
+        {
+          "type": "daftar_isi",
+          "required": true,
+          "number": null,
+          "title": "DAFTAR ISI",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_gambar",
+          "required": false,
+          "number": null,
+          "title": "DAFTAR GAMBAR",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_tabel",
+          "required": false,
+          "number": null,
+          "title": "DAFTAR TABEL",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_lampiran",
+          "required": false,
+          "number": null,
+          "title": "DAFTAR LAMPIRAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 1,
+          "title": "PENDAHULUAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 2,
+          "title": "TARGET LUARAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 3,
+          "title": "TAHAP PELAKSANAAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 4,
+          "title": "HASIL YANG DICAPAI",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 5,
+          "title": "POTENSI HASIL",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 6,
+          "title": "RENCANA TAHAPAN BERIKUTNYA",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_pustaka",
+          "required": true,
+          "number": null,
+          "title": "DAFTAR PUSTAKA",
+          "is_major_section": true
+        },
+        {
+          "type": "lampiran",
+          "required": true,
+          "number": null,
+          "title": "LAMPIRAN",
+          "is_major_section": true
+        }
+      ],
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas antara source_field dan target_path",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.07142857142857142
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.07142857142857142
+        },
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.047619047619047616
+        },
+        {
+          "chunk_id": "property::section.first_page_header",
+          "path": "section.first_page_header",
+          "text": "section=section\nkind=property\npath=section.first_page_header\ntype=_Header\ndescription=Header used on the first page when different_first_page_header_footer is True",
+          "score": 0.047619047619047616
+        },
+        {
+          "chunk_id": "property::section.first_page_footer",
+          "path": "section.first_page_footer",
+          "text": "section=section\nkind=property\npath=section.first_page_footer\ntype=_Footer\ndescription=Footer used on the first page when different_first_page_header_footer is True",
+          "score": 0.047619047619047616
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.047619047619047616
+        },
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.047619047619047616
+        },
+        {
+          "chunk_id": "property::cell.grid_span",
+          "path": "cell.grid_span",
+          "text": "section=cell\nkind=property\npath=cell.grid_span\ntype=int\ndescription=Number of layout grid cells spanned horizontally",
+          "score": 0.047619047619047616
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_laporan_kemajuan.max_halaman_inti",
+      "source_value": 10,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "document_structure_laporan_kemajuan.format_nama_file",
+      "source_value": "namaketua_namapt_PKM-KC.pdf",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "document_structure_laporan_akhir.halaman_sampul",
+      "source_value": false,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.5,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas, namun memiliki kesamaan dengan beberapa target path",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_laporan_akhir.halaman_pengesahan",
+      "source_value": false,
+      "final_status": "needs_review",
+      "target_path": "header.is_linked_to_previous",
+      "target_kind": "property",
+      "normalized_value": false,
+      "confidence": 0.5,
+      "llm_status": "needs_review",
+      "llm_reason": "Tidak ada padanan yang jelas, namun target_path yang paling mirip adalah header.is_linked_to_previous karena memiliki tipe boolean",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_laporan_akhir.ringkasan",
+      "source_value": true,
+      "final_status": "needs_review",
+      "target_path": "section.different_first_page_header_footer",
+      "target_kind": "property",
+      "normalized_value": true,
+      "confidence": 0.8,
+      "llm_status": "needs_review",
+      "llm_reason": "The source field 'document_structure_laporan_akhir.ringkasan' seems to be related to the concept of having a distinct header/footer on the first page, which is described by the 'section.different_first_page_header_footer' path in the dictionary context.",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.first_page_header",
+          "path": "section.first_page_header",
+          "text": "section=section\nkind=property\npath=section.first_page_header\ntype=_Header\ndescription=Header used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.first_page_footer",
+          "path": "section.first_page_footer",
+          "text": "section=section\nkind=property\npath=section.first_page_footer\ntype=_Footer\ndescription=Footer used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::footer.is_linked_to_previous",
+          "path": "footer.is_linked_to_previous",
+          "text": "section=footer\nkind=property\npath=footer.is_linked_to_previous\ndescription=Inherit footer from prior section when True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_laporan_akhir.sections",
+      "source_value": [
+        {
+          "type": "ringkasan",
+          "required": true,
+          "number": null,
+          "title": null,
+          "is_major_section": false
+        },
+        {
+          "type": "daftar_isi",
+          "required": true,
+          "number": null,
+          "title": "DAFTAR ISI",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_gambar",
+          "required": false,
+          "number": null,
+          "title": "DAFTAR GAMBAR",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_tabel",
+          "required": false,
+          "number": null,
+          "title": "DAFTAR TABEL",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_lampiran",
+          "required": false,
+          "number": null,
+          "title": "DAFTAR LAMPIRAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 1,
+          "title": "PENDAHULUAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 2,
+          "title": "TINJAUAN PUSTAKA",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 3,
+          "title": "TAHAP PELAKSANAAN",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 4,
+          "title": "HASIL YANG DICAPAI DAN POTENSI KHUSUS",
+          "is_major_section": true
+        },
+        {
+          "type": "bab",
+          "required": null,
+          "number": 5,
+          "title": "PENUTUP",
+          "is_major_section": true
+        },
+        {
+          "type": "daftar_pustaka",
+          "required": true,
+          "number": null,
+          "title": "DAFTAR PUSTAKA",
+          "is_major_section": true
+        },
+        {
+          "type": "lampiran",
+          "required": true,
+          "number": null,
+          "title": "LAMPIRAN",
+          "is_major_section": true
+        }
+      ],
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.5,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas antara source_field dan target_path",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.07317073170731707
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.07317073170731707
+        },
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.04878048780487805
+        },
+        {
+          "chunk_id": "property::section.first_page_header",
+          "path": "section.first_page_header",
+          "text": "section=section\nkind=property\npath=section.first_page_header\ntype=_Header\ndescription=Header used on the first page when different_first_page_header_footer is True",
+          "score": 0.04878048780487805
+        },
+        {
+          "chunk_id": "property::section.first_page_footer",
+          "path": "section.first_page_footer",
+          "text": "section=section\nkind=property\npath=section.first_page_footer\ntype=_Footer\ndescription=Footer used on the first page when different_first_page_header_footer is True",
+          "score": 0.04878048780487805
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.04878048780487805
+        },
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.04878048780487805
+        },
+        {
+          "chunk_id": "property::cell.grid_span",
+          "path": "cell.grid_span",
+          "text": "section=cell\nkind=property\npath=cell.grid_span\ntype=int\ndescription=Number of layout grid cells spanned horizontally",
+          "score": 0.04878048780487805
+        }
+      ]
+    },
+    {
+      "source_field": "document_structure_laporan_akhir.max_halaman_inti",
+      "source_value": 10,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "document_structure_laporan_akhir.format_nama_file",
+      "source_value": "namaketua_namapt_PKM-KC.pdf",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "numbering.preliminary.format",
+      "source_value": "lowerRoman",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas antara numbering.preliminary.format dan font.color",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::font.color",
+          "path": "font.color",
+          "text": "section=font\nkind=property\npath=font.color\ntype=ColorFormat\ndescription=Color format object with rgb, theme_color, and type",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "numbering.preliminary.location",
+      "source_value": "FOOTER",
+      "final_status": "accepted",
+      "target_path": "section.footer",
+      "target_kind": "property",
+      "normalized_value": "FOOTER",
+      "confidence": 1.0,
+      "llm_status": "mapped",
+      "llm_reason": "exact match",
+      "validator_reason": "target_path ada di dictionary dan nilai lolos validasi tipe dasar.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.footer",
+          "path": "section.footer",
+          "text": "section=section\nkind=property\npath=section.footer\ntype=_Footer\ndescription=Default page footer for the section",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::section.first_page_footer",
+          "path": "section.first_page_footer",
+          "text": "section=section\nkind=property\npath=section.first_page_footer\ntype=_Footer\ndescription=Footer used on the first page when different_first_page_header_footer is True",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::section.even_page_footer",
+          "path": "section.even_page_footer",
+          "text": "section=section\nkind=property\npath=section.even_page_footer\ntype=_Footer\ndescription=Footer used on even pages when odd/even footers enabled",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::section.footer_distance",
+          "path": "section.footer_distance",
+          "text": "section=section\nkind=property\npath=section.footer_distance\ntype=Length | None\ndescription=Distance from bottom of page to footer",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::footer.paragraphs",
+          "path": "footer.paragraphs",
+          "text": "section=footer\nkind=property\npath=footer.paragraphs\ndescription=List of paragraphs in footer",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::footer.tables",
+          "path": "footer.tables",
+          "text": "section=footer\nkind=property\npath=footer.tables\ndescription=List of tables in footer",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::footer.is_linked_to_previous",
+          "path": "footer.is_linked_to_previous",
+          "text": "section=footer\nkind=property\npath=footer.is_linked_to_previous\ndescription=Inherit footer from prior section when True",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "numbering.preliminary.alignment",
+      "source_value": "RIGHT",
+      "final_status": "accepted",
+      "target_path": "paragraph.alignment",
+      "target_kind": "property",
+      "normalized_value": "RIGHT",
+      "confidence": 1.0,
+      "llm_status": "mapped",
+      "llm_reason": "The source field 'numbering.preliminary.alignment' has a clear equivalent in the target 'paragraph.alignment' with the same value 'RIGHT'",
+      "validator_reason": "target_path ada di dictionary dan nilai lolos validasi tipe dasar.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::table.alignment",
+          "path": "table.alignment",
+          "text": "section=table\nkind=property\npath=table.alignment\ntype=enum | None\nenum=WD_TABLE_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT\ndescription=Table justification; member of WD_TABLE_ALIGNMENT or None",
+          "score": 0.5
+        },
+        {
+          "chunk_id": "property::paragraph.alignment",
+          "path": "paragraph.alignment",
+          "text": "section=paragraph\nkind=property\npath=paragraph.alignment\ntype=enum | None\nenum=WD_PARAGRAPH_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT, JUSTIFY, DISTRIBUTE, JUSTIFY_MED, JUSTIFY_HI, JUSTIFY_LOW, THAI_JUSTIFY\ndescription=Horizontal alignment (justification); member of WD_PARAGRAPH_ALIGNMENT or None.",
+          "score": 0.5
+        },
+        {
+          "chunk_id": "property::paragraph_format.alignment",
+          "path": "paragraph_format.alignment",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.alignment\ntype=enum | None\nenum=WD_PARAGRAPH_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT, JUSTIFY, DISTRIBUTE, JUSTIFY_MED, JUSTIFY_HI, JUSTIFY_LOW, THAI_JUSTIFY\ndescription=Paragraph justification (WD_PARAGRAPH_ALIGNMENT)",
+          "score": 0.5
+        },
+        {
+          "chunk_id": "property::section.right_margin",
+          "path": "section.right_margin",
+          "text": "section=section\nkind=property\npath=section.right_margin\ntype=Length | None\ndescription=Right margin in EMU",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::cell.vertical_alignment",
+          "path": "cell.vertical_alignment",
+          "text": "section=cell\nkind=property\npath=cell.vertical_alignment\ntype=enum | None\nenum=WD_CELL_VERTICAL_ALIGNMENT\nenum_members=TOP, CENTER, BOTTOM, BOTH\ndescription=Vertical alignment of text within the cell; member of WD_CELL_VERTICAL_ALIGNMENT or None.",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::paragraph_format.right_indent",
+          "path": "paragraph_format.right_indent",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.right_indent\ntype=Length | None\ndescription=Right indentation",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::font.rtl",
+          "path": "font.rtl",
+          "text": "section=font\nkind=property\npath=font.rtl\ntype=boolean | None\ndescription=Right‑to‑left characteristics",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "enumeration::WD_PARAGRAPH_ALIGNMENT",
+          "path": "enumerations.WD_PARAGRAPH_ALIGNMENT",
+          "text": "section=enumerations\nkind=enumeration\npath=enumerations.WD_PARAGRAPH_ALIGNMENT\ntype=enum\nenum=WD_PARAGRAPH_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT, JUSTIFY, DISTRIBUTE, JUSTIFY_MED, JUSTIFY_HI, JUSTIFY_LOW, THAI_JUSTIFY\ndescription=Allowed members for WD_PARAGRAPH_ALIGNMENT.",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "numbering.preliminary.start_at_section",
+      "source_value": "DAFTAR ISI",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "numbering.content.format",
+      "source_value": "decimal",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.5,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas untuk numbering.content.format dengan nilai 'decimal' di target python-docx",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::cell.text",
+          "path": "cell.text",
+          "text": "section=cell\nkind=property\npath=cell.text\ntype=string\ndescription=Entire text content of the cell.  Assigning a string replaces all existing content with a single paragraph containing the assigned text.",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::paragraph.text",
+          "path": "paragraph.text",
+          "text": "section=paragraph\nkind=property\npath=paragraph.text\ntype=string\ndescription=Text content of the paragraph",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "method::paragraph.clear",
+          "path": "paragraph.clear",
+          "text": "section=paragraph\nkind=method\npath=paragraph.clear\ndescription=Remove all content in the paragraph but keep formatting",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "method::run.clear",
+          "path": "run.clear",
+          "text": "section=run\nkind=method\npath=run.clear\ndescription=Remove all content from the run (formatting preserved)",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "method::run.iter_inner_content",
+          "path": "run.iter_inner_content",
+          "text": "section=run\nkind=method\npath=run.iter_inner_content\ndescription=Iterate over content items (text, drawings, page breaks)",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::font.color",
+          "path": "font.color",
+          "text": "section=font\nkind=property\npath=font.color\ntype=ColorFormat\ndescription=Color format object with rgb, theme_color, and type",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "numbering.content.location",
+      "source_value": "HEADER",
+      "final_status": "accepted",
+      "target_path": "section.header",
+      "target_kind": "property",
+      "normalized_value": "HEADER",
+      "confidence": 1.0,
+      "llm_status": "mapped",
+      "llm_reason": "exact match",
+      "validator_reason": "target_path ada di dictionary dan nilai lolos validasi tipe dasar.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.header",
+          "path": "section.header",
+          "text": "section=section\nkind=property\npath=section.header\ntype=_Header\ndescription=Default page header for the section",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::section.first_page_header",
+          "path": "section.first_page_header",
+          "text": "section=section\nkind=property\npath=section.first_page_header\ntype=_Header\ndescription=Header used on the first page when different_first_page_header_footer is True",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::section.even_page_header",
+          "path": "section.even_page_header",
+          "text": "section=section\nkind=property\npath=section.even_page_header\ntype=_Header\ndescription=Header used on even pages when odd/even headers enabled",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::section.header_distance",
+          "path": "section.header_distance",
+          "text": "section=section\nkind=property\npath=section.header_distance\ntype=Length | None\ndescription=Distance from top of page to header",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::header.paragraphs",
+          "path": "header.paragraphs",
+          "text": "section=header\nkind=property\npath=header.paragraphs\ndescription=List of paragraphs in header",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::header.tables",
+          "path": "header.tables",
+          "text": "section=header\nkind=property\npath=header.tables\ndescription=List of tables in header",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "numbering.content.alignment",
+      "source_value": "RIGHT",
+      "final_status": "accepted",
+      "target_path": "paragraph.alignment",
+      "target_kind": "property",
+      "normalized_value": "RIGHT",
+      "confidence": 1.0,
+      "llm_status": "mapped",
+      "llm_reason": "exact match with enum member",
+      "validator_reason": "target_path ada di dictionary dan nilai lolos validasi tipe dasar.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::table.alignment",
+          "path": "table.alignment",
+          "text": "section=table\nkind=property\npath=table.alignment\ntype=enum | None\nenum=WD_TABLE_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT\ndescription=Table justification; member of WD_TABLE_ALIGNMENT or None",
+          "score": 0.5
+        },
+        {
+          "chunk_id": "property::paragraph.alignment",
+          "path": "paragraph.alignment",
+          "text": "section=paragraph\nkind=property\npath=paragraph.alignment\ntype=enum | None\nenum=WD_PARAGRAPH_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT, JUSTIFY, DISTRIBUTE, JUSTIFY_MED, JUSTIFY_HI, JUSTIFY_LOW, THAI_JUSTIFY\ndescription=Horizontal alignment (justification); member of WD_PARAGRAPH_ALIGNMENT or None.",
+          "score": 0.5
+        },
+        {
+          "chunk_id": "property::paragraph_format.alignment",
+          "path": "paragraph_format.alignment",
+          "text": "section=paragraph_format\nkind=property\npath=paragraph_format.alignment\ntype=enum | None\nenum=WD_PARAGRAPH_ALIGNMENT\nenum_members=LEFT, CENTER, RIGHT, JUSTIFY, DISTRIBUTE, JUSTIFY_MED, JUSTIFY_HI, JUSTIFY_LOW, THAI_JUSTIFY\ndescription=Paragraph justification (WD_PARAGRAPH_ALIGNMENT)",
+          "score": 0.5
+        },
+        {
+          "chunk_id": "property::section.right_margin",
+          "path": "section.right_margin",
+          "text": "section=section\nkind=property\npath=section.right_margin\ntype=Length | None\ndescription=Right margin in EMU",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::cell.text",
+          "path": "cell.text",
+          "text": "section=cell\nkind=property\npath=cell.text\ntype=string\ndescription=Entire text content of the cell.  Assigning a string replaces all existing content with a single paragraph containing the assigned text.",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::cell.vertical_alignment",
+          "path": "cell.vertical_alignment",
+          "text": "section=cell\nkind=property\npath=cell.vertical_alignment\ntype=enum | None\nenum=WD_CELL_VERTICAL_ALIGNMENT\nenum_members=TOP, CENTER, BOTTOM, BOTH\ndescription=Vertical alignment of text within the cell; member of WD_CELL_VERTICAL_ALIGNMENT or None.",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "property::paragraph.text",
+          "path": "paragraph.text",
+          "text": "section=paragraph\nkind=property\npath=paragraph.text\ntype=string\ndescription=Text content of the paragraph",
+          "score": 0.25
+        },
+        {
+          "chunk_id": "method::paragraph.clear",
+          "path": "paragraph.clear",
+          "text": "section=paragraph\nkind=method\npath=paragraph.clear\ndescription=Remove all content in the paragraph but keep formatting",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "numbering.content.start_at_section",
+      "source_value": "BAB 1. PENDAHULUAN",
+      "final_status": "needs_review",
+      "target_path": "document.add_heading",
+      "target_kind": "method",
+      "normalized_value": "BAB 1. PENDAHULUAN",
+      "confidence": 0.8,
+      "llm_status": "needs_review",
+      "llm_reason": "Terdapat kemungkinan bahwa field output.json 'numbering.content.start_at_section' dapat diterjemahkan ke target python-docx 'document.add_heading' karena keduanya terkait dengan teks atau judul",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.16666666666666666
+        },
+        {
+          "chunk_id": "property::cell.text",
+          "path": "cell.text",
+          "text": "section=cell\nkind=property\npath=cell.text\ntype=string\ndescription=Entire text content of the cell.  Assigning a string replaces all existing content with a single paragraph containing the assigned text.",
+          "score": 0.16666666666666666
+        },
+        {
+          "chunk_id": "property::paragraph.text",
+          "path": "paragraph.text",
+          "text": "section=paragraph\nkind=property\npath=paragraph.text\ntype=string\ndescription=Text content of the paragraph",
+          "score": 0.16666666666666666
+        },
+        {
+          "chunk_id": "method::paragraph.clear",
+          "path": "paragraph.clear",
+          "text": "section=paragraph\nkind=method\npath=paragraph.clear\ndescription=Remove all content in the paragraph but keep formatting",
+          "score": 0.16666666666666666
+        },
+        {
+          "chunk_id": "method::run.clear",
+          "path": "run.clear",
+          "text": "section=run\nkind=method\npath=run.clear\ndescription=Remove all content from the run (formatting preserved)",
+          "score": 0.16666666666666666
+        },
+        {
+          "chunk_id": "method::run.iter_inner_content",
+          "path": "run.iter_inner_content",
+          "text": "section=run\nkind=method\npath=run.iter_inner_content\ndescription=Iterate over content items (text, drawings, page breaks)",
+          "score": 0.16666666666666666
+        }
+      ]
+    },
+    {
+      "source_field": "numbering.chapter_format",
+      "source_value": "BAB {n}",
+      "final_status": "needs_review",
+      "target_path": "document.add_paragraph",
+      "target_kind": "method",
+      "normalized_value": "BAB {n}",
+      "confidence": 0.8,
+      "llm_status": "needs_review",
+      "llm_reason": "Terdapat kesesuaian antara source_field dan target_path, namun masih memerlukan review karena tidak ada informasi tentang style",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "method::document.add_paragraph",
+          "path": "document.add_paragraph",
+          "text": "section=document\nkind=method\npath=document.add_paragraph\nsignature=add_paragraph(text: str='', style: str | ParagraphStyle | None = None) -> Paragraph\ndescription=Appends a paragraph to the document with optional text and paragraph style.  Tab (\\t) and newline (\\n) characters are converted to Word tab and line break elements.",
+          "score": 0.25
+        }
+      ]
+    },
+    {
+      "source_field": "numbering.sub_chapter_format",
+      "source_value": null,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "numbering.figure_format",
+      "source_value": null,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "numbering.table_format",
+      "source_value": null,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "figures_and_tables.table_caption_position",
+      "source_value": "BELOW",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "figures_and_tables.figure_caption_position",
+      "source_value": "BELOW",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "figures_and_tables.caption_format_figure",
+      "source_value": "Gambar {n}. {title} ({source})",
+      "final_status": "needs_review",
+      "target_path": "document.add_paragraph",
+      "target_kind": "method",
+      "normalized_value": "Gambar {n}. {title} ({source})",
+      "confidence": 0.8,
+      "llm_status": "needs_review",
+      "llm_reason": "Terdapat kemungkinan bahwa field figures_and_tables.caption_format_figure dapat diterjemahkan ke document.add_paragraph karena keduanya terkait dengan teks",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::document.core_properties",
+          "path": "document.core_properties",
+          "text": "section=document\nkind=property\npath=document.core_properties\ndescription=Provides read/write access to the document’s Dublin Core properties such as author, title, subject, keywords, created/modified dates, etc. Properties like `author`, `title`, `subject`, `keywords`, `created`, and `modified` are exposed as attributes.",
+          "score": 0.16666666666666666
+        },
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.16666666666666666
+        },
+        {
+          "chunk_id": "method::document.add_paragraph",
+          "path": "document.add_paragraph",
+          "text": "section=document\nkind=method\npath=document.add_paragraph\nsignature=add_paragraph(text: str='', style: str | ParagraphStyle | None = None) -> Paragraph\ndescription=Appends a paragraph to the document with optional text and paragraph style.  Tab (\\t) and newline (\\n) characters are converted to Word tab and line break elements.",
+          "score": 0.16666666666666666
+        }
+      ]
+    },
+    {
+      "source_field": "figures_and_tables.caption_format_table",
+      "source_value": "Tabel {bab}.{n}. {title}",
+      "final_status": "needs_review",
+      "target_path": "document.add_paragraph",
+      "target_kind": "method",
+      "normalized_value": "Tabel {bab}.{n}. {title}",
+      "confidence": 0.8,
+      "llm_status": "needs_review",
+      "llm_reason": "Tabel caption format table dapat diterjemahkan ke dalam paragraf dokumen",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::document.core_properties",
+          "path": "document.core_properties",
+          "text": "section=document\nkind=property\npath=document.core_properties\ndescription=Provides read/write access to the document’s Dublin Core properties such as author, title, subject, keywords, created/modified dates, etc. Properties like `author`, `title`, `subject`, `keywords`, `created`, and `modified` are exposed as attributes.",
+          "score": 0.16666666666666666
+        },
+        {
+          "chunk_id": "method::document.add_heading",
+          "path": "document.add_heading",
+          "text": "section=document\nkind=method\npath=document.add_heading\nsignature=add_heading(text: str='', level: int=1) -> Paragraph\ndescription=Appends a heading paragraph.  The level argument chooses the heading style (Title for level 0, Heading 1 for level 1, etc.).",
+          "score": 0.16666666666666666
+        },
+        {
+          "chunk_id": "method::document.add_paragraph",
+          "path": "document.add_paragraph",
+          "text": "section=document\nkind=method\npath=document.add_paragraph\nsignature=add_paragraph(text: str='', style: str | ParagraphStyle | None = None) -> Paragraph\ndescription=Appends a paragraph to the document with optional text and paragraph style.  Tab (\\t) and newline (\\n) characters are converted to Word tab and line break elements.",
+          "score": 0.16666666666666666
+        }
+      ]
+    },
+    {
+      "source_field": "figures_and_tables.source_required_if_not_own",
+      "source_value": true,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": "unmapped",
+      "llm_reason": "Tidak ada padanan yang jelas",
+      "validator_reason": "LLM menyatakan tidak ada properti python-docx yang cocok dari konteks RAG.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.first_page_header",
+          "path": "section.first_page_header",
+          "text": "section=section\nkind=property\npath=section.first_page_header\ntype=_Header\ndescription=Header used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.first_page_footer",
+          "path": "section.first_page_footer",
+          "text": "section=section\nkind=property\npath=section.first_page_footer\ntype=_Footer\ndescription=Footer used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::footer.is_linked_to_previous",
+          "path": "footer.is_linked_to_previous",
+          "text": "section=footer\nkind=property\npath=footer.is_linked_to_previous\ndescription=Inherit footer from prior section when True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "figures_and_tables.max_width_constraint",
+      "source_value": "within_margins",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "page_count_limits.proposal_halaman_inti_maks",
+      "source_value": 10,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "page_count_limits.laporan_kemajuan_halaman_inti_maks",
+      "source_value": 10,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "page_count_limits.laporan_akhir_halaman_inti_maks",
+      "source_value": 10,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "page_count_limits.definisi_halaman_inti",
+      "source_value": "bab_pendahuluan_to_daftar_pustaka",
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "page_count_limits.lampiran_excluded",
+      "source_value": true,
+      "final_status": "needs_review",
+      "target_path": "section.different_first_page_header_footer",
+      "target_kind": "property",
+      "normalized_value": true,
+      "confidence": 0.5,
+      "llm_status": "needs_review",
+      "llm_reason": "The source field 'page_count_limits.lampiran_excluded' seems related to the concept of different first page headers/footers, but the connection is not clear.",
+      "validator_reason": "Target valid, tetapi confidence rendah atau LLM minta review.",
+      "retrieved_chunks": [
+        {
+          "chunk_id": "property::section.first_page_header",
+          "path": "section.first_page_header",
+          "text": "section=section\nkind=property\npath=section.first_page_header\ntype=_Header\ndescription=Header used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.first_page_footer",
+          "path": "section.first_page_footer",
+          "text": "section=section\nkind=property\npath=section.first_page_footer\ntype=_Footer\ndescription=Footer used on the first page when different_first_page_header_footer is True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::section.different_first_page_header_footer",
+          "path": "section.different_first_page_header_footer",
+          "text": "section=section\nkind=property\npath=section.different_first_page_header_footer\ntype=boolean\ndescription=True when the first page has a distinct header/footer",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::header.is_linked_to_previous",
+          "path": "header.is_linked_to_previous",
+          "text": "section=header\nkind=property\npath=header.is_linked_to_previous\ndescription=When True, the header uses the definition from the previous section; when False, the header has its own definition.",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::footer.is_linked_to_previous",
+          "path": "footer.is_linked_to_previous",
+          "text": "section=footer\nkind=property\npath=footer.is_linked_to_previous\ndescription=Inherit footer from prior section when True",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::run.underline",
+          "path": "run.underline",
+          "text": "section=run\nkind=property\npath=run.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or member of WD_UNDERLINE",
+          "score": 0.3333333333333333
+        },
+        {
+          "chunk_id": "property::font.underline",
+          "path": "font.underline",
+          "text": "section=font\nkind=property\npath=font.underline\ntype=boolean | None | enum\nenum=WD_UNDERLINE\nenum_members=NONE, SINGLE, WORDS, DOUBLE, DOTTED, THICK, DASH, DOT_DASH, DOT_DOT_DASH, WAVY, DOTTED_HEAVY, DASH_HEAVY, DOT_DASH_HEAVY, DOT_DOT_DASH_HEAVY, WAVY_HEAVY, DASH_LONG, WAVY_DOUBLE, DASH_LONG_HEAVY\ndescription=Underline style; True/False/None or WD_UNDERLINE member",
+          "score": 0.3333333333333333
+        }
+      ]
+    },
+    {
+      "source_field": "page_count_limits.judul_maks_kata",
+      "source_value": 20,
+      "final_status": "unmapped",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Tidak ada potongan dictionary yang relevan dari RAG.",
+      "retrieved_chunks": []
+    }
+  ]
+}
