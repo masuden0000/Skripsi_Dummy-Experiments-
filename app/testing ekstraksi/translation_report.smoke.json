@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-05-02T05:47:27.028864+00:00",
+  "inputs": {
+    "output_json": "C:\\Users\\hudar\\Documents\\[1] Huda Rasyad Wicaksono\\[3] Project\\[1] Project Website\\Skripsi (Dummy)\\Project 1 (AI)\\app\\data\\output.json",
+    "python_docx_dictionary": "C:\\Users\\hudar\\Documents\\[1] Huda Rasyad Wicaksono\\[3] Project\\[1] Project Website\\Skripsi (Dummy)\\Project 1 (AI)\\app\\data\\python_docx_full_dictionary.yaml",
+    "report": "C:\\Users\\hudar\\Documents\\[1] Huda Rasyad Wicaksono\\[3] Project\\[1] Project Website\\Skripsi (Dummy)\\Project 1 (AI)\\app\\testing ekstraksi\\translation_report.smoke.json"
+  },
+  "summary": {
+    "total_fields": 2,
+    "catalog_entries": 149,
+    "retrieval_mode": "embedding",
+    "accepted": 0,
+    "rejected": 0,
+    "unmapped": 0,
+    "needs_review": 0,
+    "retrieve_failed": 2
+  },
+  "results": [
+    {
+      "source_field": "document_type",
+      "source_value": "Panduan PKM-KC",
+      "final_status": "retrieve_failed",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Retrieval dictionary gagal, jadi LLM tidak dipanggil agar tidak memakai pengetahuan bebas. Detail: Error embedding content: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/embed_content_free_tier_requests, limit: 100, model: gemini-embedding-1.0\nPlease retry in 11.373100813s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/embed_content_free_tier_requests\"\n  quota_id: \"EmbedContentRequestsPerMinutePerUserPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-embedding-1.0\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 100\n}\n, retry_delay {\n  seconds: 11\n}\n]",
+      "retrieved_chunks": []
+    },
+    {
+      "source_field": "source_document",
+      "source_value": "file.pdf",
+      "final_status": "retrieve_failed",
+      "target_path": null,
+      "target_kind": null,
+      "normalized_value": null,
+      "confidence": 0.0,
+      "llm_status": null,
+      "llm_reason": "",
+      "validator_reason": "Retrieval dictionary gagal, jadi LLM tidak dipanggil agar tidak memakai pengetahuan bebas. Detail: Error embedding content: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/embed_content_free_tier_requests, limit: 100, model: gemini-embedding-1.0\nPlease retry in 11.373100813s. [links {\n  description: \"Learn more about Gemini API quotas\"\n  url: \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n}\n, violations {\n  quota_metric: \"generativelanguage.googleapis.com/embed_content_free_tier_requests\"\n  quota_id: \"EmbedContentRequestsPerMinutePerUserPerProjectPerModel-FreeTier\"\n  quota_dimensions {\n    key: \"model\"\n    value: \"gemini-embedding-1.0\"\n  }\n  quota_dimensions {\n    key: \"location\"\n    value: \"global\"\n  }\n  quota_value: 100\n}\n, retry_delay {\n  seconds: 11\n}\n]",
+      "retrieved_chunks": []
+    }
+  ]
+}
