@@ -12,12 +12,14 @@
       "Bash(python -c ':*)",
       "Bash(python -m pytest tests/ -v --tb=short)",
       "Bash(python -m pytest tests/ -q --tb=short)",
-      "Bash(python -m pytest tests/ -q --tb=no)"
+      "Bash(python -m pytest tests/ -q --tb=no)",
+      "Bash(python manage.py docx-style-map --input data/output.json)"
     ],
     "additionalDirectories": [
       "C:\\Users\\hudar\\.config\\superpowers\\worktrees\\Project 1 (AI)\\docx-pipeline\\experiments\\pymupdf4llm\\tests\\docx",
       "C:\\Users\\hudar\\.config\\superpowers\\worktrees\\Project 1 (AI)\\docx-pipeline\\experiments\\pymupdf4llm\\model_ai\\docx",
-      "C:\\Users\\hudar\\.config\\superpowers\\worktrees\\Project 1 (AI)\\docx-pipeline\\experiments\\pymupdf4llm"
+      "C:\\Users\\hudar\\.config\\superpowers\\worktrees\\Project 1 (AI)\\docx-pipeline\\experiments\\pymupdf4llm",
+      "c:\\Users\\hudar\\Documents\\[1] Huda Rasyad Wicaksono\\[3] Project\\[1] Project Website\\Skripsi (Dummy)\\Project 1 (AI)\\app\\model_ai\\docx"
     ]
   }
 }
