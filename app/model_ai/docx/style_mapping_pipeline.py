@@ -9,6 +9,7 @@ secara fleksibel, namun tetap aman melalui validator + execution plan.
 import json
 import math
 import re
+import time
 from pathlib import Path
 from typing import Any, Literal
 
@@ -48,6 +49,10 @@ DEFAULT_APPLY_PLAN_PATH = DATA_DIR / "docx_apply_plan.json"
 # Blok konstanta `EMBEDDING_DIMENSION` untuk menyimpan konfigurasi/registry yang dipakai berulang.
 # ---------------------------------------------------------------------------
 EMBEDDING_DIMENSION = 768
+# Google Embedding free tier: 1.500 RPM = 25 req/detik.
+# Batching 30 teks per panggilan API → maks ~900 RPM, aman di bawah batas.
+_EMBED_BATCH_SIZE = 30
+_EMBED_BATCH_DELAY_S = 60
 
 PageNumberPosition = Literal[
     "header_left",
@@ -104,8 +109,10 @@ class LLMStyleConfigCandidate(BaseModel):
     heading_bold: bool | None = None
     heading_all_caps: bool | None = None
     paragraph_alignment: ParagraphAlignmentOption | None = None
-    page_number_prelim_pos: PageNumberPosition | None = None
-    page_number_content_pos: PageNumberPosition | None = None
+    # Gunakan str bukan PageNumberPosition agar Groq tidak reject nilai uppercase dari LLM
+    # Normalisasi ke lowercase dilakukan di propose_mappings_with_llm setelah parsing
+    page_number_prelim_pos: str | None = None
+    page_number_content_pos: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -468,6 +475,38 @@ def _build_embedder() -> GoogleGenerativeAIEmbeddings:
 
 
 # ---------------------------------------------------------------------------
+# Digunakan oleh: build_chunk_index()
+# Helper untuk embed_documents bertahap agar tidak melebihi batas RPM Google free tier.
+# ---------------------------------------------------------------------------
+def _embed_documents_throttled(
+    embedder: GoogleGenerativeAIEmbeddings,
+    texts: list[str],
+    batch_size: int = _EMBED_BATCH_SIZE,
+    delay_s: float = _EMBED_BATCH_DELAY_S,
+) -> list[list[float]]:
+    """Kirim embed_documents dalam batch kecil dengan jeda antar batch.
+
+    Google free tier: 1.500 RPM. LangChain memanggil API sekali per teks,
+    sehingga 162 teks sekaligus bisa melampaui batas. Dengan batch_size=30
+    dan delay_s=2.0, kecepatan efektif ~900 RPM — aman di bawah limit.
+    """
+    all_vectors: list[list[float]] = []
+    total = len(texts)
+    for i in range(0, total, batch_size):
+        batch = texts[i : i + batch_size]
+        batch_vectors = embedder.embed_documents(batch, output_dimensionality=EMBEDDING_DIMENSION)
+        all_vectors.extend(batch_vectors)
+        remaining = total - (i + batch_size)
+        if remaining > 0:
+            print(
+                f"[embed] Batch {i // batch_size + 1} selesai ({i + len(batch)}/{total} teks). "
+                f"Jeda {delay_s}s sebelum batch berikutnya..."
+            )
+            time.sleep(delay_s)
+    return all_vectors
+
+
+# ---------------------------------------------------------------------------
 # Digunakan oleh: retrieve_relevant_chunks()
 # Menjalankan fungsi `_tokenize` sebagai bagian alur `style_mapping_pipeline`.
 # ---------------------------------------------------------------------------
@@ -511,17 +550,29 @@ def build_chunk_index(
     chunks: list[CatalogChunk],
     index_path: Path,
     with_embeddings: bool = True,
+    force_rebuild: bool = False,
 ) -> list[dict[str, Any]]:
+    # Cache hit: kembalikan index dari disk jika sudah ada dan valid.
+    if not force_rebuild and index_path.exists():
+        try:
+            cached = json.loads(index_path.read_text(encoding="utf-8"))
+            if cached and (not with_embeddings or cached[0].get("embedding") is not None):
+                print(f"[embed] Cache hit: memuat {len(cached)} baris dari {index_path.name}")
+                return cached
+        except Exception:
+            pass  # cache korup → lanjut rebuild
+
     texts = [chunk.text for chunk in chunks]
     index_rows: list[dict[str, Any]] = []
 
     vectors: list[list[float] | None]
     if with_embeddings and texts:
         embedder = _build_embedder()
-        embedded = embedder.embed_documents(
-            texts,
-            output_dimensionality=EMBEDDING_DIMENSION,
+        print(
+            f"[embed] Memulai embedding {len(texts)} teks dalam batch {_EMBED_BATCH_SIZE} "
+            f"(jeda {_EMBED_BATCH_DELAY_S}s per batch)..."
         )
+        embedded = _embed_documents_throttled(embedder, texts)
         vectors = [list(vector) for vector in embedded]
     else:
         vectors = [None for _ in texts]
@@ -670,7 +721,9 @@ def retrieve_relevant_chunks(
             scored.append((score, item))
 
     scored.sort(key=lambda item: item[0], reverse=True)
-    return [item for _, item in scored[:top_k]]
+    # Exclude section-level chunks (verbose, 2000-3000 chars each) — pakai property chunks saja
+    results = [item for _, item in scored if not item.get("chunk_id", "").startswith("section::")]
+    return results[:top_k]
 
 
 # ---------------------------------------------------------------------------
@@ -681,8 +734,17 @@ def _build_candidate_prompt(
     flattened_payload: dict[str, Any],
     retrieved_chunks: list[dict[str, Any]],
 ) -> str:
+    # Filter: kirim hanya style-relevant scalar fields ke LLM (bukan snippets/konten teks)
+    # output.json bisa memiliki 800+ keys setelah flatten — mayoritas dari sources[N].snippet
+    # dan top-level .sources fields berisi list besar (7000+ chars each)
+    style_payload = {
+        k: v for k, v in flattened_payload.items()
+        if "[" not in k  # skip list-index keys (sources[0], sources[1], dst)
+        and not isinstance(v, (list, dict))  # skip list/dict values (sources arrays)
+        and not k.endswith(".sources")  # skip citation source fields
+    }
     source_lines = []
-    for key, value in flattened_payload.items():
+    for key, value in style_payload.items():
         source_lines.append(f"- {key}: {json.dumps(value, ensure_ascii=False)}")
 
     catalog_lines = []
@@ -731,7 +793,14 @@ def propose_mappings_with_llm(
         api_key=config.groq_api_key.get_secret_value(),
     )
     chain = llm.with_structured_output(MappingCandidate)
-    return chain.invoke(prompt)
+    candidate = chain.invoke(prompt)
+    # Normalisasi page_number_*_pos ke lowercase (LLM kadang mengembalikan uppercase)
+    sc = candidate.style_config_candidate
+    if sc.page_number_prelim_pos:
+        sc.page_number_prelim_pos = sc.page_number_prelim_pos.lower().replace(" ", "_")
+    if sc.page_number_content_pos:
+        sc.page_number_content_pos = sc.page_number_content_pos.lower().replace(" ", "_")
+    return candidate
 
 
 # ---------------------------------------------------------------------------
@@ -1023,7 +1092,7 @@ def run_docx_style_mapping_pipeline(
     extracted_payload = load_extracted_payload(extracted_path)
     flattened = _flatten_json(extracted_payload)
     query_text = "\n".join(f"{key}: {value}" for key, value in flattened.items())
-    retrieved = retrieve_relevant_chunks(query_text, chunk_index=chunk_index, top_k=12)
+    retrieved = retrieve_relevant_chunks(query_text, chunk_index=chunk_index, top_k=6)
     if verbose:
         print(f"[docx-map] Retrieved chunks: {len(retrieved)}")
 
