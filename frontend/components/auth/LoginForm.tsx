@@ -20,8 +20,10 @@ export default function LoginForm() {
 
   const canSubmit = Boolean(role) && !isPending
 
-  function handleSubmit(formData: FormData) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setError("")
+    const formData = new FormData(e.currentTarget)
     formData.set("role", role)
     startTransition(async () => {
       const result = await login(formData)
@@ -70,7 +72,7 @@ export default function LoginForm() {
       </div>
 
       {/* Form */}
-      <form action={handleSubmit} className="flex flex-col gap-5 px-6 py-8">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5 px-6 py-8">
         {/* Role checkbox */}
         <div className="flex flex-col gap-2">
           <Label className="text-sm font-medium text-pkm-900">
