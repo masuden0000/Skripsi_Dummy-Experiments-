@@ -16,6 +16,17 @@ async function callAiBackend(endpoint, options = {}) {
       },
     })
 
+    const contentType = response.headers.get("content-type") || ""
+    if (!contentType.includes("application/json")) {
+      // AI backend returned HTML error page (e.g., 500 Internal Server Error)
+      const text = await response.text()
+      console.error(`[ProjectsService] AI backend returned non-JSON (${response.status}):`, text.slice(0, 200))
+      return {
+        success: false,
+        error: `AI backend error (${response.status})`,
+      }
+    }
+
     const data = await response.json()
     return data
   } catch (error) {

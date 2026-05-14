@@ -18,6 +18,12 @@ router = APIRouter()
 
 def map_project_row(row: dict[str, Any]) -> Project:
     """Map Supabase row to Project model."""
+    status_value = row.get("status", "pending")
+    try:
+        status = ProjectStatus(status_value)
+    except ValueError:
+        status = ProjectStatus.PENDING
+
     return Project(
         id=row.get("id", ""),
         skema=row.get("skema", ""),
@@ -25,7 +31,7 @@ def map_project_row(row: dict[str, Any]) -> Project:
         judul=row.get("judul", ""),
         source_file=row.get("source_file"),
         source_url=row.get("source_url"),
-        status=ProjectStatus(row.get("status", "pending")),
+        status=status,
         error_message=row.get("error_message"),
         result_url=row.get("result_url"),
         created_at=row.get("created_at", datetime.now()),
@@ -247,6 +253,30 @@ async def get_project(project_id: str):
     return {
         "success": True,
         "data": project.model_dump(mode="json")
+    }
+
+
+@router.get("/{project_id}/logs")
+async def get_project_logs(project_id: str):
+    """
+    Get all log entries for a project (for real-time log streaming via polling).
+    """
+    supabase = get_supabase()
+
+    # Verify project exists
+    project_result = supabase.table("projects").select("id").eq("id", project_id).execute()
+    if not project_result.data:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "error": "Project not found"}
+        )
+
+    # Get logs ordered by timestamp
+    result = supabase.table("project_logs").select("*").eq("project_id", project_id).order("timestamp", desc=False).execute()
+
+    return {
+        "success": True,
+        "data": result.data or []
     }
 
 

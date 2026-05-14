@@ -3,6 +3,7 @@ queries:
   - "sistematika penulisan proposal PKM halaman sampul pengesahan daftar isi daftar pustaka lampiran"
   - "BAB 1 pendahuluan BAB 2 tinjauan pustaka BAB 3 tahap pelaksanaan BAB 4 biaya jadwal kegiatan proposal PKM-KC"
   - "format nama file PKM pengumpulan batas halaman inti proposal maksimum sistematika"
+  - "4.1 anggaran biaya 4.2 jadwal kegiatan sub bab BAB 4 proposal PKM-KC rekapitulasi bar chart"
 top_k: 10
 ---
 
