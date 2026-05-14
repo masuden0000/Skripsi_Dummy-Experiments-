@@ -18,7 +18,7 @@ import {
 import { DocumentIcon, FileTextIcon, UploadIcon, CheckCircleIcon, AlertCircleIcon, Loader2Icon } from "@/components/icons/public-icons"
 
 // Types
-type ProjectStatus = "pending" | "uploading" | "extracting" | "extracted" | "generating" | "completed" | "failed"
+type ProjectStatus = "pending" | "uploading" | "extracting" | "extracted" | "generating" | "completed" | "failed" | "pending_upload"
 
 type ProjectResponse = {
   data: {
@@ -50,6 +50,14 @@ type DocumentResult = {
   createdAt: string
 }
 
+type LogEntry = {
+  id: number
+  project_id: string
+  step: string
+  message: string
+  timestamp: string
+}
+
 const PKM_SCHEMES = [
   { value: "pkm-volid", label: "PKM Vokasi" },
   { value: "pkm-kc", label: "PKM Karsa Ceatera (KC)" },
@@ -74,7 +82,16 @@ export default function ProposalDocumentPage() {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [result, setResult] = useState<DocumentResult | null>(null)
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const logsEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-scroll logs when new entries are added
+  useEffect(() => {
+    if (logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [logs])
 
   // Status polling effect
   useEffect(() => {
@@ -109,6 +126,45 @@ export default function ProposalDocumentPage() {
     // Poll every 3 seconds
     const interval = setInterval(pollStatus, 3000)
     return () => clearInterval(interval)
+  }, [currentProjectId, result?.status])
+
+  // SSE log streaming effect
+  useEffect(() => {
+    if (!currentProjectId) return
+    if (result && (result.status === "completed" || result.status === "failed")) return
+
+    let eventSource: EventSource | null = null
+    let lastLogId = 0
+
+    const connectSSE = () => {
+      eventSource = new EventSource(`/api/projects/${currentProjectId}/logs`)
+
+      eventSource.addEventListener("log", (event) => {
+        try {
+          const logEntry: LogEntry = JSON.parse(event.data)
+          setLogs((prev) => {
+            // Avoid duplicates
+            if (logEntry.id <= lastLogId) return prev
+            lastLogId = logEntry.id
+            return [...prev, logEntry]
+          })
+        } catch (error) {
+          console.error("Error parsing log:", error)
+        }
+      })
+
+      eventSource.onerror = () => {
+        // Reconnect on error
+        eventSource?.close()
+        setTimeout(connectSSE, 3000)
+      }
+    }
+
+    connectSSE()
+
+    return () => {
+      eventSource?.close()
+    }
   }, [currentProjectId, result?.status])
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -547,6 +603,34 @@ export default function ProposalDocumentPage() {
                   <Loader2Icon className="size-6 animate-spin" />
                 )}
               </div>
+
+              {/* Terminal Log Display */}
+              {logs.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-2">Log Proses</p>
+                  <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 max-h-64 overflow-y-auto font-mono text-xs">
+                    {logs.map((log, index) => (
+                      <div
+                        key={log.id}
+                        className={`flex gap-3 py-1 ${
+                          log.step === "pipeline" ? "text-cyan-400" :
+                          log.step === "setup" ? "text-green-400" :
+                          log.step === "extraction" ? "text-yellow-400" :
+                          log.step === "docx" ? "text-purple-400" :
+                          log.step === "download" ? "text-blue-400" :
+                          "text-gray-300"
+                        }`}
+                      >
+                        <span className="text-gray-500 shrink-0">[{index + 1}]</span>
+                        <span className="text-gray-400 shrink-0">{new Date(log.timestamp).toLocaleTimeString("id-ID")}</span>
+                        <span className="uppercase shrink-0 font-bold opacity-70">[{log.step}]</span>
+                        <span className="text-gray-100">{log.message}</span>
+                      </div>
+                    ))}
+                    <div ref={logsEndRef} />
+                  </div>
+                </div>
+              )}
 
               {result.status === "completed" && (
                 <div className="mt-5 flex flex-col gap-3 sm:flex-row">

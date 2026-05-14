@@ -9,6 +9,7 @@ from datetime import datetime
 
 
 class ProjectStatus(str, Enum):
+    PENDING_UPLOAD = "pending_upload"
     PENDING = "pending"
     UPLOADING = "uploading"
     EXTRACTING = "extracting"

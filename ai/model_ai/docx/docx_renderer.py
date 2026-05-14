@@ -132,12 +132,19 @@ _BOOKMARK_IDS: dict[str, int] = {
 def _bookmark_name(section_type: str, number=None) -> str:
     if section_type == "bab" and number:
         return f"bab_{number}"
+    if section_type == "sub_bab" and number:
+        return f"sub_bab_{number}"
     return section_type
 
 
 def _bookmark_id(section_type: str, number=None) -> int:
     if section_type == "bab" and number:
         return 10 + int(number)
+    if section_type == "sub_bab" and number:
+        # 4.1 -> id 41, 4.2 -> id 42, etc.
+        parts = str(number).split(".")
+        if len(parts) == 2:
+            return 40 + int(parts[1])  # sub_bab_4.1 -> 41, sub_bab_4.2 -> 42
     return _BOOKMARK_IDS.get(section_type, 99)
 
 
@@ -415,6 +422,15 @@ def _render_daftar_isi_example(
             label = f"BAB {num}. {title}".strip() if num else f"BAB {title}".strip()
             entries.append((label, str(body_counter), _bookmark_name("bab", num)))
             body_counter += 2
+        elif sec_type == "sub_bab":
+            # Sub bab 4.1 dan 4.2 masuk ke daftar isi dengan indentasi
+            sub_num = sec.get("sub_number") or ""
+            sub_title = sec.get("title") or ""
+            label = f"{sub_num} {sub_title}".strip()
+            # Bookmark menggunakan nama heading
+            bookmark = _bookmark_name("sub_bab", sub_num)
+            entries.append((label, str(body_counter), bookmark))
+            body_counter += 1
         elif sec_type in ("daftar_pustaka", "lampiran"):
             entries.append((title, str(body_counter), _bookmark_name(sec_type)))
             body_counter += 1
@@ -621,7 +637,7 @@ def _render_proposal_body(
                 doc_structure,
             )
         elif section["type"] == "sub_bab":
-            _render_sub_bab_section(document, section, page_layout, spacing, instructional_placeholders)
+            _render_sub_bab_section(document, section, page_layout, spacing, figures_tables, instructional_placeholders)
         elif section["type"] == "item_lampiran":
             _render_item_lampiran_section(document, section, page_layout, spacing, instructional_placeholders)
 
@@ -672,8 +688,11 @@ def _render_bab_section(
     body_placeholder.paragraph_format.space_after = Pt(0)
     _force_paragraph_runs_black(body_placeholder)
 
-    # Tambah contoh gambar di BAB 1
+    # Tambah contoh gambar di BAB 1 (setelah instructional placeholder)
     if num == "1":
+        # Enter 1x sebelum gambar
+        empty = document.add_paragraph()
+        empty.paragraph_format.space_after = Pt(0)
         fig_caption = figures_tables.get("caption_format_figure")
         if fig_caption:
             fig_caption = (
@@ -684,25 +703,25 @@ def _render_bab_section(
             )
         _add_example_figure(document, fig_caption)
 
-    # Khusus bab BIAYA: tabel anggaran + contoh gambar + tabel jadwal (poin 4 & 5)
+    # Khusus bab BIAYA: placeholder untuk sub bab (4.1 Anggaran Biaya, 4.2 Jadwal Kegiatan)
+    # Tabel anggaran biaya dan jadwal kegiatan akan dirender di sub_bab sections
+    # Contoh gambar sudah dipindahkan ke BAB 1 (setelah instructional placeholder)
     if "BIAYA" in title.upper():
+        # Placeholder text untuk mengingatkan bahwa 4.1 dan 4.2 harus diisi
         bab_num = int(num) if num else 4
-        _add_budget_table(document, bab_num, figures_tables)
-        # Contoh gambar + caption di bawahnya (poin 4)
-        fig_caption = figures_tables.get("caption_format_figure")
-        if fig_caption:
-            fig_caption = (
-                fig_caption
-                .replace("{n}", f"{bab_num}.1")
-                .replace("{title}", "[Contoh Gambar]")
-                .replace(" ({source})", "").replace("()", "").strip()
+        placeholder = document.add_paragraph(
+            instructional_placeholders.get(
+                make_instruction_key("bab", f"BAB {bab_num}"),
+                f"BAB {bab_num} ini memiliki 2 sub bab: 4.1 Anggaran Biaya dan 4.2 Jadwal Kegiatan. "
+                f"Lengkapi kedua sub bab tersebut sesuai panduan dokumen."
             )
-        _add_example_figure(document, fig_caption)
-        # Tabel jadwal dengan caption di bawahnya (poin 5)
-        _add_schedule_table(document, bab_num, figures_tables, page_layout)
-        # Enter 1x setelah tabel jadwal
-        empty = document.add_paragraph()
-        empty.paragraph_format.space_after = Pt(0)
+        )
+        placeholder.paragraph_format.line_spacing = spacing.get("line_spacing", 1.15)
+        placeholder.paragraph_format.alignment    = _map_alignment(
+            (spacing.get("paragraph_alignment") or "JUSTIFY").upper()
+        )
+        placeholder.paragraph_format.space_after = Pt(0)
+        _force_paragraph_runs_black(placeholder)
 
     sources = match_sources_for_section(
         chunks=chunks,
@@ -777,6 +796,7 @@ def _render_sub_bab_section(
     section: dict,
     page_layout: dict,
     spacing: dict,
+    figures_tables: dict,
     instructional_placeholders: dict[str, str],
 ) -> None:
     sub_num  = section.get("sub_number") or "?"
@@ -786,6 +806,10 @@ def _render_sub_bab_section(
     heading = document.add_heading(heading_text, level=2)
     heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
     _force_paragraph_runs_black(heading)
+    # Tambahkan bookmark untuk hyperlink dari daftar isi
+    bm_id = _bookmark_id("sub_bab")
+    bm_name = _bookmark_name("sub_bab", sub_num)
+    _add_bookmark_to_paragraph(heading, bm_id, bm_name)
 
     # Spasi kosong 1 baris enter antara header dan body
     empty = document.add_paragraph()
@@ -797,6 +821,52 @@ def _render_sub_bab_section(
     note.paragraph_format.space_after = Pt(0)
     note.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
     _force_paragraph_runs_black(note)
+
+    # Tentukan nomor BAB dari sub_number (misal "4.1" -> 4, "4.2" -> 4)
+    bab_num = 4
+    if sub_num and "." in str(sub_num):
+        try:
+            bab_num = int(str(sub_num).split(".")[0])
+        except (ValueError, IndexError):
+            bab_num = 4
+
+    # Sub bab 4.1: Tabel Anggaran Biaya
+    if sub_num and str(sub_num).endswith(".1"):
+        # Caption di atas tabel
+        fmt = figures_tables.get("caption_format_table", "Tabel {bab}.{n}. {title}")
+        caption_text = (
+            fmt.replace("{bab}", str(bab_num)).replace("{n}", "1")
+               .replace("{title}", "Rincian Anggaran Biaya")
+        )
+        cap_p = document.add_paragraph(caption_text, style="Caption")
+        cap_p.paragraph_format.space_after = Pt(0)
+        _force_paragraph_runs_black(cap_p)
+
+        # Tambahkan tabel anggaran biaya
+        _add_budget_table(document, bab_num, figures_tables)
+
+        # Enter 1x setelah tabel
+        empty = document.add_paragraph()
+        empty.paragraph_format.space_after = Pt(0)
+
+    # Sub bab 4.2: Tabel Jadwal Kegiatan
+    elif sub_num and str(sub_num).endswith(".2"):
+        # Caption di atas tabel
+        fmt = figures_tables.get("caption_format_table", "Tabel {bab}.{n}. {title}")
+        caption_text = (
+            fmt.replace("{bab}", str(bab_num)).replace("{n}", "2")
+               .replace("{title}", "Jadwal Pelaksanaan Kegiatan")
+        )
+        cap_p = document.add_paragraph(caption_text, style="Caption")
+        cap_p.paragraph_format.space_after = Pt(0)
+        _force_paragraph_runs_black(cap_p)
+
+        # Tambahkan tabel jadwal kegiatan
+        _add_schedule_table(document, bab_num, figures_tables, page_layout)
+
+        # Enter 1x setelah tabel
+        empty = document.add_paragraph()
+        empty.paragraph_format.space_after = Pt(0)
 
     body_placeholder = document.add_paragraph(
         instructional_placeholders.get(
@@ -827,6 +897,10 @@ def _render_item_lampiran_section(
     heading = document.add_heading(heading_text, level=2)
     heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
     _force_paragraph_runs_black(heading)
+    # Tambahkan bookmark untuk hyperlink dari daftar isi
+    bm_id = _bookmark_id("lampiran")
+    bm_name = _bookmark_name("lampiran", lampiran_number)
+    _add_bookmark_to_paragraph(heading, bm_id, bm_name)
 
     # Spasi kosong 1 baris enter antara header dan body
     empty = document.add_paragraph()

@@ -187,6 +187,37 @@ def _apply_typography_heading_bold_heuristic(payload: dict[str, Any], chunks: li
 
 
 # ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
+# Menjalankan fungsi `_apply_typography_caps_heuristic` sebagai bagian alur `doc_extractor`.
+# ---------------------------------------------------------------------------
+def _apply_typography_caps_heuristic(payload: dict[str, Any], chunks: list[dict]) -> dict[str, Any]:
+    """Force heading_all_caps=True when BAB headings are written in ALL CAPS.
+
+    Why: beberapa panduan menulis BAB dalam format ALL CAPS (misal "BAB 1. PENDAHULUAN").
+    Jika konteks mengandung heading BAB dengan huruf besar semua, maka set heading_all_caps=True.
+    Ini heuristic tambahan karena tidak semua panduan menulis eksplisit aturan uppercase.
+    """
+    if payload.get("heading_all_caps") is True:
+        return payload
+
+    # Pattern untuk mendeteksi BAB dalam format ALL CAPS
+    # Contoh: "BAB 1. PENDAHULUAN", "**BAB 2. TINJAUAN PUSTAKA**", "BAB 3.TAHAP PELAKSANAAN"
+    import re
+    caps_pattern = re.compile(
+        r"(^|\s)BAB\s+[\dIVX]+\.?\s+[A-Z]{2,}",
+        re.MULTILINE
+    )
+    for chunk in chunks:
+        content = str(chunk.get("content", ""))
+        if caps_pattern.search(content):
+            patched = dict(payload)
+            patched["heading_all_caps"] = True
+            return patched
+
+    return payload
+
+
+# ---------------------------------------------------------------------------
 # Digunakan oleh: model_ai/extractor/schema_differ.py
 # Menjalankan fungsi `_format_vector` sebagai bagian alur `doc_extractor`.
 # ---------------------------------------------------------------------------
@@ -330,6 +361,7 @@ def _extract_key(
     payload = extracted.model_dump()
     if extracted_cls is TypographyExtracted:
         payload = _apply_typography_heading_bold_heuristic(payload, chunks)
+        payload = _apply_typography_caps_heuristic(payload, chunks)
 
     sources = build_sources(chunks)
     return info_cls(**payload, sources=sources)
