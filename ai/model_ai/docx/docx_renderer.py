@@ -315,7 +315,7 @@ def _apply_base_styles(document: Document, typography: dict, spacing: dict) -> N
     caption_style.font.name      = body_font
     caption_style.font.size      = Pt(body_size)
     caption_style.font.bold      = False
-    caption_style.font.italic    = True
+    caption_style.font.italic    = False
     caption_style.font.color.rgb = RGBColor(0, 0, 0)
     caption_style.paragraph_format.alignment    = WD_ALIGN_PARAGRAPH.CENTER
     caption_style.paragraph_format.space_before = Pt(3)
@@ -438,7 +438,7 @@ def _render_daftar_isi_example(
         elif sec_type == "sub_bab":
             # Sub bab 4.1 dan 4.2 masuk ke daftar isi dengan indentasi
             sub_num = sec.get("sub_number") or ""
-            sub_title = sec.get("title") or ""
+            sub_title = (sec.get("title") or "").title()
             label = f"{sub_num} {sub_title}".strip()
             # Bookmark menggunakan nama heading
             bookmark = _bookmark_name("sub_bab", sub_num)
@@ -677,10 +677,6 @@ def _render_bab_section(
     _force_paragraph_runs_black(heading)
     _add_bookmark_to_paragraph(heading, _bookmark_id("bab", num), _bookmark_name("bab", num))
 
-    # Spasi kosong 1 baris enter antara header dan body (space_after = 0)
-    empty = document.add_paragraph()
-    empty.paragraph_format.space_after = Pt(0)
-
     note = document.add_paragraph(_SECTION_DELETE_NOTE)
     note.runs[0].italic     = True
     note.runs[0].font.size  = Pt(10)
@@ -711,8 +707,8 @@ def _render_bab_section(
             fig_caption = (
                 fig_caption
                 .replace("{n}", "1.1")
-                .replace("{title}", "[Contoh Gambar]")
-                .replace(" ({source})", "").replace("()", "").strip()
+                .replace("{title}", "Contoh Gambar")
+                .replace("{source}", "Sumber Contoh")
             )
         _add_example_figure(document, fig_caption)
 
@@ -823,10 +819,6 @@ def _render_sub_bab_section(
     bm_id = _bookmark_id("sub_bab")
     bm_name = _bookmark_name("sub_bab", sub_num)
     _add_bookmark_to_paragraph(heading, bm_id, bm_name)
-
-    # Spasi kosong 1 baris enter antara header dan body
-    empty = document.add_paragraph()
-    empty.paragraph_format.space_after = Pt(0)
 
     note = document.add_paragraph(_SECTION_DELETE_NOTE)
     note.runs[0].italic     = True

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"
 import {
   AdminPageHeader,
@@ -15,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { DocumentIcon, FileTextIcon, UploadIcon, CheckCircleIcon, AlertCircleIcon, Loader2Icon } from "@/components/icons/public-icons"
+import { YearPicker } from "@/components/ui/year-picker"
+import { DocumentIcon, FileTextIcon, UploadIcon, CheckCircleIcon, AlertCircleIcon, Loader2Icon, HistoryIcon } from "@/components/icons/public-icons"
 import { ExtractionValuesForm, type ExtractionPayload } from "@/components/proposal/ExtractionValuesForm"
 
 // Types
@@ -73,16 +75,12 @@ const PKM_SCHEMES = [
   { value: "pkm-gft", label: "PKM-GFT: Gagasan Futuristik Tertulis" },
 ]
 
-const YEARS = Array.from({ length: 5 }, (_, i) => {
-  const year = new Date().getFullYear() + 1 - i
-  return { value: String(year), label: String(year) }
-})
-
 function isPdfFile(file: File): boolean {
   return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
 }
 
 export default function ProposalDocumentPage() {
+  const router = useRouter()
   const [skema, setSkema] = useState("")
   const [tahun, setTahun] = useState("")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -93,16 +91,29 @@ export default function ProposalDocumentPage() {
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isRestoring, setIsRestoring] = useState(true)
-  const [showExtractionValues, setShowExtractionValues] = useState(false)
   const [extractionData, setExtractionData] = useState<ExtractionPayload | null>(null)
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [metadataError, setMetadataError] = useState<string | null>(null)
+  const [metadataRetry, setMetadataRetry] = useState(0)
   const logsEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const maxLogIdRef = useRef<number>(0)
   const resultStatus = result?.status
+
+  const riwayatButton = (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="gap-1.5"
+      onClick={() => router.push("/admin/proposal/riwayat")}
+    >
+      <HistoryIcon className="size-4" />
+      Riwayat
+    </Button>
+  )
 
   const applyStatusUpdate = useCallback((status: ProjectStatus, resultUrl: string | null, errorMessage: string | null) => {
     setResult((prev) =>
@@ -110,7 +121,9 @@ export default function ProposalDocumentPage() {
     )
     if (status === "completed" || status === "failed") {
       setIsUploading(false)
-      localStorage.removeItem(ACTIVE_PROJECT_KEY)
+      if (status === "failed") {
+        localStorage.removeItem(ACTIVE_PROJECT_KEY)
+      }
       // Persist max log ID so next run starts filtering from here
       localStorage.setItem(RUN_SINCE_KEY, String(maxLogIdRef.current))
     }
@@ -134,7 +147,7 @@ export default function ProposalDocumentPage() {
         }
 
         const status: ProjectStatus = project.status
-        if (status === "completed" || status === "failed") {
+        if (status === "failed") {
           localStorage.removeItem(ACTIVE_PROJECT_KEY)
         }
 
@@ -282,6 +295,24 @@ export default function ProposalDocumentPage() {
       eventSource?.close()
     }
   }, [currentProjectId, resultStatus, applyStatusUpdate])
+
+  // Auto-fetch extraction data when pipeline completes
+  useEffect(() => {
+    if (result?.status !== "completed" || !currentProjectId || extractionData) return
+    setIsLoadingMetadata(true)
+    setMetadataError(null)
+    fetch(`/api/projects/${currentProjectId}/metadata`)
+      .then((res) => {
+        if (res.status === 404) throw new Error("NOT_FOUND")
+        if (!res.ok) return res.json().then((j: { error?: string }) => {
+          throw new Error(j.error || "Gagal memuat nilai ekstraksi")
+        })
+        return res.json()
+      })
+      .then((json) => setExtractionData(json.data))
+      .catch((err) => setMetadataError(err instanceof Error ? err.message : "Gagal memuat nilai ekstraksi"))
+      .finally(() => setIsLoadingMetadata(false))
+  }, [result?.status, currentProjectId, extractionData, metadataRetry])
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -449,32 +480,11 @@ export default function ProposalDocumentPage() {
     setUploadProgress(0)
     setUploadError(null)
     setLogs([])
-    setShowExtractionValues(false)
     setExtractionData(null)
     setIsSaved(false)
     setMetadataError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
-    }
-  }
-
-  async function handleTampilkanNilai() {
-    if (!currentProjectId) return
-    setIsLoadingMetadata(true)
-    setMetadataError(null)
-    try {
-      const res = await fetch(`/api/projects/${currentProjectId}/metadata`)
-      if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || "Gagal memuat nilai ekstraksi")
-      }
-      const json = await res.json()
-      setExtractionData(json.data)
-      setShowExtractionValues(true)
-    } catch (err) {
-      setMetadataError(err instanceof Error ? err.message : "Gagal memuat nilai ekstraksi")
-    } finally {
-      setIsLoadingMetadata(false)
     }
   }
 
@@ -493,6 +503,7 @@ export default function ProposalDocumentPage() {
         throw new Error(text || "Gagal menyimpan nilai")
       }
       setIsSaved(true)
+      localStorage.removeItem(ACTIVE_PROJECT_KEY)
     } catch (err) {
       setMetadataError(err instanceof Error ? err.message : "Gagal menyimpan nilai")
     } finally {
@@ -548,12 +559,172 @@ export default function ProposalDocumentPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
+  function renderStepTwoContent() {
+    if (!result) {
+      return (
+        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-5 py-8 text-center">
+          <FileTextIcon className="mx-auto size-8 text-gray-300" />
+          <p className="mt-3 text-sm font-medium text-gray-700">
+            Upload dokumen terlebih dahulu untuk melihat hasil ekstraksi.
+          </p>
+          <p className="mt-1 text-xs text-gray-400">
+            Nilai ekstraksi akan muncul di sini setelah dokumen selesai diproses.
+          </p>
+        </div>
+      )
+    }
+
+    if (result.status === "failed") {
+      return (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-5">
+          <div className="flex items-start gap-3">
+            <AlertCircleIcon className="mt-0.5 size-5 text-red-600" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-700">Ekstraksi belum bisa direview.</p>
+              <p className="mt-1 text-sm text-red-600">
+                Proses dokumen gagal. Reset lalu upload ulang dokumen untuk menjalankan proses dari awal.
+              </p>
+              {result.errorMessage ? (
+                <p className="mt-2 text-xs text-red-500">{result.errorMessage}</p>
+              ) : null}
+              <Button onClick={handleReset} variant="outline" className="mt-4 border-red-200 text-red-600 hover:border-red-300 hover:bg-red-100 hover:text-red-700">
+                Reset Upload
+              </Button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (result.status !== "completed") {
+      return (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-5">
+          <div className="flex items-start gap-3">
+            <Loader2Icon className="mt-0.5 size-5 animate-spin text-amber-600" />
+            <div>
+              <p className="text-sm font-semibold text-amber-700">Menunggu proses ekstraksi selesai.</p>
+              <p className="mt-1 text-sm text-amber-600">
+                Form review akan aktif setelah dokumen selesai diproses.
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (isLoadingMetadata) {
+      return (
+        <div className="flex justify-center py-10">
+          <Loader2Icon className="size-5 animate-spin text-gray-400" />
+        </div>
+      )
+    }
+
+    if (metadataError && !extractionData) {
+      const isNotFound = metadataError === "NOT_FOUND"
+      return (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-amber-700">
+                {isNotFound ? "Nilai ekstraksi belum tersedia." : "Gagal memuat nilai ekstraksi."}
+              </p>
+              <p className="mt-1 text-sm text-amber-600">
+                {isNotFound
+                  ? "Data mungkin belum selesai ditulis. Klik Coba Lagi dalam beberapa saat."
+                  : metadataError}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 border-amber-300 text-amber-700 hover:bg-amber-100"
+              onClick={() => { setMetadataError(null); setMetadataRetry((c) => c + 1) }}
+            >
+              Coba Lagi
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
+    if (extractionData) {
+      return (
+        <>
+          <ExtractionValuesForm
+            data={extractionData}
+            onChange={setExtractionData}
+          />
+
+          {metadataError && (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {metadataError}
+            </div>
+          )}
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-3">
+              <Button onClick={handleSave} disabled={isSaving || isSaved} className="gap-2">
+                {isSaving ? <Loader2Icon className="size-4 animate-spin" /> : null}
+                {isSaving ? "Menyimpan..." : isSaved ? "Tersimpan" : "Simpan"}
+              </Button>
+              <Button onClick={handleTolak} variant="outline" className="gap-2 border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700">
+                Batal
+              </Button>
+            </div>
+
+            {isSaved && (
+              <a
+                href={result?.resultUrl || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <DocumentIcon className="size-4" />
+                Download Template Proposal
+              </a>
+            )}
+          </div>
+        </>
+      )
+    }
+
+    return null
+  }
+
+  function renderStepTwoSection() {
+    return (
+      <>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-full bg-pkm-100 px-3 py-1 text-xs font-semibold text-pkm-700">
+            Langkah 2 dari 2
+          </span>
+          <span className="text-sm font-medium text-gray-600">Review dan Validasi Nilai Ekstraksi</span>
+        </div>
+
+        <AdminSurfaceCard>
+          <div className="border-b border-gray-100 px-5 py-4">
+            <h2 className="text-sm font-semibold text-gray-700">Nilai Hasil Ekstraksi</h2>
+            <p className="mt-0.5 text-xs text-[rgba(0,0,0,0.4)]">
+              Periksa dan perbaiki nilai yang diekstrak oleh AI dari dokumen yang diupload
+            </p>
+          </div>
+
+          <div className="px-5 py-5">
+            {renderStepTwoContent()}
+          </div>
+        </AdminSurfaceCard>
+      </>
+    )
+  }
+
   if (isRestoring) {
     return (
       <div className="px-8 py-8">
         <AdminPageHeader
           title="Buat Dokumen Proposal"
           description="Upload dokumen proposal PKM untuk diproses dan divisualisasikan"
+          action={riwayatButton}
         />
         <div className="flex items-center justify-center py-24">
           <Loader2Icon className="size-6 animate-spin text-gray-400" />
@@ -567,6 +738,7 @@ export default function ProposalDocumentPage() {
       <AdminPageHeader
         title="Buat Dokumen Proposal"
         description="Upload dokumen proposal PKM untuk diproses dan divisualisasikan"
+        action={riwayatButton}
       />
 
       {!result ? (
@@ -606,21 +778,10 @@ export default function ProposalDocumentPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="proposal-tahun" className="text-xs font-medium text-gray-600">
+                  <Label className="text-xs font-medium text-gray-600">
                     Tahun
                   </Label>
-                  <Select value={tahun || undefined} onValueChange={setTahun} disabled={isUploading}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih tahun" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {YEARS.map((y) => (
-                        <SelectItem key={y.value} value={y.value}>
-                          {y.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <YearPicker value={tahun} onChange={setTahun} placeholder="Pilih tahun" disabled={isUploading} />
                 </div>
               </div>
 
@@ -700,6 +861,8 @@ export default function ProposalDocumentPage() {
               </div>
             </form>
           </AdminSurfaceCard>
+
+          {renderStepTwoSection()}
         </div>
       ) : (
         <div className="grid gap-6">
@@ -802,29 +965,6 @@ export default function ProposalDocumentPage() {
                 </div>
               )}
 
-              {result.status === "completed" && (
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                  <Button
-                    onClick={handleTampilkanNilai}
-                    disabled={isLoadingMetadata}
-                    className="flex-1 gap-2"
-                  >
-                    {isLoadingMetadata ? (
-                      <Loader2Icon className="size-4 animate-spin" />
-                    ) : (
-                      <FileTextIcon className="size-4" />
-                    )}
-                    {isLoadingMetadata ? "Memuat..." : "Tampilkan Nilai"}
-                  </Button>
-                </div>
-              )}
-
-              {metadataError && (
-                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {metadataError}
-                </div>
-              )}
-
               {result.status !== "completed" && (
                 <div className="mt-5 flex justify-end">
                   <Button onClick={handleReset} variant="outline">Batal</Button>
@@ -834,62 +974,7 @@ export default function ProposalDocumentPage() {
           </AdminSurfaceCard>
 
           {/* ── Langkah 2: Review dan Validasi ── */}
-          {showExtractionValues && extractionData && (
-            <>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                  Langkah 2 dari 2
-                </span>
-                <span className="text-sm font-medium text-gray-600">Review dan Validasi Nilai Ekstraksi</span>
-              </div>
-
-              <AdminSurfaceCard>
-                <div className="border-b border-gray-100 px-5 py-4">
-                  <h2 className="text-sm font-semibold text-gray-700">Nilai Hasil Ekstraksi</h2>
-                  <p className="mt-0.5 text-xs text-[rgba(0,0,0,0.4)]">
-                    Periksa dan perbaiki nilai yang diekstrak oleh AI dari dokumen yang diupload
-                  </p>
-                </div>
-
-                <div className="px-5 py-5">
-                  <ExtractionValuesForm
-                    data={extractionData}
-                    onChange={setExtractionData}
-                  />
-
-                  {metadataError && (
-                    <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                      {metadataError}
-                    </div>
-                  )}
-
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-                    <div className="flex gap-3">
-                      <Button onClick={handleSave} disabled={isSaving || isSaved} className="gap-2">
-                        {isSaving ? <Loader2Icon className="size-4 animate-spin" /> : null}
-                        {isSaving ? "Menyimpan..." : isSaved ? "Tersimpan" : "Simpan"}
-                      </Button>
-                      <Button onClick={handleTolak} variant="outline" className="gap-2 text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50">
-                        Tolak
-                      </Button>
-                    </div>
-
-                    {isSaved && (
-                      <a
-                        href={result.resultUrl || "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      >
-                        <DocumentIcon className="size-4" />
-                        Download Template Proposal
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </AdminSurfaceCard>
-            </>
-          )}
+          {renderStepTwoSection()}
         </div>
       )}
     </div>
