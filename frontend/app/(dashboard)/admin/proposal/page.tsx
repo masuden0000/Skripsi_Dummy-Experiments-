@@ -863,6 +863,8 @@ export default function ProposalDocumentPage() {
           </AdminSurfaceCard>
 
           {renderStepTwoSection()}
+
+          {renderStepTwoSection()}
         </div>
       ) : (
         <div className="grid gap-6">
