@@ -13,14 +13,11 @@
         <mxCell id="lane_admin" value="Admin" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#fef3c7;strokeColor=#d97706;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="40" y="80" width="220" height="1400" as="geometry" />
         </mxCell>
-        <mxCell id="lane_frontend" value="Antarmuka Sistem" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#dcfce7;strokeColor=#16a34a;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="lane_frontend" value="Antarmuka Admin (Frontend)" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#dcfce7;strokeColor=#16a34a;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="260" y="80" width="320" height="1400" as="geometry" />
         </mxCell>
-        <mxCell id="lane_next" value="Pengelola Permintaan" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#dbeafe;strokeColor=#2563eb;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="580" y="80" width="260" height="1400" as="geometry" />
-        </mxCell>
-        <mxCell id="lane_backend" value="Proses Bisnis Sistem" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#ede9fe;strokeColor=#7c3aed;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="840" y="80" width="340" height="1400" as="geometry" />
+        <mxCell id="lane_next" value="Layanan Periode Review (Backend)" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#dbeafe;strokeColor=#2563eb;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="580" y="80" width="600" height="1400" as="geometry" />
         </mxCell>
         <mxCell id="lane_db" value="Basis Data" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#f3f4f6;strokeColor=#4b5563;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1180" y="80" width="300" height="1400" as="geometry" />
