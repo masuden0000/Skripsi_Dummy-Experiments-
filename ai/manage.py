@@ -128,6 +128,25 @@ def run_schema_diff_cmd(project_id: str) -> None:
 # Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
 # Menjalankan fungsi `run_validate` sebagai bagian alur `manage`.
 # ---------------------------------------------------------------------------
+def run_export_payload(project_id: str, output: str | None = None) -> None:
+    import json
+    from model_ai.metadata_repository import load_document_metadata_payload
+
+    payload = load_document_metadata_payload(project_id)
+
+    out_path = resolve_ai_path(output) if output else AI_DIR / "data" / f"payload_{project_id}.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+
+    print(f"[export-payload] Payload disimpan ke: {out_path}")
+
+
+# ---------------------------------------------------------------------------
+# Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
+# Menjalankan fungsi `run_validate` sebagai bagian alur `manage`.
+# ---------------------------------------------------------------------------
 def run_validate(project_id: str | None = None, output_json: str | None = None) -> None:
     import json
     from model_ai.validation.validator import validate_and_print
@@ -276,6 +295,20 @@ def main() -> None:
         help="Gunakan mapper rule-based sederhana tanpa LLM.",
     )
 
+    export_payload_parser = subparsers.add_parser(
+        "export-payload",
+        help="Export document_metadata.payload dari Supabase ke file JSON lokal.",
+    )
+    export_payload_parser.add_argument(
+        "--project-id",
+        required=True,
+        help="Project ID sebagai selector document_metadata.",
+    )
+    export_payload_parser.add_argument(
+        "--output",
+        help="Path output JSON (default: data/payload_<project-id>.json).",
+    )
+
     validate_parser = subparsers.add_parser(
         "validate",
         help="Validasi format dokumen DOCX terhadap rules dari output.json lokal.",
@@ -317,6 +350,13 @@ def main() -> None:
             dictionary_path=args.dictionary,
             with_embeddings=not args.no_embeddings,
             use_llm_mapper=not args.no_llm_mapper,
+        )
+        return
+
+    if args.command == "export-payload":
+        run_export_payload(
+            project_id=args.project_id,
+            output=getattr(args, "output", None),
         )
         return
 

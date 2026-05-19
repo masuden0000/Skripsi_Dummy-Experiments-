@@ -78,7 +78,6 @@ class PageLayoutExtracted(BaseModel):
     margin_right_cm: float | None = None
     paper_size: str | None = None
     orientation: str | None = None
-    columns: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +209,8 @@ class SectionItem(BaseModel):
 # Mendefinisikan class `DocumentStructureExtracted` untuk kebutuhan modul `models`.
 # ---------------------------------------------------------------------------
 class DocumentStructureExtracted(BaseModel):
+    # halaman_sampul/pengesahan/ringkasan tidak lagi diekstrak dari prompt;
+    # dipertahankan di model agar kode renderer & validator tidak patah (selalu None).
     halaman_sampul: bool | None = None
     halaman_pengesahan: bool | None = None
     ringkasan: bool | None = None
@@ -271,7 +272,6 @@ class FiguresTablesExtracted(BaseModel):
     figure_caption_position: str | None = None
     caption_format_figure: str | None = None
     caption_format_table: str | None = None
-    source_required_if_not_own: bool | None = None
     max_width_constraint: str | None = None
     budget_format_rules: "BudgetFormatRules | None" = None
 
@@ -307,21 +307,33 @@ class FiguresTablesInfo(FiguresTablesExtracted):
 # Digunakan oleh: model_ai/extractor/doc_extractor.py
 # Mendefinisikan class `PageCountExtracted` untuk kebutuhan modul `models`.
 # ---------------------------------------------------------------------------
+_VALID_HALAMAN_INTI_SECTIONS = frozenset({
+    "bab", "daftar_isi", "daftar_pustaka", "lampiran",
+})
+
+
 class PageCountExtracted(BaseModel):
     proposal_halaman_inti_maks: int | None = None
-    definisi_halaman_inti: str | None = None
-    lampiran_excluded: bool | None = None
-    judul_maks_kata: int | None = None
+    halaman_inti_mulai: str = "bab"
+    halaman_inti_selesai: str = "daftar_pustaka"
 
     @model_validator(mode="before")
     @classmethod
-    def normalize_legacy_keys(cls, data: object) -> object:
+    def normalize_fields(cls, data: object) -> object:
         if not isinstance(data, dict):
             return data
         normalized = dict(data)
-        legacy_note = normalized.pop("catatan", None)
-        if legacy_note and "definisi_halaman_inti" not in normalized:
-            normalized["definisi_halaman_inti"] = legacy_note
+
+        # Buang field legacy yang tidak lagi dipakai
+        normalized.pop("catatan", None)
+        normalized.pop("definisi_halaman_inti", None)
+
+        # Pastikan nilai mulai/selesai valid; fallback ke default jika tidak
+        for field, default in (("halaman_inti_mulai", "bab"), ("halaman_inti_selesai", "daftar_pustaka")):
+            val = normalized.get(field)
+            if val not in _VALID_HALAMAN_INTI_SECTIONS:
+                normalized[field] = default
+
         return normalized
 
 

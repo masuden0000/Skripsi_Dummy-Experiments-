@@ -12,7 +12,7 @@ from docx import Document
 from docx.enum.section import WD_ORIENT, WD_SECTION_START
 from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.table import WD_ALIGN_VERTICAL
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT, WD_TAB_LEADER
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING, WD_TAB_ALIGNMENT, WD_TAB_LEADER
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Mm, Pt, RGBColor
@@ -273,7 +273,7 @@ def _apply_base_styles(document: Document, typography: dict, spacing: dict) -> N
     normal_style.font.color.rgb = RGBColor(0, 0, 0)
     normal_style._element.rPr.rFonts.set(qn("w:ascii"), body_font)
     normal_style._element.rPr.rFonts.set(qn("w:hAnsi"), body_font)
-    normal_style.paragraph_format.line_spacing = line_spacing
+    _apply_line_spacing(normal_style.paragraph_format, spacing)
     normal_style.paragraph_format.alignment    = _map_alignment(alignment_str)
 
     # Perbaikan: hapus theme font override (w:asciiTheme/w:hAnsiTheme) agar
@@ -289,6 +289,8 @@ def _apply_base_styles(document: Document, typography: dict, spacing: dict) -> N
         h.font.all_caps = heading_caps if style_name == "Heading 1" else False
         h.font.color.rgb = RGBColor(0, 0, 0)
         h.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        h.paragraph_format.space_before = Pt(0)
+        h.paragraph_format.space_after  = Pt(0)
 
         # Paksa font di level XML — hapus theme font yang bisa menimpa explicit font
         style_el = h._element
@@ -672,6 +674,9 @@ def _render_bab_section(
     bab_label    = chapter_fmt.replace("{n}", str(num)) if num else "BAB"
     heading_text = f"{bab_label} {title}".strip()
 
+    sep = document.add_paragraph()
+    sep.paragraph_format.space_after = Pt(0)
+
     heading = document.add_heading(heading_text, level=1)
     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _force_paragraph_runs_black(heading)
@@ -690,7 +695,7 @@ def _render_bab_section(
             f"Instruksi pengisian untuk {heading_text}: lengkapi isi bagian ini sesuai panduan.",
         )
     )
-    body_placeholder.paragraph_format.line_spacing = spacing.get("line_spacing", 1.15)
+    _apply_line_spacing(body_placeholder.paragraph_format, spacing)
     body_placeholder.paragraph_format.alignment    = _map_alignment(
         (spacing.get("paragraph_alignment") or "JUSTIFY").upper()
     )
@@ -710,7 +715,7 @@ def _render_bab_section(
                 .replace("{title}", "Contoh Gambar")
                 .replace("{source}", "Sumber Contoh")
             )
-        _add_example_figure(document, fig_caption)
+        _add_example_figure(document, fig_caption, page_layout, figures_tables)
 
     # Khusus bab BIAYA: placeholder untuk sub bab (4.1 Anggaran Biaya, 4.2 Jadwal Kegiatan)
     # Tabel anggaran biaya dan jadwal kegiatan akan dirender di sub_bab sections
@@ -725,7 +730,7 @@ def _render_bab_section(
                 f"Lengkapi kedua sub bab tersebut sesuai panduan dokumen."
             )
         )
-        placeholder.paragraph_format.line_spacing = spacing.get("line_spacing", 1.15)
+        _apply_line_spacing(placeholder.paragraph_format, spacing)
         placeholder.paragraph_format.alignment    = _map_alignment(
             (spacing.get("paragraph_alignment") or "JUSTIFY").upper()
         )
@@ -751,6 +756,9 @@ def _render_named_section(
     instructional_placeholders: dict[str, str],
     doc_structure: dict | None = None,
 ) -> None:
+    sep = document.add_paragraph()
+    sep.paragraph_format.space_after = Pt(0)
+
     heading = document.add_heading(title, level=1)
     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _force_paragraph_runs_black(heading)
@@ -780,11 +788,12 @@ def _render_named_section(
             lines = para_text.strip().split("\n")
             for line in lines:
                 p = document.add_paragraph(line.strip())
-                p.paragraph_format.line_spacing = spacing.get("line_spacing", 1.15)
+                _apply_line_spacing(p.paragraph_format, spacing)
                 p.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
                 p.paragraph_format.space_after = Pt(0)
-                p.paragraph_format.left_indent = Cm(0.5)
-                p.paragraph_format.first_line_indent = Cm(-0.5)
+                if spacing.get("references_hanging_indent", True):
+                    p.paragraph_format.left_indent = Cm(0.5)
+                    p.paragraph_format.first_line_indent = Cm(-0.5)
                 _force_paragraph_runs_black(p)
     else:
         placeholder_text = instructional_placeholders.get(
@@ -792,7 +801,7 @@ def _render_named_section(
             f"Instruksi pengisian untuk {title}: lengkapi bagian ini sesuai panduan dokumen.",
         )
         placeholder = document.add_paragraph(placeholder_text)
-        placeholder.paragraph_format.line_spacing = spacing.get("line_spacing", 1.15)
+        _apply_line_spacing(placeholder.paragraph_format, spacing)
         _force_paragraph_runs_black(placeholder)
 
     sources = match_sources_for_section(chunks=chunks, section_label=title, section_title=title)
@@ -811,6 +820,9 @@ def _render_sub_bab_section(
     sub_num  = section.get("sub_number") or "?"
     title = (section.get("title") or "[SUB_BAB_TANPA_JUDUL]").title()
     heading_text = f"{sub_num} {title}".strip()
+
+    sep = document.add_paragraph()
+    sep.paragraph_format.space_after = Pt(0)
 
     heading = document.add_heading(heading_text, level=2)
     heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -835,41 +847,49 @@ def _render_sub_bab_section(
         except (ValueError, IndexError):
             bab_num = 4
 
+    table_caption_pos = (figures_tables.get("table_caption_position") or "ABOVE").upper()
+
     # Sub bab 4.1: Tabel Anggaran Biaya
     if sub_num and str(sub_num).endswith(".1"):
-        # Caption di atas tabel
         fmt = figures_tables.get("caption_format_table", "Tabel {bab}.{n}. {title}")
         caption_text = (
             fmt.replace("{bab}", str(bab_num)).replace("{n}", "1")
                .replace("{title}", "Rincian Anggaran Biaya")
         )
-        cap_p = document.add_paragraph(caption_text, style="Caption")
-        cap_p.paragraph_format.space_after = Pt(0)
-        _force_paragraph_runs_black(cap_p)
+        if table_caption_pos != "BELOW":
+            cap_p = document.add_paragraph(caption_text, style="Caption")
+            cap_p.paragraph_format.space_after = Pt(0)
+            _force_paragraph_runs_black(cap_p)
 
-        # Tambahkan tabel anggaran biaya
         _add_budget_table(document, bab_num, figures_tables)
 
-        # Enter 1x setelah tabel
+        if table_caption_pos == "BELOW":
+            cap_p = document.add_paragraph(caption_text, style="Caption")
+            cap_p.paragraph_format.space_after = Pt(0)
+            _force_paragraph_runs_black(cap_p)
+
         empty = document.add_paragraph()
         empty.paragraph_format.space_after = Pt(0)
 
     # Sub bab 4.2: Tabel Jadwal Kegiatan
     elif sub_num and str(sub_num).endswith(".2"):
-        # Caption di atas tabel
         fmt = figures_tables.get("caption_format_table", "Tabel {bab}.{n}. {title}")
         caption_text = (
             fmt.replace("{bab}", str(bab_num)).replace("{n}", "2")
                .replace("{title}", "Jadwal Pelaksanaan Kegiatan")
         )
-        cap_p = document.add_paragraph(caption_text, style="Caption")
-        cap_p.paragraph_format.space_after = Pt(0)
-        _force_paragraph_runs_black(cap_p)
+        if table_caption_pos != "BELOW":
+            cap_p = document.add_paragraph(caption_text, style="Caption")
+            cap_p.paragraph_format.space_after = Pt(0)
+            _force_paragraph_runs_black(cap_p)
 
-        # Tambahkan tabel jadwal kegiatan
         _add_schedule_table(document, bab_num, figures_tables, page_layout)
 
-        # Enter 1x setelah tabel
+        if table_caption_pos == "BELOW":
+            cap_p = document.add_paragraph(caption_text, style="Caption")
+            cap_p.paragraph_format.space_after = Pt(0)
+            _force_paragraph_runs_black(cap_p)
+
         empty = document.add_paragraph()
         empty.paragraph_format.space_after = Pt(0)
 
@@ -883,7 +903,7 @@ def _render_sub_bab_section(
                 f"Instruksi pengisian untuk {heading_text}: lengkapi isi bagian ini sesuai panduan.",
             )
         )
-        body_placeholder.paragraph_format.line_spacing = spacing.get("line_spacing", 1.15)
+        _apply_line_spacing(body_placeholder.paragraph_format, spacing)
         body_placeholder.paragraph_format.alignment   = _map_alignment(
             (spacing.get("paragraph_alignment") or "JUSTIFY").upper()
         )
@@ -902,6 +922,9 @@ def _render_item_lampiran_section(
     lampiran_number = section.get("lampiran_number") or "Lampiran ?"
     title           = section.get("title") or "[LAMPIRAN_TANPA_JUDUL]"
     heading_text    = f"{lampiran_number}. {title}".strip()
+
+    sep = document.add_paragraph()
+    sep.paragraph_format.space_after = Pt(0)
 
     heading = document.add_heading(heading_text, level=2)
     heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -928,7 +951,7 @@ def _render_item_lampiran_section(
             f"Instruksi pengisian untuk {heading_text}: lengkapi isi bagian ini sesuai panduan.",
         )
     )
-    body_placeholder.paragraph_format.line_spacing = spacing.get("line_spacing", 1.15)
+    _apply_line_spacing(body_placeholder.paragraph_format, spacing)
     body_placeholder.paragraph_format.alignment    = _map_alignment(
         (spacing.get("paragraph_alignment") or "JUSTIFY").upper()
     )
@@ -1037,7 +1060,15 @@ def _add_budget_table(document: Document, bab_number: int, figures_tables: dict)
             if ci < len(row.cells):
                 row.cells[ci].width = width
 
-    # Enter 1x setelah tabel anggaran
+    additional_rules = None
+    if budget_rules:
+        additional_rules = budget_rules.get("additional_rules")
+    if additional_rules:
+        note_p = document.add_paragraph(additional_rules)
+        note_p.runs[0].italic = True
+        note_p.runs[0].font.size = Pt(10)
+        note_p.paragraph_format.space_after = Pt(0)
+        _force_paragraph_runs_black(note_p)
 
 
 # ---------------------------------------------------------------------------
@@ -1109,13 +1140,26 @@ def _add_schedule_table(document: Document, bab_number: int, figures_tables: dic
     empty.paragraph_format.space_after = Pt(0)
 
 
-def _add_example_figure(document: Document, caption: str | None = None) -> None:
-    """Add example figure from data/images.jpg if available.
+def _add_example_figure(
+    document: Document,
+    caption: str | None = None,
+    page_layout: dict | None = None,
+    figures_tables: dict | None = None,
+) -> None:
+    """Add example figure from data/images.jpg if available."""
+    # Determine image width from max_width_constraint
+    if (
+        figures_tables
+        and (figures_tables.get("max_width_constraint") or "").lower() == "within_margins"
+        and page_layout
+    ):
+        paper_width, _ = _get_paper_dimensions(page_layout.get("paper_size"))
+        img_width = Cm(paper_width - page_layout.get("margin_left_cm", 4.0) - page_layout.get("margin_right_cm", 3.0))
+    else:
+        img_width = Cm(10)
 
-    Args:
-        document: python-docx Document object
-        caption: Optional caption text to add below the image
-    """
+    caption_pos = (figures_tables.get("figure_caption_position") or "BELOW").upper() if figures_tables else "BELOW"
+
     # Try multiple paths for images.jpg
     possible_paths = [
         Path(__file__).parent.parent.parent / "data" / "images.jpg",
@@ -1123,30 +1167,33 @@ def _add_example_figure(document: Document, caption: str | None = None) -> None:
         Path("ai/data/images.jpg"),
         Path("data/images.jpg"),
     ]
-
     figure_image_path = None
     for p in possible_paths:
         if p.exists() and p.is_file():
             figure_image_path = p
             break
 
+    if caption and caption_pos == "ABOVE":
+        caption_p = document.add_paragraph(caption, style="Caption")
+        caption_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        caption_p.paragraph_format.space_after = Pt(0)
+        _force_paragraph_runs_black(caption_p)
+
     if figure_image_path:
-        document.add_picture(str(figure_image_path), width=Cm(10))
-        # Akses paragraph terakhir untuk di-center (add_picture mengembalikan InlineShape, bukan Paragraph)
+        document.add_picture(str(figure_image_path), width=img_width)
         document.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
     else:
-        # Fallback placeholder jika file gambar tidak ditemukan
         placeholder_p = document.add_paragraph("[Gambar: sisipkan gambar yang relevan di sini]")
         placeholder_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         placeholder_p.runs[0].italic = True
         _force_paragraph_runs_black(placeholder_p)
 
-    if caption:
+    if caption and caption_pos != "ABOVE":
         caption_p = document.add_paragraph(caption, style="Caption")
         caption_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         caption_p.paragraph_format.space_after = Pt(0)
         _force_paragraph_runs_black(caption_p)
-    # Enter 1x after image/caption
+
     empty = document.add_paragraph()
     empty.paragraph_format.space_after = Pt(0)
 
@@ -1177,6 +1224,22 @@ def _split_caption_template(template: str, label: str) -> tuple[str, str]:
             before, after = normalized.split(marker, maxsplit=1)
             return before, after
     return f"{label} ", ". [JUDUL]"
+
+
+# ---------------------------------------------------------------------------
+def _apply_line_spacing(paragraph_format, spacing: dict) -> None:
+    """Apply line_spacing and line_spacing_rule from spacing dict."""
+    line_spacing = spacing.get("line_spacing", 1.15)
+    rule = (spacing.get("line_spacing_rule") or "MULTIPLE").upper()
+    if rule == "EXACTLY":
+        paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+        paragraph_format.line_spacing = Pt(line_spacing)
+    elif rule == "AT_LEAST":
+        paragraph_format.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
+        paragraph_format.line_spacing = Pt(line_spacing)
+    else:
+        paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+        paragraph_format.line_spacing = line_spacing
 
 
 # ---------------------------------------------------------------------------
@@ -1311,6 +1374,14 @@ def render_proposal_docx_bytes(
         )
 
     _render_proposal_body(doc, doc_structure, page_layout, spacing, numbering, figures_tables, chunks, instructional_placeholders)
+
+    format_nama_file = doc_structure.get("format_nama_file")
+    if format_nama_file:
+        doc.core_properties.subject = f"Format nama file: {format_nama_file}"
+        note_p = doc.add_paragraph(f"Catatan format nama file pengumpulan: {format_nama_file}")
+        note_p.runs[0].italic = True
+        note_p.runs[0].font.size = Pt(10)
+        _force_paragraph_runs_black(note_p)
 
     buf = BytesIO()
     doc.save(buf)

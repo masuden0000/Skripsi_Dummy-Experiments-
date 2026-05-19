@@ -1,9 +1,9 @@
 ---
 queries:
-  - "sistematika penulisan proposal PKM halaman sampul pengesahan daftar isi daftar pustaka lampiran"
+  - "sistematika penulisan proposal PKM daftar isi daftar pustaka lampiran"
   - "BAB 1 pendahuluan BAB 2 tinjauan pustaka BAB 3 tahap pelaksanaan BAB 4 biaya jadwal kegiatan proposal PKM-KC"
-  - "format nama file PKM pengumpulan batas halaman inti proposal maksimum sistematika"
-  - "4.1 anggaran biaya 4.2 jadwal kegiatan sub bab BAB 4 proposal PKM-KC rekapitulasi bar chart"
+  - "format nama file PKM pengumpulan sistematika proposal"
+  - "4.1 anggaran biaya 4.2 jadwal kegiatan sub bab BAB 4 proposal PKM-KC rekapitulasi"
 top_k: 10
 ---
 
@@ -12,30 +12,18 @@ top_k: 10
 ## Context
 {context}
 
-## PERINGATAN: Batas Jenis Dokumen
-Dokumen sumber membahas TIGA jenis dokumen PKM: Proposal, Laporan Kemajuan, dan Laporan Akhir.
-Konteks di atas mungkin mencampur ketiga jenis ini dalam satu section.
-
-**HANYA ekstrak informasi yang berlaku untuk PROPOSAL PKM.**
-- Abaikan semua informasi yang berlabel "Laporan Kemajuan" atau "Laporan Akhir"
-- Jika ada konflik antara informasi proposal dan laporan, prioritaskan yang berlabel "Proposal"
-- Proposal PKM **TIDAK memiliki ringkasan** — jika konteks menyebut ringkasan, itu milik laporan akhir, bukan proposal. Untuk proposal, `ringkasan` = **false**
-- BAB 4 proposal adalah "BIAYA DAN JADWAL KEGIATAN", BUKAN "HASIL YANG DICAPAI" (itu milik laporan kemajuan)
-
 ## Task
-Ekstrak struktur dokumen untuk jenis PROPOSAL PKM dari konteks di atas.
+Ekstrak struktur dokumen untuk jenis **PROPOSAL PKM** dari konteks di atas.
 Susun `sections` dengan urutan munculnya section dalam dokumen.
 
 ## Normalization Rules
 - Gunakan JSON null (bukan string "null") untuk nilai yang tidak ditemukan
 - Judul BAB WAJIB ALL CAPS: "PENDAHULUAN", "BIAYA DAN JADWAL KEGIATAN", dst.
+- Judul sub-BAB menggunakan Title Case (huruf awal tiap kata besar): "Anggaran Biaya", "Jadwal Kegiatan"
 - Nilai bool: true atau false (bukan string)
 - required: true = wajib ada; false = opsional (sertakan jika ada konten)
 
 ## Output Fields (top-level)
-- halaman_sampul: apakah ada halaman sampul (bool)
-- halaman_pengesahan: apakah ada halaman pengesahan (bool)
-- ringkasan: apakah ada ringkasan atau abstrak (bool) — untuk proposal ini **false**
 - sections: daftar section berurutan (lihat format di bawah)
 - max_halaman_inti: batas maksimum halaman inti (integer)
 - format_nama_file: format nama file untuk pengumpulan (string)
@@ -48,13 +36,13 @@ Setiap entry di `sections` adalah objek dengan fields berikut:
 - required: true jika wajib ada, false jika opsional — hanya untuk non-bab sections
 - number: nomor BAB (integer) — hanya untuk type "bab"
 - sub_number: nomor sub-BAB seperti "4.1" (string) — hanya untuk type "sub_bab"
-- title: judul dalam ALL CAPS (string) — untuk type "bab", "sub_bab", dan "lampiran"
+- title: untuk type "bab" gunakan ALL CAPS; untuk type "sub_bab" gunakan Title Case (contoh: "Anggaran Biaya"); untuk type "lampiran" gunakan ALL CAPS
 - lampiran_number: nomor lampiran seperti "Lampiran 1" (string) — hanya untuk type "lampiran" atau "item_lampiran"
 
 ## Aturan Sub-BAB
 - **WAJIB ekstrak SEMUA sub-BAB** yang disebutkan dalam dokumen sumber (misal: "4.1 Anggaran Biaya", "4.2 Jadwal Kegiatan")
 - Sub-BAB muncul setelah BAB atasannya dalam sections
-- Format: `{"type": "sub_bab", "sub_number": "4.1", "title": "ANGGARAN BIAYA"}`
+- Format: `{"type": "sub_bab", "sub_number": "4.1", "title": "Anggaran Biaya"}`
 
 ## Aturan LAMPIRAN
 - **WAJIB ekstrak SEMUA lampiran** yang disebutkan dalam dokumen sumber
@@ -88,8 +76,8 @@ Contoh sections untuk proposal:
   {"type": "bab", "number": 2, "title": "TINJAUAN PUSTAKA"},
   {"type": "bab", "number": 3, "title": "TAHAP PELAKSANAAN"},
   {"type": "bab", "number": 4, "title": "BIAYA DAN JADWAL KEGIATAN"},
-  {"type": "sub_bab", "sub_number": "4.1", "title": "ANGGARAN BIAYA"},
-  {"type": "sub_bab", "sub_number": "4.2", "title": "JADWAL KEGIATAN"},
+  {"type": "sub_bab", "sub_number": "4.1", "title": "Anggaran Biaya"},
+  {"type": "sub_bab", "sub_number": "4.2", "title": "Jadwal Kegiatan"},
   {"type": "daftar_pustaka", "required": true},
   {"type": "lampiran", "title": "LAMPIRAN"},
   {"type": "item_lampiran", "lampiran_number": "Lampiran 1", "title": "BIODATA KETUA DAN ANGGOTA, SERTA DOSEN PENDAMPING"},

@@ -18,8 +18,8 @@ Jika tidak ditemukan dalam konteks, gunakan null (JSON null, BUKAN string "null"
 
 ## Normalization Rules
 - Gunakan JSON null (bukan string "null") untuk nilai yang tidak ditemukan
-- table_caption_position: "ABOVE" jika keterangan di atas tabel, "BELOW" jika di bawah
-- figure_caption_position: "ABOVE" jika keterangan di atas gambar, "BELOW" jika di bawah
+- table_caption_position: "ABOVE" jika keterangan di atas tabel, "BELOW" jika di bawah — jika tidak disebutkan eksplisit, gunakan "ABOVE" sebagai default
+- figure_caption_position: "ABOVE" jika keterangan di atas gambar, "BELOW" jika di bawah — jika tidak disebutkan eksplisit, gunakan "BELOW" sebagai default
 - Untuk template caption, gunakan placeholder {n} untuk nomor urut, {bab} untuk nomor bab, {title} untuk judul, {source} untuk sumber
 - max_width_constraint: "within_margins" jika gambar/tabel tidak boleh melebihi batas margin
 
@@ -44,7 +44,6 @@ Fokus pada REKAPITULASI RENCANA ANGGARAN BIAYA untuk ekstraksi:
 - figure_caption_position: posisi keterangan gambar — "ABOVE" atau "BELOW"
 - caption_format_figure: template format keterangan gambar (contoh: "Gambar {n}. {title} ({source})")
 - caption_format_table: template format keterangan tabel (contoh: "Tabel {bab}.{n} {title}")
-- source_required_if_not_own: apakah sumber wajib dicantumkan jika bukan karya sendiri (bool)
 - max_width_constraint: batasan lebar gambar/tabel (contoh: "within_margins")
 - budget_format_rules: object dengan:
   - budget_items: array of {jenis_pengeluaran, persentase_maksimum, contoh}
