@@ -1,23 +1,30 @@
 ---
-query: "maksimum halaman inti batas halaman proposal laporan kemajuan akhir lampiran"
+query: "maksimum halaman inti batas halaman proposal lampiran judul kata"
 ---
 
-# Extraction Task: Page Count Limits
+# Extraction Task: Page Count Limits (Proposal PKM)
 
 ## Context
 {context}
 
 ## Task
-Ekstrak batas maksimum halaman untuk setiap jenis dokumen PKM dari konteks di atas.
+Ekstrak batas maksimum halaman inti untuk **proposal PKM** dari konteks di atas.
+Fokus HANYA pada ketentuan yang berlaku untuk proposal — abaikan informasi tentang laporan kemajuan atau laporan akhir.
 Jika tidak ditemukan, gunakan null.
 
 ## Output Fields
-- proposal_halaman_inti_maks: batas halaman inti proposal yang benar-benar disebut eksplisit di konteks (integer)
-- definisi_halaman_inti: rentang section yang dihitung sebagai halaman inti, dalam format "section_awal_to_section_akhir" (contoh: "bab_1_to_daftar_pustaka")
-- lampiran_excluded: true jika lampiran tidak dihitung dalam batas halaman inti (bool)
-- judul_maks_kata: jumlah maksimum kata pada judul proposal/laporan jika disebutkan (integer atau null)
 
-Catatan penting:
-- Jangan keluarkan field khusus `laporan_kemajuan_halaman_inti_maks`.
-- Jangan keluarkan field khusus `laporan_akhir_halaman_inti_maks`.
-- Jika konteks hanya memberi satu batas umum yang dipakai lintas dokumen, simpan hanya ke `proposal_halaman_inti_maks` bila memang konteks mengaitkannya ke proposal; selain itu biarkan null.
+- `proposal_halaman_inti_maks` (integer): batas maksimum halaman inti proposal yang disebutkan eksplisit di konteks.
+
+- `halaman_inti_mulai` (string): nama section tempat hitungan halaman inti dimulai.
+  Gunakan TEPAT salah satu nilai section berikut: `"bab"`, `"daftar_isi"`, `"daftar_pustaka"`, `"lampiran"`.
+  Jika tidak disebutkan eksplisit, default: `"bab"` (merujuk ke BAB 1 PENDAHULUAN).
+
+- `halaman_inti_selesai` (string): nama section tempat hitungan halaman inti berakhir (inklusif).
+  Gunakan TEPAT salah satu nilai section berikut: `"bab"`, `"daftar_isi"`, `"daftar_pustaka"`, `"lampiran"`.
+  Jika tidak disebutkan eksplisit, default: `"daftar_pustaka"` (merujuk ke DAFTAR PUSTAKA).
+
+## Normalization Rules
+- `halaman_inti_mulai` dan `halaman_inti_selesai` harus menggunakan nilai dari daftar section di atas — jangan gunakan string bebas.
+- Jika konteks menyebut "dari BAB 1 sampai Daftar Pustaka" atau padanannya, set `halaman_inti_mulai = "bab"` dan `halaman_inti_selesai = "daftar_pustaka"`.
+- Jangan keluarkan field untuk laporan kemajuan atau laporan akhir.

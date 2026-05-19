@@ -47,7 +47,6 @@ export type ExtractionPayload = {
     margin_right_cm: number | null
     paper_size: string | null
     orientation: string | null
-    columns: number | null
   }
   spacing: {
     line_spacing: number | null
@@ -77,14 +76,12 @@ export type ExtractionPayload = {
     figure_caption_position: string | null
     caption_format_figure: string | null
     caption_format_table: string | null
-    source_required_if_not_own: boolean | null
     max_width_constraint: string | null
   }
   page_count_limits: {
     proposal_halaman_inti_maks: number | null
-    definisi_halaman_inti: string | null
-    lampiran_excluded: boolean | null
-    judul_maks_kata: number | null
+    halaman_inti_mulai: string | null
+    halaman_inti_selesai: string | null
   }
 }
 
@@ -282,11 +279,6 @@ export function ExtractionValuesForm({ data, onChange }: Props) {
                 { value: "Landscape", label: "Landscape" },
               ]}
               onChange={(v) => patch("page_layout", { orientation: v })}
-            />
-            <NumberFieldInput
-              label="Jumlah Kolom"
-              value={data.page_layout.columns}
-              onChange={(v) => patch("page_layout", { columns: v })}
             />
           </FieldRow>
         </div>
@@ -559,6 +551,42 @@ export function ExtractionValuesForm({ data, onChange }: Props) {
             value={data.document_structure_proposal.ringkasan}
             onChange={(v) => patch("document_structure_proposal", { ringkasan: v })}
           />
+        </div>
+      </div>
+
+      {/* ── 8. Batas Halaman ── */}
+      <div>
+        <SectionHeader title="8. Batas Halaman" />
+        <div className="mt-3 px-1">
+          <FieldRow>
+            <NumberFieldInput
+              label="Maks. Halaman Inti"
+              value={data.page_count_limits.proposal_halaman_inti_maks}
+              onChange={(v) => patch("page_count_limits", { proposal_halaman_inti_maks: v })}
+            />
+            <SelectFieldInput
+              label="Halaman Inti Mulai Dari"
+              value={data.page_count_limits.halaman_inti_mulai}
+              options={[
+                { value: "bab", label: "BAB" },
+                { value: "daftar_isi", label: "Daftar Isi" },
+                { value: "daftar_pustaka", label: "Daftar Pustaka" },
+                { value: "lampiran", label: "Lampiran" },
+              ]}
+              onChange={(v) => patch("page_count_limits", { halaman_inti_mulai: v })}
+            />
+            <SelectFieldInput
+              label="Halaman Inti Selesai Di"
+              value={data.page_count_limits.halaman_inti_selesai}
+              options={[
+                { value: "bab", label: "BAB" },
+                { value: "daftar_isi", label: "Daftar Isi" },
+                { value: "daftar_pustaka", label: "Daftar Pustaka" },
+                { value: "lampiran", label: "Lampiran" },
+              ]}
+              onChange={(v) => patch("page_count_limits", { halaman_inti_selesai: v })}
+            />
+          </FieldRow>
         </div>
       </div>
 
