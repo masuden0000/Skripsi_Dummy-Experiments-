@@ -551,24 +551,11 @@ def _extract_spacing(doc: Document) -> dict:
     paragraph_alignment = alignment_votes.most_common(1)[0][0] if alignment_votes else "JUSTIFY"
     first_line_indent = indent_votes.most_common(1)[0][0] if indent_votes else None
 
-    # Hanging indent untuk daftar pustaka
-    references_hanging_indent = None
-    for style_name in ("Bibliography", "Citations", "Daftar Pustaka"):
-        try:
-            ref_style = doc.styles[style_name]
-            pf = ref_style.paragraph_format
-            if pf.left_indent and pf.first_line_indent:
-                references_hanging_indent = pf.first_line_indent.cm < 0
-            break
-        except KeyError:
-            continue
-
     return {
         "line_spacing": line_spacing,
         "line_spacing_rule": "MULTIPLE",
         "paragraph_alignment": paragraph_alignment,
         "first_line_indent_cm": first_line_indent,
-        "references_hanging_indent": references_hanging_indent,
     }
 
 
@@ -580,36 +567,12 @@ def _extract_document_structure(doc: Document) -> dict:
     """Extract document structure dari seluruh paragraf dokumen."""
     heading_count = 0
     section_count = len(doc.sections)
-    has_cover = False
-    has_approval = False
-    has_summary = False
-
-    all_texts = [p.text.strip().upper() for p in doc.paragraphs if p.text.strip()]
-
-    for text in all_texts:
-        if p_style := next(
-            (p.style.name for p in doc.paragraphs
-             if p.text.strip().upper() == text and p.style.name.startswith("Heading")),
-            None,
-        ):
-            heading_count += 1
-
-        if any(kw in text for kw in ("SAMPUL", "COVER", "HALAMAN JUDUL")):
-            has_cover = True
-        if any(kw in text for kw in ("PENGESAHAN", "PERSETUJUAN", "APPROVAL", "LEMBAR PERSETUJUAN")):
-            has_approval = True
-        if any(kw in text for kw in ("RINGKASAN", "ABSTRACT", "ABSTRAK")):
-            has_summary = True
-
-    # Hitung ulang heading_count dengan cara yang benar
+    # Hitung heading_count
     heading_count = sum(1 for p in doc.paragraphs if p.style.name.startswith("Heading"))
 
     return {
         "heading_count": heading_count,
         "section_count": section_count,
-        "has_halaman_sampul": has_cover,
-        "has_halaman_pengesahan": has_approval,
-        "has_ringkasan": has_summary,
     }
 
 
@@ -826,13 +789,9 @@ def extract_docx_properties(docx_path: str | Path) -> DocxProperties:
         line_spacing_rule=spacing["line_spacing_rule"],
         paragraph_alignment=spacing["paragraph_alignment"],
         first_line_indent_cm=spacing["first_line_indent_cm"],
-        references_hanging_indent=spacing["references_hanging_indent"],
         # Document Structure
         heading_count=doc_structure["heading_count"],
         section_count=doc_structure["section_count"],
-        has_halaman_sampul=doc_structure["has_halaman_sampul"],
-        has_halaman_pengesahan=doc_structure["has_halaman_pengesahan"],
-        has_ringkasan=doc_structure["has_ringkasan"],
         # Daftar sections (dari paragraph map)
         has_daftar_isi=daftar_flags["has_daftar_isi"],
         has_daftar_pustaka=daftar_flags["has_daftar_pustaka"],

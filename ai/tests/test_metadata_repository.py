@@ -44,7 +44,6 @@ SAMPLE_PAYLOAD = {
         "line_spacing_rule": "MULTIPLE",
         "paragraph_alignment": "JUSTIFY",
         "first_line_indent_cm": None,
-        "references_hanging_indent": True,
     },
     "numbering": {
         "sources": [],
@@ -68,7 +67,6 @@ SAMPLE_PAYLOAD = {
     "figures_and_tables": {
         "sources": [],
         "caption_format_table": "Tabel {bab}.{n}. {title}",
-        "max_width_constraint": "within_margins",
         "caption_format_figure": "Gambar {n}. {title} ({source})",
         "table_caption_position": "ABOVE",
         "figure_caption_position": "ABOVE",
@@ -106,11 +104,8 @@ SAMPLE_PAYLOAD = {
                 "is_major_section": True,
             },
         ],
-        "ringkasan": False,
-        "halaman_sampul": False,
         "format_nama_file": "namaketua_namapt_PKM-KC.pdf",
         "max_halaman_inti": 10,
-        "halaman_pengesahan": False,
     },
 }
 

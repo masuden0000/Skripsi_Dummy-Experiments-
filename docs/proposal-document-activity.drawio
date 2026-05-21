@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-05-20T00:00:00.000Z" agent="Claude" version="24.7.17">
+  <diagram id="proposal-doc-activity" name="Activity Diagram Buat Dokumen Proposal">
+    <mxGraphModel dx="1200" dy="760" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="1440" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="&lt;b&gt;Activity Diagram Buat Dokumen Proposal&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="18" width="920" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Swim Lanes -->
+        <mxCell id="lane_fe" value="Frontend" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#dcfce7;strokeColor=#16a34a;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="58" width="270" height="1340" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_be" value="Backend" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#dbeafe;strokeColor=#2563eb;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="58" width="200" height="1340" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_ai" value="AI Backend" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#fef9c3;strokeColor=#ca8a04;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="510" y="58" width="220" height="1340" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_db" value="Basis Data" style="swimlane;html=1;rounded=0;whiteSpace=wrap;horizontal=1;startSize=28;fillColor=#f3f4f6;strokeColor=#4b5563;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="730" y="58" width="220" height="1340" as="geometry" />
+        </mxCell>
+
+        <!-- START -->
+        <mxCell id="start" value="" style="ellipse;html=1;aspect=fixed;fillColor=#111827;strokeColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="163" y="106" width="24" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- STEP 1: Isi form & buat project -->
+        <mxCell id="fe_form" value="Isi form proposal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;" vertex="1" parent="1">
+          <mxGeometry x="85" y="150" width="180" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="be_buat" value="Buat project &amp; URL unggah" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;" vertex="1" parent="1">
+          <mxGeometry x="320" y="150" width="170" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="db_insert" value="INSERT project" style="shape=mxgraph.flowchart.database;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="748" y="143" width="170" height="58" as="geometry" />
+        </mxCell>
+
+        <!-- STEP 2: Upload file langsung ke storage -->
+        <mxCell id="fe_upload" value="Unggah file ke storage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;" vertex="1" parent="1">
+          <mxGeometry x="85" y="222" width="180" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- STEP 3: Konfirmasi upload → trigger pipeline -->
+        <mxCell id="fe_konfirm" value="Konfirmasi unggah" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;" vertex="1" parent="1">
+          <mxGeometry x="85" y="290" width="180" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="be_konfirm" value="Proses &amp; mulai ekstraksi" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;" vertex="1" parent="1">
+          <mxGeometry x="320" y="290" width="170" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="db_uploading" value="UPDATE status project" style="shape=mxgraph.flowchart.database;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="748" y="283" width="170" height="58" as="geometry" />
+        </mxCell>
+
+        <!-- STEP 4: AI Pipeline (background) -->
+        <mxCell id="ai_download" value="Unduh file PDF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ca8a04;" vertex="1" parent="1">
+          <mxGeometry x="525" y="370" width="180" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ai_setup" value="Pecah &amp; indeks dokumen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ca8a04;" vertex="1" parent="1">
+          <mxGeometry x="525" y="440" width="180" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="db_chunks" value="INSERT potongan dokumen" style="shape=mxgraph.flowchart.database;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="748" y="433" width="170" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="ai_ekstrak" value="Ekstraksi metadata dokumen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ca8a04;" vertex="1" parent="1">
+          <mxGeometry x="525" y="520" width="180" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="db_metadata" value="INSERT metadata dokumen" style="shape=mxgraph.flowchart.database;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="748" y="513" width="170" height="58" as="geometry" />
+        </mxCell>
+
+        <!-- STEP 5: Frontend terima update realtime -->
+        <mxCell id="fe_tampil" value="Tampil hasil ekstraksi" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;" vertex="1" parent="1">
+          <mxGeometry x="85" y="600" width="180" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- DECISION -->
+        <mxCell id="d_aksi" value="Lanjutkan atau Tolak?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="135" y="672" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- LANJUTKAN branch -->
+        <mxCell id="fe_review" value="Tinjau &amp; ubah nilai ekstraksi" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;" vertex="1" parent="1">
+          <mxGeometry x="85" y="762" width="180" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="be_simpan" value="Simpan metadata &amp; buat dokumen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;" vertex="1" parent="1">
+          <mxGeometry x="320" y="762" width="170" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="db_update_meta" value="UPDATE metadata" style="shape=mxgraph.flowchart.database;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="748" y="755" width="170" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="ai_generate" value="Buat &amp; unggah dokumen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ca8a04;" vertex="1" parent="1">
+          <mxGeometry x="525" y="844" width="180" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="db_completed" value="UPDATE status &amp; tautan hasil" style="shape=mxgraph.flowchart.database;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="748" y="837" width="170" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="fe_unduh" value="Tampil tautan unduh dokumen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;" vertex="1" parent="1">
+          <mxGeometry x="85" y="924" width="180" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- TOLAK branch -->
+        <mxCell id="fe_reset" value="Reset form" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;" vertex="1" parent="1">
+          <mxGeometry x="85" y="1014" width="180" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="be_hapus" value="Hapus metadata &amp; project" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1014" width="170" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="db_hapus" value="DELETE metadata &amp; project" style="shape=mxgraph.flowchart.database;html=1;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#4b5563;" vertex="1" parent="1">
+          <mxGeometry x="748" y="1007" width="170" height="58" as="geometry" />
+        </mxCell>
+
+        <!-- MERGE & END -->
+        <mxCell id="merge" value="" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="145" y="1106" width="80" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="finish" value="" style="ellipse;html=1;aspect=fixed;fillColor=#ffffff;strokeColor=#111827;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="173" y="1200" width="36" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="finish_inner" value="" style="ellipse;html=1;aspect=fixed;fillColor=#111827;strokeColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="182" y="1209" width="18" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- ===== EDGES ===== -->
+
+        <!-- start → fe_form -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="start" target="fe_form" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- fe_form → be_buat -->
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="fe_form" target="be_buat" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- be_buat → db_insert -->
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="be_buat" target="db_insert" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- db_insert → fe_upload (signed URL kembali ke frontend) -->
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="db_insert" target="fe_upload" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="833" y="244" />
+              <mxPoint x="265" y="244" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- fe_upload → fe_konfirm -->
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="fe_upload" target="fe_konfirm" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- fe_konfirm → be_konfirm -->
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="fe_konfirm" target="be_konfirm" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- be_konfirm → db_uploading -->
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="be_konfirm" target="db_uploading" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- be_konfirm → ai_download (trigger background pipeline) -->
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="be_konfirm" target="ai_download" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="312" />
+              <mxPoint x="490" y="392" />
+              <mxPoint x="525" y="392" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ai_download → ai_setup -->
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="ai_download" target="ai_setup" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ai_setup → db_chunks -->
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="ai_setup" target="db_chunks" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- db_chunks → ai_ekstrak -->
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="db_chunks" target="ai_ekstrak" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="833" y="520" />
+              <mxPoint x="705" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ai_ekstrak → db_metadata -->
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="ai_ekstrak" target="db_metadata" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- db_metadata → fe_tampil (Supabase Realtime notifikasi) -->
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="db_metadata" target="fe_tampil" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="833" y="622" />
+              <mxPoint x="265" y="622" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- fe_tampil → d_aksi -->
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="fe_tampil" target="d_aksi" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- d_aksi → fe_review [Lanjutkan] -->
+        <mxCell id="e15" value="[Lanjutkan]" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" source="d_aksi" target="fe_review" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- d_aksi → fe_reset [Tolak] (rute ke kiri) -->
+        <mxCell id="e16" value="[Tolak]" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;fontSize=10;" edge="1" source="d_aksi" target="fe_reset" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="48" y="702" />
+              <mxPoint x="48" y="1036" />
+              <mxPoint x="85" y="1036" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- fe_review → be_simpan -->
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="fe_review" target="be_simpan" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- be_simpan → db_update_meta -->
+        <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="be_simpan" target="db_update_meta" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- be_simpan → ai_generate (trigger docx pipeline) -->
+        <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="be_simpan" target="ai_generate" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="784" />
+              <mxPoint x="490" y="866" />
+              <mxPoint x="525" y="866" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ai_generate → db_completed -->
+        <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="ai_generate" target="db_completed" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- db_completed → fe_unduh (realtime update status: completed) -->
+        <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="db_completed" target="fe_unduh" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="833" y="946" />
+              <mxPoint x="265" y="946" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- fe_reset → be_hapus -->
+        <mxCell id="e22" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="fe_reset" target="be_hapus" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- be_hapus → db_hapus -->
+        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="be_hapus" target="db_hapus" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- fe_unduh → merge -->
+        <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="fe_unduh" target="merge" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- db_hapus → merge -->
+        <mxCell id="e25" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="db_hapus" target="merge" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="833" y="1136" />
+              <mxPoint x="225" y="1136" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- merge → finish -->
+        <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=1;" edge="1" source="merge" target="finish" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

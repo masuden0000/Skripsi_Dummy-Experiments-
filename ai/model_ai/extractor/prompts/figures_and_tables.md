@@ -22,7 +22,6 @@ Jika tidak ditemukan dalam konteks, gunakan null (JSON null, BUKAN string "null"
 - table_caption_position: "ABOVE" jika keterangan di atas tabel, "BELOW" jika di bawah — jika tidak disebutkan eksplisit, gunakan "ABOVE" sebagai default
 - figure_caption_position: "ABOVE" jika keterangan di atas gambar, "BELOW" jika di bawah — jika tidak disebutkan eksplisit, gunakan "BELOW" sebagai default
 - Untuk template caption, gunakan placeholder {n} untuk nomor urut, {bab} untuk nomor bab, {title} untuk judul, {source} untuk sumber
-- max_width_constraint: "within_margins" jika gambar/tabel tidak boleh melebihi batas margin
 
 ## Budget Format Rules Extraction
 Fokus pada REKAPITULASI RENCANA ANGGARAN BIAYA untuk ekstraksi:
@@ -45,7 +44,6 @@ Fokus pada REKAPITULASI RENCANA ANGGARAN BIAYA untuk ekstraksi:
 - figure_caption_position: posisi keterangan gambar — "ABOVE" atau "BELOW"
 - caption_format_figure: template format keterangan gambar (contoh: "Gambar {n}. {title} ({source})") — **jika tidak dinyatakan eksplisit, inferensikan dari contoh gambar di konteks** (misal: "Gambar 1. Reaktor Pengolahan Limbah" → "Gambar {n}. {title}")
 - caption_format_table: template format keterangan tabel (contoh: "Tabel {bab}.{n} {title}") — **jika tidak dinyatakan eksplisit, inferensikan dari contoh nama tabel di konteks** (misal: "Tabel 4.1. Format Rekapitulasi..." → "Tabel {bab}.{n} {title}")
-- max_width_constraint: batasan lebar gambar/tabel (contoh: "within_margins")
 - budget_format_rules: object dengan:
   - budget_items: array of {jenis_pengeluaran, persentase_maksimum, contoh}
   - sumber_dana_options: array of strings

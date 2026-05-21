@@ -270,12 +270,6 @@ def _validate_spacing(
                   message=f"First line indent: diharapkan {s.first_line_indent_cm}cm, ditemukan {props.first_line_indent_cm}cm",
                   location=loc_global)
 
-    _record_check(checks, issues, "spacing", "references_hanging_indent",
-                  s.references_hanging_indent, props.references_hanging_indent,
-                  severity="warning",
-                  message="Hanging indent daftar pustaka tidak sesuai",
-                  location="Daftar Pustaka")
-
     # Per-paragraf spacing anomalies
     metadata_spacing = s.line_spacing
     reported = 0
@@ -323,36 +317,6 @@ def _validate_document_structure(
     if metadata.document_structure_proposal is None:
         return
     d = metadata.document_structure_proposal
-
-    # Halaman sampul
-    if d.halaman_sampul is True:
-        _record_check(checks, issues, "document_structure", "halaman_sampul",
-                      True, props.has_halaman_sampul, severity="warning",
-                      message="Halaman sampul tidak ditemukan dalam dokumen",
-                      location="Awal dokumen (halaman pertama)")
-    else:
-        _record_skipped(checks, "document_structure", "halaman_sampul",
-                        skip_reason="Metadata tidak mengharuskan halaman sampul")
-
-    # Halaman pengesahan
-    if d.halaman_pengesahan is True:
-        _record_check(checks, issues, "document_structure", "halaman_pengesahan",
-                      True, props.has_halaman_pengesahan, severity="warning",
-                      message="Halaman pengesahan tidak ditemukan dalam dokumen",
-                      location="Awal dokumen (setelah halaman sampul)")
-    else:
-        _record_skipped(checks, "document_structure", "halaman_pengesahan",
-                        skip_reason="Metadata tidak mengharuskan halaman pengesahan")
-
-    # Ringkasan
-    if d.ringkasan is True:
-        _record_check(checks, issues, "document_structure", "ringkasan",
-                      True, props.has_ringkasan, severity="warning",
-                      message="Ringkasan/abstrak tidak ditemukan dalam dokumen",
-                      location="Bagian awal dokumen")
-    else:
-        _record_skipped(checks, "document_structure", "ringkasan",
-                        skip_reason="Metadata tidak mengharuskan ringkasan")
 
     # Section count
     if props.section_count < 1:
