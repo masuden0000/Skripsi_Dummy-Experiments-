@@ -236,14 +236,10 @@ class DocxProperties(BaseModel):
     line_spacing_rule: str | None = Field(default=None, description="Line spacing rule (MULTIPLE, EXACT, AT_LEAST)")
     paragraph_alignment: str | None = Field(default=None, description="Default paragraph alignment")
     first_line_indent_cm: float | None = Field(default=None, description="First line indent in cm")
-    references_hanging_indent: bool | None = Field(default=None, description="Whether references use hanging indent")
 
     # Document Structure
     heading_count: int = Field(default=0, description="Number of headings in document")
     section_count: int = Field(default=0, description="Number of sections in document")
-    has_halaman_sampul: bool = Field(default=False, description="Whether document has cover page")
-    has_halaman_pengesahan: bool = Field(default=False, description="Whether document has approval page")
-    has_ringkasan: bool = Field(default=False, description="Whether document has summary/abstract")
 
     # Numbering
     chapter_format: str | None = Field(default=None, description="Chapter number format")

@@ -99,7 +99,6 @@ class SpacingExtracted(BaseModel):
     line_spacing_rule: str | None = None
     paragraph_alignment: str | None = None
     first_line_indent_cm: float | None = None
-    references_hanging_indent: bool | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -209,11 +208,6 @@ class SectionItem(BaseModel):
 # Mendefinisikan class `DocumentStructureExtracted` untuk kebutuhan modul `models`.
 # ---------------------------------------------------------------------------
 class DocumentStructureExtracted(BaseModel):
-    # halaman_sampul/pengesahan/ringkasan tidak lagi diekstrak dari prompt;
-    # dipertahankan di model agar kode renderer & validator tidak patah (selalu None).
-    halaman_sampul: bool | None = None
-    halaman_pengesahan: bool | None = None
-    ringkasan: bool | None = None
     sections: list[SectionItem] = []
     max_halaman_inti: int | None = None
     format_nama_file: str | None = None
@@ -272,7 +266,6 @@ class FiguresTablesExtracted(BaseModel):
     figure_caption_position: str | None = None
     caption_format_figure: str | None = None
     caption_format_table: str | None = None
-    max_width_constraint: str | None = None
     budget_format_rules: "BudgetFormatRules | None" = None
 
 

@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2Icon, CalendarIcon, LinkIcon, CopyIcon, CheckIcon } from "@/components/icons/public-icons"
+import { CalendarIcon, ChevronIcon, CheckIcon, CopyIcon, LinkIcon, Loader2Icon } from "@/components/icons/public-icons"
 import { getReviewerAssignments, type Assignment } from "@/lib/api/reviewer-assignments"
 
 function formatDate(dateStr: string): string {
@@ -69,16 +69,15 @@ function AssignmentCard({ assignment }: AssignmentCardProps) {
             <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
               <CalendarIcon className="size-3.5 flex-none" />
               <span>
-                {formatDate(assignment.periodMulai || "")} — {formatDate(assignment.periodSelesai || "")}
+                {formatDate(assignment.periodMulai || "")} – {formatDate(assignment.periodSelesai || "")}
               </span>
             </div>
           </div>
           <span
-            className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              active
-                ? "bg-green-100 text-green-700"
-                : "bg-muted text-muted-foreground"
-            }`}
+            className={[
+              "shrink-0 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium",
+              active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500",
+            ].join(" ")}
           >
             {active ? "Aktif" : "Selesai"}
           </span>
@@ -142,10 +141,46 @@ function AssignmentCard({ assignment }: AssignmentCardProps) {
   )
 }
 
+interface SectionProps {
+  title: string
+  count: number
+  expanded: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}
+
+function CollapsibleSection({ title, count, expanded, onToggle, children }: SectionProps) {
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between py-3 border-b border-gray-100"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-700">{title}</span>
+          <span className="inline-flex rounded-full bg-pkm-100 px-2 py-0.5 text-xs font-medium text-pkm-700">
+            {count}
+          </span>
+        </div>
+        <ChevronIcon open={expanded} className="size-4 text-gray-400" />
+      </button>
+      {expanded && (
+        <div className="space-y-3 pt-3">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function AssignmentsList() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedYear, setSelectedYear] = useState<string>("all")
+  const [activeExpanded, setActiveExpanded] = useState(true)
+  const [inactiveExpanded, setInactiveExpanded] = useState(false)
 
   useEffect(() => {
     async function fetchAssignments() {
@@ -159,6 +194,31 @@ export function AssignmentsList() {
     }
     fetchAssignments()
   }, [])
+
+  const availableYears = useMemo(() => {
+    const years = assignments
+      .map(a => (a.periodMulai ? new Date(a.periodMulai).getFullYear().toString() : null))
+      .filter((y): y is string => y !== null)
+    return [...new Set(years)].sort((a, b) => Number(b) - Number(a))
+  }, [assignments])
+
+  const filteredAssignments = useMemo(() => {
+    if (selectedYear === "all") return assignments
+    return assignments.filter(a => {
+      const year = a.periodMulai ? new Date(a.periodMulai).getFullYear().toString() : null
+      return year === selectedYear
+    })
+  }, [assignments, selectedYear])
+
+  const activeAssignments = useMemo(
+    () => filteredAssignments.filter(a => isActive(a.periodMulai || "", a.periodSelesai || "")),
+    [filteredAssignments]
+  )
+
+  const inactiveAssignments = useMemo(
+    () => filteredAssignments.filter(a => !isActive(a.periodMulai || "", a.periodSelesai || "")),
+    [filteredAssignments]
+  )
 
   if (loading) {
     return (
@@ -195,9 +255,69 @@ export function AssignmentsList() {
 
   return (
     <div className="space-y-4">
-      {assignments.map((assignment) => (
-        <AssignmentCard key={assignment.id} assignment={assignment} />
-      ))}
+      {availableYears.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setSelectedYear("all")}
+            className={[
+              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              selectedYear === "all"
+                ? "bg-pkm-600 text-white"
+                : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50",
+            ].join(" ")}
+          >
+            Semua
+          </button>
+          {availableYears.map(year => (
+            <button
+              key={year}
+              type="button"
+              onClick={() => setSelectedYear(year)}
+              className={[
+                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                selectedYear === year
+                  ? "bg-pkm-600 text-white"
+                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50",
+              ].join(" ")}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-1">
+        <CollapsibleSection
+          title="Aktif"
+          count={activeAssignments.length}
+          expanded={activeExpanded}
+          onToggle={() => setActiveExpanded(v => !v)}
+        >
+          {activeAssignments.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">Tidak ada penugasan aktif.</p>
+          ) : (
+            activeAssignments.map(assignment => (
+              <AssignmentCard key={assignment.id} assignment={assignment} />
+            ))
+          )}
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Tidak Aktif"
+          count={inactiveAssignments.length}
+          expanded={inactiveExpanded}
+          onToggle={() => setInactiveExpanded(v => !v)}
+        >
+          {inactiveAssignments.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">Tidak ada penugasan tidak aktif.</p>
+          ) : (
+            inactiveAssignments.map(assignment => (
+              <AssignmentCard key={assignment.id} assignment={assignment} />
+            ))
+          )}
+        </CollapsibleSection>
+      </div>
     </div>
   )
 }

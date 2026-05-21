@@ -124,7 +124,6 @@ _SECTION_DELETE_NOTE = "(Catatan: bagian ini boleh dihapus)"
 # ID bookmark tetap per section type agar TOC dan heading selalu sinkron
 # ---------------------------------------------------------------------------
 _BOOKMARK_IDS: dict[str, int] = {
-    "halaman_sampul": 1, "halaman_pengesahan": 2, "ringkasan": 3,
     "daftar_isi": 4,    "daftar_gambar": 5,      "daftar_tabel": 6,
     "daftar_lampiran": 7, "daftar_pustaka": 20,  "lampiran": 21,
 }
@@ -332,8 +331,6 @@ def _force_paragraph_runs_black(paragraph) -> None:
 
 # ---------------------------------------------------------------------------
 def _has_preliminary_pages(doc_structure: dict) -> bool:
-    if doc_structure.get("halaman_sampul") or doc_structure.get("halaman_pengesahan") or doc_structure.get("ringkasan"):
-        return True
     prelim_types = {"daftar_isi", "daftar_gambar", "daftar_tabel", "daftar_lampiran"}
     return any(s["type"] in prelim_types for s in doc_structure.get("sections", []))
 
@@ -348,16 +345,6 @@ def _render_preliminary_pages(
     figures_tables: dict | None = None,
 ) -> None:
     prelim_entries: list[tuple[str, str, str]] = []  # (instruction_key, title, section_type)
-
-    if doc_structure.get("halaman_sampul"):
-        title = "HALAMAN SAMPUL"
-        prelim_entries.append((make_instruction_key("halaman_sampul", title), title, "halaman_sampul"))
-    if doc_structure.get("halaman_pengesahan"):
-        title = "HALAMAN PENGESAHAN"
-        prelim_entries.append((make_instruction_key("halaman_pengesahan", title), title, "halaman_pengesahan"))
-    if doc_structure.get("ringkasan"):
-        title = "RINGKASAN"
-        prelim_entries.append((make_instruction_key("ringkasan", title), title, "ringkasan"))
 
     for section in doc_structure.get("sections", []):
         if section["type"] in ("daftar_isi", "daftar_gambar", "daftar_tabel", "daftar_lampiran"):
@@ -413,15 +400,6 @@ def _render_daftar_isi_example(
     entries: list[tuple[str, str, str]] = []  # (teks, nomor, anchor_bookmark)
     prelim_counter = 1
 
-    if doc_structure.get("halaman_sampul"):
-        entries.append(("HALAMAN SAMPUL", _to_roman(prelim_counter), _bookmark_name("halaman_sampul")))
-        prelim_counter += 1
-    if doc_structure.get("halaman_pengesahan"):
-        entries.append(("HALAMAN PENGESAHAN", _to_roman(prelim_counter), _bookmark_name("halaman_pengesahan")))
-        prelim_counter += 1
-    if doc_structure.get("ringkasan"):
-        entries.append(("RINGKASAN", _to_roman(prelim_counter), _bookmark_name("ringkasan")))
-        prelim_counter += 1
 
     body_counter = 1
     for sec in doc_structure.get("sections", []):
@@ -791,9 +769,8 @@ def _render_named_section(
                 _apply_line_spacing(p.paragraph_format, spacing)
                 p.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
                 p.paragraph_format.space_after = Pt(0)
-                if spacing.get("references_hanging_indent", True):
-                    p.paragraph_format.left_indent = Cm(0.5)
-                    p.paragraph_format.first_line_indent = Cm(-0.5)
+                p.paragraph_format.left_indent = Cm(0.5)
+                p.paragraph_format.first_line_indent = Cm(-0.5)
                 _force_paragraph_runs_black(p)
     else:
         placeholder_text = instructional_placeholders.get(
@@ -1147,12 +1124,8 @@ def _add_example_figure(
     figures_tables: dict | None = None,
 ) -> None:
     """Add example figure from data/images.jpg if available."""
-    # Determine image width from max_width_constraint
-    if (
-        figures_tables
-        and (figures_tables.get("max_width_constraint") or "").lower() == "within_margins"
-        and page_layout
-    ):
+    # Lebar gambar selalu dalam batas margin
+    if page_layout:
         paper_width, _ = _get_paper_dimensions(page_layout.get("paper_size"))
         img_width = Cm(paper_width - page_layout.get("margin_left_cm", 4.0) - page_layout.get("margin_right_cm", 3.0))
     else:

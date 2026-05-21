@@ -53,12 +53,8 @@ export type ExtractionPayload = {
     line_spacing_rule: string | null
     paragraph_alignment: string | null
     first_line_indent_cm: number | null
-    references_hanging_indent: boolean | null
   }
   document_structure_proposal: {
-    halaman_sampul: boolean | null
-    halaman_pengesahan: boolean | null
-    ringkasan: boolean | null
     sections: SectionItem[]
     max_halaman_inti: number | null
     format_nama_file: string | null
@@ -76,7 +72,6 @@ export type ExtractionPayload = {
     figure_caption_position: string | null
     caption_format_figure: string | null
     caption_format_table: string | null
-    max_width_constraint: string | null
   }
   page_count_limits: {
     proposal_halaman_inti_maks: number | null
@@ -527,11 +522,6 @@ export function ExtractionValuesForm({ data, onChange }: Props) {
               value={data.figures_and_tables.caption_format_table}
               onChange={(v) => patch("figures_and_tables", { caption_format_table: v })}
             />
-            <TextFieldInput
-              label="Batas Lebar Maksimum"
-              value={data.figures_and_tables.max_width_constraint}
-              onChange={(v) => patch("figures_and_tables", { max_width_constraint: v })}
-            />
           </FieldRow>
         </div>
       </div>
@@ -549,11 +539,6 @@ export function ExtractionValuesForm({ data, onChange }: Props) {
             label="Heading All Caps"
             value={data.typography.heading_all_caps}
             onChange={(v) => patch("typography", { heading_all_caps: v })}
-          />
-          <BoolFieldInput
-            label="Hanging Indent Referensi"
-            value={data.spacing.references_hanging_indent}
-            onChange={(v) => patch("spacing", { references_hanging_indent: v })}
           />
         </div>
       </div>
