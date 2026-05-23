@@ -1,3 +1,19 @@
+"""
+Fungsi: FastAPI router untuk validasi format dokumen DOCX proposal mahasiswa.
+
+Pipeline validasi (dipanggil oleh reviewer):
+  1. Terima file DOCX + schema_slug dari frontend via Express proxy
+  2. Tentukan tahun aktif dari pkm_review_periods
+  3. Cari project referensi (skema + tahun) dari tabel projects
+  4. Muat payload document_metadata sebagai ground truth aturan format
+  5. Jalankan validator Python terhadap file DOCX yang diupload
+  6. Kembalikan ValidationResult (status, issues, checks) ke frontend
+
+schema_slug adalah value dari PKM_SCHEMES di frontend (mis. "pkm-re"),
+yang harus cocok persis dengan kolom projects.skema di database.
+
+Digunakan oleh: backend/src/routes/pkm.routes.js (sebagai proxy)
+"""
 import os
 import sys
 import tempfile
@@ -24,6 +40,8 @@ async def run_validation(
     """
     Validasi format DOCX proposal mahasiswa terhadap aturan yang tersimpan
     di document_metadata untuk skema dan tahun periode review aktif.
+
+    schema_id: slug PKM (mis. "pkm-re") yang cocok dengan projects.skema.
     """
     # Validasi tipe file
     if not (file.filename or "").lower().endswith(".docx"):
@@ -48,23 +66,14 @@ async def run_validation(
         )
     year = period_result.data[0]["tanggal_mulai"][:4]
 
-    # 2. Fetch singkatan skema dari pkm_schemas
-    schema_result = (
-        supabase.table("pkm_schemas")
-        .select("singkatan")
-        .eq("id", schema_id)
-        .limit(1)
-        .execute()
-    )
-    if not schema_result.data:
-        raise HTTPException(status_code=404, detail="Skema PKM tidak ditemukan.")
-    singkatan = schema_result.data[0]["singkatan"]
+    # schema_id IS the slug (e.g. "pkm-re") — matches projects.skema directly
+    skema_slug = schema_id
 
-    # 3. Cari project untuk skema + tahun (ambil yang terbaru)
+    # 2. Cari project untuk skema + tahun (ambil yang terbaru)
     project_result = (
         supabase.table("projects")
         .select("id")
-        .eq("skema", singkatan)
+        .eq("skema", skema_slug)
         .eq("tahun", year)
         .order("created_at", desc=True)
         .limit(1)
@@ -73,7 +82,7 @@ async def run_validation(
     if not project_result.data:
         raise HTTPException(
             status_code=404,
-            detail=f"Data referensi untuk {singkatan} tahun {year} belum tersedia.",
+            detail=f"Data referensi untuk {skema_slug} tahun {year} belum tersedia.",
         )
     project_id = project_result.data[0]["id"]
 
@@ -101,7 +110,7 @@ async def run_validation(
             tmp_path = tmp.name
 
         from model_ai.validation import validate_document  # noqa: PLC0415
-        result = validate_document(tmp_path, payload)
+        result = validate_document(tmp_path, metadata_dict=payload)
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)

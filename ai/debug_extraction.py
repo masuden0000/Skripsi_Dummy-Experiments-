@@ -15,12 +15,35 @@ Argumen:
                          numbering, figures_and_tables, page_count_limits
   --all         Jalankan debug untuk SEMUA prompt sekaligus (mengabaikan --key)
   --project-id  UUID project di Supabase (opsional, tanpa filter jika tidak diisi)
-  --save        Simpan output ke file di debug_output/
-                  Mode --key  : satu file per prompt  → debug_output/<key>_<timestamp>.txt
-                  Mode --all  : satu file gabungan    → debug_output/ALL_<timestamp>.txt
+  --save        Simpan output ke file JSON di debug_output/
+                  Mode --key  : satu file → debug_output/<key>_<timestamp>.json
+                  Mode --all  : satu file → debug_output/ALL_<timestamp>.json
+
+Struktur JSON output:
+  {
+    "meta": { key, timestamp, project_id },
+    "rag_queries": [...],
+    "top_k": int,
+    "chunks": [
+      {
+        "index": int,
+        "chunk_index": int,
+        "chunk_parent": str,
+        "page_start": int,
+        "page_end": int,
+        "content_length": int,
+        "content_snippet": str,   ← 300 karakter pertama
+        "content_full": str       ← isi lengkap
+      }
+    ],
+    "rendered_prompt": str,
+    "llm_raw_response": str,
+    "summary": { chunks_retrieved, prompt_length, response_length, error }
+  }
 """
 
 import argparse
+import json
 import sys
 import textwrap
 from datetime import datetime
@@ -60,55 +83,40 @@ PROMPT_REGISTRY: dict[str, PromptConfig] = {
     "page_count_limits": PAGE_COUNT_LIMITS,
 }
 
-SEPARATOR  = "=" * 80
-SEP_THIN   = "-" * 80
-SEP_PROMPT = "#" * 80   # pemisah antar-prompt saat mode --all
 
-
-def _print(text: str, file=None) -> None:
-    """Print ke console dan opsional ke file sekaligus."""
-    print(text)
-    if file:
-        file.write(text + "\n")
-
-
-def _debug_one(
+def _collect_one(
     key: str,
     prompt_cfg: PromptConfig,
     project_id: str | None,
     timestamp: str,
-    file=None,
 ) -> dict:
     """
-    Jalankan satu siklus debug untuk satu prompt.
-    Kembalikan dict ringkasan {key, chunks, prompt_len, response_len, error}.
+    Jalankan satu siklus debug dan kumpulkan semua data ke dalam dict.
+    Tidak ada I/O ke file di sini — hanya kumpulkan dan kembalikan.
     """
-    f = file
+    result: dict = {
+        "meta": {
+            "key": key,
+            "timestamp": timestamp,
+            "project_id": project_id,
+        },
+        "rag_queries": prompt_cfg.queries,
+        "top_k": prompt_cfg.top_k or "menggunakan RAG_TOP_K dari .env",
+        "chunks": [],
+        "rendered_prompt": None,
+        "llm_raw_response": None,
+        "summary": {
+            "chunks_retrieved": 0,
+            "prompt_length": 0,
+            "response_length": 0,
+            "error": None,
+        },
+    }
 
     # ----------------------------------------------------------------
-    # BAGIAN 1 — INFO SESI
+    # RAG RETRIEVAL
     # ----------------------------------------------------------------
-    _print(SEPARATOR, f)
-    _print(f"  DEBUG EXTRACTION — key: '{key}'", f)
-    _print(f"  Waktu     : {timestamp}", f)
-    _print(f"  project_id: {project_id or '(tanpa filter)'}", f)
-    _print(SEPARATOR, f)
-
-    # ----------------------------------------------------------------
-    # BAGIAN 2 — RAG QUERIES
-    # ----------------------------------------------------------------
-    _print("\n[1] RAG QUERIES yang digunakan:", f)
-    _print(SEP_THIN, f)
-    for i, q in enumerate(prompt_cfg.queries, 1):
-        _print(f"  Query {i}: {q}", f)
-    _print(f"  top_k   : {prompt_cfg.top_k or 'menggunakan RAG_TOP_K dari .env'}", f)
-
-    # ----------------------------------------------------------------
-    # BAGIAN 3 — CHUNKS HASIL RETRIEVAL
-    # ----------------------------------------------------------------
-    _print(f"\n[2] Menjalankan RAG retrieval...", f)
-    _print(SEP_THIN, f)
-
+    print(f"  [1/3] RAG retrieval untuk '{key}'...")
     try:
         chunks = _retrieve_chunks_multi(
             prompt_cfg.queries,
@@ -116,160 +124,138 @@ def _debug_one(
             project_id=project_id,
         )
     except Exception as e:
-        _print(f"  [ERROR] RAG retrieval gagal: {e}", f)
-        return {"key": key, "chunks": 0, "prompt_len": 0, "response_len": 0, "error": str(e)}
+        result["summary"]["error"] = f"RAG retrieval gagal: {e}"
+        print(f"  [ERROR] {result['summary']['error']}")
+        return result
 
-    _print(f"  Total chunk ditemukan: {len(chunks)}", f)
-    _print("", f)
-
+    # Susun data setiap chunk
     for i, chunk in enumerate(chunks, 1):
-        _print(f"  --- Chunk #{i} ---", f)
-        _print(f"  chunk_index : {chunk.get('chunk_index')}", f)
-        _print(f"  chunk_parent: {chunk.get('chunk_parent')}", f)
-        _print(f"  page        : {chunk.get('page_start')} - {chunk.get('page_end')}", f)
-        content      = str(chunk.get("content", ""))
-        snippet      = content[:300].replace("\n", " ")
-        has_more     = len(content) > 300
-        _print(f"  snippet     : {snippet}{'...' if has_more else ''}", f)
-        _print(f"  isi penuh   : {len(content):,} karakter total", f)
-        _print("", f)
+        content = str(chunk.get("content", ""))
+        result["chunks"].append({
+            "index": i,
+            "chunk_index": chunk.get("chunk_index"),
+            "chunk_parent": chunk.get("chunk_parent"),
+            "page_start": chunk.get("page_start"),
+            "page_end": chunk.get("page_end"),
+            "content_length": len(content),
+            "content_snippet": content[:300],
+            "content_full": content,
+        })
+
+    result["summary"]["chunks_retrieved"] = len(chunks)
+    print(f"        → {len(chunks)} chunk ditemukan")
 
     # ----------------------------------------------------------------
-    # BAGIAN 4 — RENDERED PROMPT
+    # RENDER PROMPT
     # ----------------------------------------------------------------
-    _print(f"\n[3] RENDERED PROMPT (template + context dari RAG):", f)
-    _print(SEPARATOR, f)
-
+    print(f"  [2/3] Render prompt...")
     rendered = render_prompt(prompt_cfg.template, chunks)
-    _print(rendered, f)
-    _print(SEPARATOR, f)
+    result["rendered_prompt"] = rendered
+    result["summary"]["prompt_length"] = len(rendered)
+    print(f"        → {len(rendered):,} karakter")
 
     # ----------------------------------------------------------------
-    # BAGIAN 5 — RAW LLM RESPONSE
+    # PANGGIL LLM (tanpa Pydantic)
     # ----------------------------------------------------------------
-    _print(f"\n[4] RAW LLM RESPONSE (sebelum diproses Pydantic):", f)
-    _print(SEPARATOR, f)
-    _print("  Memanggil LLM tanpa structured output...", f)
-    _print("", f)
-
+    print(f"  [3/3] Memanggil LLM (raw, tanpa structured output)...")
     try:
-        llm          = _build_llm()
+        llm = _build_llm()
         raw_response = llm.invoke(rendered)
-        raw_text     = str(raw_response.content)
+        raw_text = str(raw_response.content)
     except Exception as e:
-        _print(f"  [ERROR] LLM gagal: {e}", f)
-        return {"key": key, "chunks": len(chunks), "prompt_len": len(rendered), "response_len": 0, "error": str(e)}
+        result["summary"]["error"] = f"LLM gagal: {e}"
+        print(f"  [ERROR] {result['summary']['error']}")
+        return result
 
-    _print(raw_text, f)
-    _print(SEPARATOR, f)
+    result["llm_raw_response"] = raw_text
+    result["summary"]["response_length"] = len(raw_text)
+    print(f"        → {len(raw_text):,} karakter response")
 
-    # ----------------------------------------------------------------
-    # BAGIAN 6 — RINGKASAN PER PROMPT
-    # ----------------------------------------------------------------
-    _print(f"\n[5] RINGKASAN — '{key}':", f)
-    _print(SEP_THIN, f)
-    _print(f"  Chunks retrieved : {len(chunks)}", f)
-    _print(f"  Prompt length    : {len(rendered):,} karakter", f)
-    _print(f"  Response length  : {len(raw_text):,} karakter", f)
-    _print(SEP_THIN, f)
+    return result
 
-    return {
-        "key": key,
-        "chunks": len(chunks),
-        "prompt_len": len(rendered),
-        "response_len": len(raw_text),
-        "error": None,
-    }
+
+def _save_json(data: dict, out_path: Path) -> None:
+    """Simpan dict sebagai file JSON dengan indentasi 2 spasi."""
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    print(f"\n[debug] Output disimpan ke: {out_path}")
 
 
 def run_debug(key: str, project_id: str | None, save: bool) -> None:
-    """Debug satu prompt."""
-    prompt_cfg = PROMPT_REGISTRY[key]
-    timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
+    """Debug satu prompt, simpan sebagai JSON jika --save."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    out_file = None
+    print(f"\n[debug] Memproses prompt: '{key}'")
+    result = _collect_one(key, PROMPT_REGISTRY[key], project_id, timestamp)
+
+    # Tampilkan ringkasan ke terminal
+    s = result["summary"]
+    print(f"\n{'─' * 50}")
+    print(f"  RINGKASAN — '{key}'")
+    print(f"{'─' * 50}")
+    print(f"  Chunks retrieved : {s['chunks_retrieved']}")
+    print(f"  Prompt length    : {s['prompt_length']:,} karakter")
+    print(f"  Response length  : {s['response_length']:,} karakter")
+    print(f"  Status           : {'ERROR: ' + s['error'] if s['error'] else 'OK'}")
+    print(f"{'─' * 50}")
+
     if save:
-        out_dir  = Path(__file__).parent / "debug_output"
+        out_dir = Path(__file__).parent / "debug_output"
         out_dir.mkdir(exist_ok=True)
-        out_path = out_dir / f"{key}_{timestamp}.txt"
-        out_file = open(out_path, "w", encoding="utf-8")
-        print(f"[debug] Output disimpan ke: {out_path}")
-
-    try:
-        _debug_one(key, prompt_cfg, project_id, timestamp, file=out_file)
-    finally:
-        if out_file:
-            out_file.close()
+        _save_json(result, out_dir / f"{key}_{timestamp}.json")
 
 
 def run_debug_all(project_id: str | None, save: bool) -> None:
-    """Debug semua prompt secara berurutan, output ke satu file gabungan."""
+    """Debug semua prompt, simpan semua dalam satu file JSON gabungan."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    keys      = list(PROMPT_REGISTRY.keys())
+    keys = list(PROMPT_REGISTRY.keys())
 
-    out_file = None
+    all_results: dict = {
+        "meta": {
+            "timestamp": timestamp,
+            "project_id": project_id,
+            "total_prompts": len(keys),
+        },
+        "results": {},
+        "summary": [],
+    }
+
+    print(f"\n[debug] Mode --all: memproses {len(keys)} prompt\n")
+
+    for idx, key in enumerate(keys, 1):
+        print(f"{'=' * 50}")
+        print(f"  ({idx}/{len(keys)}) Prompt: '{key}'")
+        print(f"{'=' * 50}")
+
+        result = _collect_one(key, PROMPT_REGISTRY[key], project_id, timestamp)
+        all_results["results"][key] = result
+
+        s = result["summary"]
+        all_results["summary"].append({
+            "key": key,
+            "chunks_retrieved": s["chunks_retrieved"],
+            "prompt_length": s["prompt_length"],
+            "response_length": s["response_length"],
+            "status": "ERROR: " + s["error"] if s["error"] else "OK",
+        })
+
+    # Tampilkan ringkasan akhir ke terminal
+    print(f"\n{'=' * 60}")
+    print(f"  RINGKASAN SEMUA PROMPT")
+    print(f"{'=' * 60}")
+    print(f"  {'KEY':<35} {'CHUNKS':>6}  {'PROMPT':>10}  {'RESPONSE':>10}  STATUS")
+    print(f"  {'─' * 58}")
+    for s in all_results["summary"]:
+        print(
+            f"  {s['key']:<35} {s['chunks_retrieved']:>6}  "
+            f"{s['prompt_length']:>9,}  {s['response_length']:>9,}  {s['status']}"
+        )
+    print(f"  {'─' * 58}")
+
     if save:
-        out_dir  = Path(__file__).parent / "debug_output"
+        out_dir = Path(__file__).parent / "debug_output"
         out_dir.mkdir(exist_ok=True)
-        out_path = out_dir / f"ALL_{timestamp}.txt"
-        out_file = open(out_path, "w", encoding="utf-8")
-        print(f"[debug] Output gabungan disimpan ke: {out_path}")
-
-    summaries: list[dict] = []
-
-    try:
-        for idx, key in enumerate(keys, 1):
-            print(f"\n[debug] ({idx}/{len(keys)}) Memproses prompt: '{key}' ...")
-
-            # Pemisah antar-prompt di file gabungan
-            if out_file and idx > 1:
-                out_file.write("\n" + SEP_PROMPT + "\n")
-                out_file.write(f"  PROMPT {idx}/{len(keys)}: {key}\n")
-                out_file.write(SEP_PROMPT + "\n\n")
-
-            summary = _debug_one(
-                key,
-                PROMPT_REGISTRY[key],
-                project_id,
-                timestamp,
-                file=out_file,
-            )
-            summaries.append(summary)
-
-        # ----------------------------------------------------------------
-        # RINGKASAN AKHIR (hanya di mode --all)
-        # ----------------------------------------------------------------
-        print("\n" + SEP_PROMPT)
-        print("  RINGKASAN SEMUA PROMPT")
-        print(SEP_PROMPT)
-        print(f"  {'KEY':<35} {'CHUNKS':>6}  {'PROMPT':>9}  {'RESPONSE':>9}  STATUS")
-        print(SEP_THIN)
-        for s in summaries:
-            status = "ERROR: " + s["error"] if s["error"] else "OK"
-            print(
-                f"  {s['key']:<35} {s['chunks']:>6}  "
-                f"{s['prompt_len']:>8,}k  {s['response_len']:>8,}k  {status}"
-            )
-        print(SEP_THIN)
-
-        if out_file:
-            out_file.write("\n" + SEP_PROMPT + "\n")
-            out_file.write("  RINGKASAN SEMUA PROMPT\n")
-            out_file.write(SEP_PROMPT + "\n")
-            out_file.write(f"  {'KEY':<35} {'CHUNKS':>6}  {'PROMPT':>9}  {'RESPONSE':>9}  STATUS\n")
-            out_file.write(SEP_THIN + "\n")
-            for s in summaries:
-                status = "ERROR: " + s["error"] if s["error"] else "OK"
-                out_file.write(
-                    f"  {s['key']:<35} {s['chunks']:>6}  "
-                    f"{s['prompt_len']:>8,}k  {s['response_len']:>8,}k  {status}\n"
-                )
-            out_file.write(SEP_THIN + "\n")
-            print(f"\n[debug] Semua output tersimpan di: {out_path}")
-
-    finally:
-        if out_file:
-            out_file.close()
+        _save_json(all_results, out_dir / f"ALL_{timestamp}.json")
 
 
 def main() -> None:
@@ -293,7 +279,7 @@ def main() -> None:
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Debug semua prompt sekaligus dalam satu file gabungan (mengabaikan --key)",
+        help="Debug semua prompt sekaligus dalam satu file JSON (mengabaikan --key)",
     )
     parser.add_argument(
         "--project-id",
@@ -304,7 +290,7 @@ def main() -> None:
     parser.add_argument(
         "--save",
         action="store_true",
-        help="Simpan output ke file di folder debug_output/",
+        help="Simpan output ke file JSON di folder debug_output/",
     )
 
     args = parser.parse_args()

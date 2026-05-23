@@ -1,3 +1,11 @@
+"""
+Fungsi: Wrapper Supabase Storage untuk ai-backend.
+
+Digunakan oleh: routers/projects.py
+Tujuan: Upload/download file DOCX proposal ke/dari bucket Supabase Storage.
+  - ai-source-files : DOCX sumber yang diupload reviewer/admin (input pipeline)
+  - ai-output-files : DOCX hasil generate AI (output pipeline)
+"""
 import os
 from supabase import create_client
 from dotenv import load_dotenv

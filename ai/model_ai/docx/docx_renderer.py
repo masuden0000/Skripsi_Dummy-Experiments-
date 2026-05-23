@@ -4,6 +4,8 @@ Fungsi: Renderer yang menulis konten terstruktur ke dokumen .docx (paragraph, st
 Digunakan oleh: model_ai/docx/generator.py
 
 Tujuan: Memisahkan logika render dokumen dari orkestrasi generator.
+
+Keyword: automated document generation
 """
 from io import BytesIO
 from pathlib import Path
@@ -165,7 +167,8 @@ def _add_bookmark_to_paragraph(paragraph, bm_id: int, bm_name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Digunakan oleh: model_ai/docx/generator.py
+# Digunakan oleh: model_ai/docx/generator.py (legacy — menyimpan ke filesystem)
+# Untuk pipeline production (Supabase upload), gunakan render_proposal_docx_bytes.
 # ---------------------------------------------------------------------------
 def render_proposal_docx(
     output_data: dict,
@@ -180,14 +183,17 @@ def render_proposal_docx(
     figures_tables = output_data["figures_and_tables"]
     doc_structure  = output_data["document_structure_proposal"]
 
+    # Langkah 1: Inisialisasi dokumen kosong dan terapkan ukuran kertas + margin
     document = Document()
     first_section = document.sections[0]
     _configure_page_layout(first_section, page_layout)
+    # Langkah 2: Terapkan gaya dasar — font, ukuran, spasi, alignment ke style Normal dan Heading 1-4
     _apply_base_styles(document, typography, spacing)
 
     prelim_num  = numbering.get("preliminary") or {}
     content_num = numbering.get("content") or {}
 
+    # Langkah 3: Render halaman preliminary (daftar isi/gambar/tabel) jika struktur dokumen mengharuskannya
     has_preliminary = _has_preliminary_pages(doc_structure)
     if has_preliminary:
         _render_preliminary_pages(document, doc_structure, page_layout, typography, instructional_placeholders, figures_tables)
@@ -213,8 +219,10 @@ def render_proposal_docx(
             start=1,
         )
 
+    # Langkah 4: Render seluruh body proposal — BAB, sub-bab, daftar pustaka, lampiran
     _render_proposal_body(document, doc_structure, page_layout, spacing, numbering, figures_tables, chunks, instructional_placeholders)
 
+    # Langkah 5: Simpan ke filesystem (production tidak melewati path ini)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         document.save(str(output_path))
@@ -232,6 +240,9 @@ def render_proposal_docx(
     return output_path
 
 
+# ---------------------------------------------------------------------------
+# Digunakan oleh: render_proposal_docx; render_proposal_docx_bytes
+# Mengatur ukuran kertas, orientasi, dan margin dari dict page_layout hasil ekstraksi.
 # ---------------------------------------------------------------------------
 def _configure_page_layout(section, page_layout: dict) -> None:
     orientation = (page_layout.get("orientation") or "PORTRAIT").strip().upper()
@@ -256,6 +267,10 @@ def _configure_page_layout(section, page_layout: dict) -> None:
     section.right_margin  = Cm(page_layout.get("margin_right_cm", 3.0))
 
 
+# ---------------------------------------------------------------------------
+# Digunakan oleh: render_proposal_docx; render_proposal_docx_bytes
+# Menerapkan font, ukuran, spasi baris, dan alignment ke style Normal dan Heading 1-4.
+# Juga menghapus theme font override di XML agar Times New Roman konsisten di semua heading.
 # ---------------------------------------------------------------------------
 def _apply_base_styles(document: Document, typography: dict, spacing: dict) -> None:
     body_font    = typography.get("font_family", "Times New Roman")
@@ -605,6 +620,10 @@ def _to_roman(n: int) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Digunakan oleh: render_proposal_docx; render_proposal_docx_bytes
+# Iterasi seluruh sections dari document_structure_proposal dan dispatch ke renderer spesifik.
+# Urutan sections mencerminkan urutan halaman akhir dokumen.
+# ---------------------------------------------------------------------------
 def _render_proposal_body(
     document: Document,
     doc_structure: dict,
@@ -615,10 +634,13 @@ def _render_proposal_body(
     chunks: list[ChunkSource],
     instructional_placeholders: dict[str, str],
 ) -> None:
+    # Dispatch setiap section ke renderer yang sesuai berdasarkan tipe hasil ekstraksi
     for section in doc_structure.get("sections", []):
         if section["type"] == "bab":
+            # BAB utama: heading level 1 + placeholder isi + sumber referensi
             _render_bab_section(document, section, page_layout, spacing, numbering, figures_tables, chunks, instructional_placeholders)
         elif section["type"] == "daftar_pustaka":
+            # Daftar referensi: heading + placeholder format bibliografi
             _render_named_section(
                 document, section["type"],
                 section.get("title") or "DAFTAR PUSTAKA",
@@ -626,6 +648,7 @@ def _render_proposal_body(
                 doc_structure,
             )
         elif section["type"] == "lampiran":
+            # Halaman lampiran induk: heading + item_lampiran di section berikutnya
             _render_named_section(
                 document, section["type"],
                 section.get("title") or "LAMPIRAN",
@@ -633,11 +656,17 @@ def _render_proposal_body(
                 doc_structure,
             )
         elif section["type"] == "sub_bab":
+            # Sub-bab (1.1, 1.2, ...): heading level 2 + placeholder + tabel anggaran/jadwal jika BAB 4
             _render_sub_bab_section(document, section, page_layout, spacing, figures_tables, instructional_placeholders)
         elif section["type"] == "item_lampiran":
+            # Item lampiran (Lampiran 1., 2., ...): heading + placeholder + sumber
             _render_item_lampiran_section(document, section, page_layout, spacing, instructional_placeholders)
 
 
+# ---------------------------------------------------------------------------
+# Digunakan oleh: _render_proposal_body
+# Merender satu BAB: separator, heading level 1 dengan bookmark, catatan instruksional,
+# placeholder isi dari LLM/user, contoh gambar di BAB 1, dan blok sumber referensi.
 # ---------------------------------------------------------------------------
 def _render_bab_section(
     document: Document,
@@ -655,16 +684,19 @@ def _render_bab_section(
     bab_label    = chapter_fmt.replace("{n}", str(num)) if num else "BAB"
     heading_text = f"{bab_label} {title}".strip()
 
+    # Separator kosong sebelum heading BAB agar ada jarak visual dari section sebelumnya
     sep = document.add_paragraph()
     sep.paragraph_format.space_before = Pt(0)
     sep.paragraph_format.space_after  = Pt(0)
     _apply_line_spacing(sep.paragraph_format, spacing)
 
+    # Heading BAB level 1, center-aligned; bookmark dipakai untuk hyperlink dari daftar isi
     heading = document.add_heading(heading_text, level=1)
     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _force_paragraph_runs_black(heading)
     _add_bookmark_to_paragraph(heading, _bookmark_id("bab", num), _bookmark_name("bab", num))
 
+    # Catatan instruksional (italic, kecil) — paragraf ini harus dihapus mahasiswa sebelum pengumpulan
     note = document.add_paragraph(_SECTION_DELETE_NOTE)
     note.runs[0].italic     = True
     note.runs[0].font.size  = Pt(10)
@@ -672,6 +704,7 @@ def _render_bab_section(
     note.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
     _force_paragraph_runs_black(note)
 
+    # Placeholder isi BAB: diambil dari LLM (generated_placeholders) atau user_placeholders
     body_placeholder = document.add_paragraph(
         instructional_placeholders.get(
             make_instruction_key("bab", heading_text, number=num),
@@ -731,6 +764,9 @@ def _render_bab_section(
 
 
 # ---------------------------------------------------------------------------
+# Digunakan oleh: _render_proposal_body
+# Merender section bernama (daftar_pustaka, lampiran): heading + placeholder + sumber referensi.
+# ---------------------------------------------------------------------------
 def _render_named_section(
     document: Document,
     section_type: str,
@@ -788,6 +824,9 @@ def _render_named_section(
     _render_source_block(document, sources)
 
 
+# ---------------------------------------------------------------------------
+# Digunakan oleh: _render_proposal_body
+# Merender sub-bab (1.1, 1.2, ...): heading level 2 + placeholder + tabel anggaran/jadwal jika BAB 4.
 # ---------------------------------------------------------------------------
 def _render_sub_bab_section(
     document: Document,
@@ -1218,19 +1257,48 @@ def _split_caption_template(template: str, label: str) -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------
+# Grup A: rule statis — multiplier sudah di-encode, line_spacing metadata = None.
+_LINE_SPACING_GRUP_A: dict[str, float] = {
+    "SINGLE": 1.0,
+    "ONE_POINT_FIVE": 1.5,
+    "DOUBLE": 2.0,
+}
+
+
 def _apply_line_spacing(paragraph_format, spacing: dict) -> None:
-    """Apply line_spacing and line_spacing_rule from spacing dict."""
-    line_spacing = spacing.get("line_spacing", 1.15)
-    rule = (spacing.get("line_spacing_rule") or "MULTIPLE").upper()
-    if rule == "EXACTLY":
+    """Terapkan spasi baris sesuai aturan MS Word.
+
+    Grup A (SINGLE/ONE_POINT_FIVE/DOUBLE):
+        Multiplier statis — line_spacing di data diabaikan.
+    Grup B (MULTIPLE):
+        line_spacing = desimal pengali (contoh: 1.15). Default 1.15 jika null.
+    Grup C (AT_LEAST/EXACTLY):
+        line_spacing = nilai pt absolut. Default 12.0 jika null.
+    """
+    _RULE_COMPAT = {"EXACT": "EXACTLY", "AT LEAST": "AT_LEAST"}
+    rule = _RULE_COMPAT.get(
+        (spacing.get("line_spacing_rule") or "MULTIPLE").upper(),
+        (spacing.get("line_spacing_rule") or "MULTIPLE").upper(),
+    )
+
+    if rule in _LINE_SPACING_GRUP_A:
+        paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+        paragraph_format.line_spacing = _LINE_SPACING_GRUP_A[rule]
+    elif rule == "MULTIPLE":
+        multiplier = float(spacing.get("line_spacing") or 1.15)
+        paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+        paragraph_format.line_spacing = multiplier
+    elif rule == "EXACTLY":
+        pt_val = float(spacing.get("line_spacing") or 12.0)
         paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
-        paragraph_format.line_spacing = Pt(line_spacing)
+        paragraph_format.line_spacing = Pt(pt_val)
     elif rule == "AT_LEAST":
+        pt_val = float(spacing.get("line_spacing") or 12.0)
         paragraph_format.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
-        paragraph_format.line_spacing = Pt(line_spacing)
+        paragraph_format.line_spacing = Pt(pt_val)
     else:
         paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
-        paragraph_format.line_spacing = line_spacing
+        paragraph_format.line_spacing = 1.15
 
 
 # ---------------------------------------------------------------------------
@@ -1315,6 +1383,11 @@ def _clear_paragraph(paragraph) -> None:
         run.clear()
 
 
+# ---------------------------------------------------------------------------
+# Digunakan oleh: model_ai/docx/generator.py (pipeline production)
+# Entry point utama generate DOCX — tidak menyimpan ke filesystem, langsung return bytes.
+# Dipanggil oleh generate_proposal_docx_bytes → diupload ke Supabase Storage oleh manage.py.
+# ---------------------------------------------------------------------------
 def render_proposal_docx_bytes(
     output_data: dict,
     chunks: list,
@@ -1324,9 +1397,11 @@ def render_proposal_docx_bytes(
     Render DOCX dan return sebagai bytes.
     Menggantikan versi yang menyimpan ke file — tidak ada filesystem lokal.
     """
+    # Langkah 1: Inisialisasi dokumen kosong dan terapkan ukuran kertas + margin
     doc: Document = Document()
     first_section = doc.sections[0]
     _configure_page_layout(first_section, output_data["page_layout"])
+    # Langkah 2: Terapkan gaya dasar — font, ukuran, spasi, alignment ke Normal dan Heading 1-4
     _apply_base_styles(doc, output_data["typography"], output_data["spacing"])
 
     typography = output_data["typography"]
@@ -1339,6 +1414,7 @@ def render_proposal_docx_bytes(
     prelim_num = numbering.get("preliminary") or {}
     content_num = numbering.get("content") or {}
 
+    # Langkah 3: Render halaman preliminary (daftar isi/gambar/tabel) + penomoran romawi jika diperlukan
     has_preliminary = _has_preliminary_pages(doc_structure)
     if has_preliminary:
         _render_preliminary_pages(doc, doc_structure, page_layout, typography, instructional_placeholders, figures_tables)
@@ -1348,6 +1424,7 @@ def render_proposal_docx_bytes(
             fmt=prelim_num.get("format", "lowerRoman"),
             start=1,
         )
+        # Section baru dimulai setelah halaman preliminary — nomor halaman reset ke 1 (arab)
         content_section = doc.add_section(WD_SECTION_START.NEW_PAGE)
         _configure_page_layout(content_section, page_layout)
         _apply_page_numbering(
@@ -1357,6 +1434,7 @@ def render_proposal_docx_bytes(
             start=1,
         )
     else:
+        # Tidak ada halaman preliminary — langsung gunakan penomoran arab dari halaman pertama
         _apply_page_numbering(
             first_section,
             _build_page_num_position(content_num.get("location", "HEADER"), content_num.get("alignment", "RIGHT")),
@@ -1364,8 +1442,10 @@ def render_proposal_docx_bytes(
             start=1,
         )
 
+    # Langkah 4: Render seluruh body proposal — BAB, sub-bab, daftar pustaka, lampiran
     _render_proposal_body(doc, doc_structure, page_layout, spacing, numbering, figures_tables, chunks, instructional_placeholders)
 
+    # Catatan format nama file di akhir dokumen jika tersedia dari ekstraksi
     format_nama_file = doc_structure.get("format_nama_file")
     if format_nama_file:
         doc.core_properties.subject = f"Format nama file: {format_nama_file}"
@@ -1374,6 +1454,7 @@ def render_proposal_docx_bytes(
         note_p.runs[0].font.size = Pt(10)
         _force_paragraph_runs_black(note_p)
 
+    # Langkah 5: Serialize dokumen ke bytes buffer — tidak menyimpan ke disk
     buf = BytesIO()
     doc.save(buf)
     buf.seek(0)

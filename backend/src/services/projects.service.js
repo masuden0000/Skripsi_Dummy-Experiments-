@@ -1,6 +1,8 @@
 /**
  * Projects Service
  * Berkomunikasi dengan AI Backend (FastAPI)
+ *
+ * Keyword: automated document generation
  */
 import { env } from "../config/env.js"
 

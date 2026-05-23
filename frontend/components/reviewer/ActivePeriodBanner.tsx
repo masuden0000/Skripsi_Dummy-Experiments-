@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { ReviewerSurfaceCard } from "./shared"
 import { Loader2Icon, CalendarIcon, UserIcon } from "@/components/icons/public-icons"
 import { getActiveAssignments, type Assignment } from "@/lib/api/reviewer-assignments"
 
@@ -50,8 +50,8 @@ export function ActivePeriodBanner({ className }: ActivePeriodBannerProps) {
 
   if (loading) {
     return (
-      <Card className={className}>
-        <CardContent className="flex items-center gap-3 p-4">
+      <ReviewerSurfaceCard className={className}>
+        <div className="flex items-center gap-3 p-4">
           <div className="flex size-10 items-center justify-center rounded-full bg-muted">
             <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
           </div>
@@ -59,15 +59,15 @@ export function ActivePeriodBanner({ className }: ActivePeriodBannerProps) {
             <div className="h-4 w-32 animate-pulse rounded bg-muted" />
             <div className="h-3 w-48 animate-pulse rounded bg-muted" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ReviewerSurfaceCard>
     )
   }
 
   if (error) {
     return (
-      <Card className={className}>
-        <CardContent className="flex items-center gap-3 p-4">
+      <ReviewerSurfaceCard className={className}>
+        <div className="flex items-center gap-3 p-4">
           <div className="flex size-10 items-center justify-center rounded-full bg-muted">
             <CalendarIcon className="text-muted-foreground" />
           </div>
@@ -75,15 +75,15 @@ export function ActivePeriodBanner({ className }: ActivePeriodBannerProps) {
             <p className="text-sm font-medium text-destructive">Gagal memuat data</p>
             <p className="text-xs text-muted-foreground">{error}</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ReviewerSurfaceCard>
     )
   }
 
   if (assignments.length === 0) {
     return (
-      <Card className={className}>
-        <CardContent className="flex items-center gap-3 p-4">
+      <ReviewerSurfaceCard className={className}>
+        <div className="flex items-center gap-3 p-4">
           <div className="flex size-10 items-center justify-center rounded-full bg-muted">
             <CalendarIcon className="text-muted-foreground" />
           </div>
@@ -95,8 +95,8 @@ export function ActivePeriodBanner({ className }: ActivePeriodBannerProps) {
               Anda belum ditugaskan ke periode aktif manapun
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ReviewerSurfaceCard>
     )
   }
 

@@ -1,3 +1,16 @@
+/**
+ * Form untuk menampilkan dan mengedit hasil ekstraksi metadata dokumen.
+ *
+ * Peran dalam pipeline:
+ *   - Menerima `data` (ExtractionPayload) dari halaman proposal setelah pipeline ekstraksi selesai
+ *   - Setiap perubahan field langsung di-propagate ke parent via `onChange`
+ *   - Parent menyimpan perubahan ke Supabase document_metadata.payload melalui Express backend
+ *   - Data yang tersimpan dipakai sebagai input untuk render_proposal_docx_bytes saat generate DOCX
+ *
+ * Digunakan oleh: frontend/app/(dashboard)/admin/proposal/page.tsx
+ *
+ * Keyword: automated document generation
+ */
 "use client"
 
 import { useState } from "react"
@@ -122,20 +135,31 @@ function NumberFieldInput({
   label,
   value,
   onChange,
+  disabled,
+  placeholder,
+  hint,
 }: {
   label: string
   value: number | null
   onChange: (v: number | null) => void
+  disabled?: boolean
+  placeholder?: string
+  hint?: string
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <Label className={`text-xs ${disabled ? "text-muted-foreground/40" : "text-muted-foreground"}`}>
+        {label}
+      </Label>
       <Input
         type="number"
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
         className="h-8 text-sm"
+        disabled={disabled}
+        placeholder={placeholder}
       />
+      {hint && <p className="text-[10px] text-muted-foreground/60 leading-tight">{hint}</p>}
     </div>
   )
 }
@@ -224,6 +248,8 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
   const [showSectionModal, setShowSectionModal] = useState(false)
   const [showFormatInfo, setShowFormatInfo] = useState(false)
 
+  // Helper: update satu field nested di ExtractionPayload dan propagate ke parent
+  // Parent (page.tsx) menyimpan hasilnya ke Supabase document_metadata.payload
   function patch<K extends keyof ExtractionPayload>(
     key: K,
     value: Partial<ExtractionPayload[K]>
@@ -308,41 +334,65 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
       </div>
 
       {/* ── 3. Spasi ── */}
-      <div>
-        <SectionHeader title="3. Spasi" />
-        <div className="mt-3 px-1">
-          <FieldRow>
-            <NumberFieldInput
-              label="Spasi Baris"
-              value={data.spacing.line_spacing}
-              onChange={(v) => patch("spacing", { line_spacing: v })}
-            />
-            <SelectFieldInput
-              label="Aturan Spasi"
-              value={data.spacing.line_spacing_rule?.toUpperCase() ?? null}
-              options={[
-                { value: "SINGLE",   label: "Single" },
-                { value: "DOUBLE",   label: "Double" },
-                { value: "MULTIPLE", label: "Multiple" },
-                { value: "AT_LEAST", label: "At Least" },
-                { value: "EXACT",    label: "Exact" },
-              ]}
-              onChange={(v) => patch("spacing", { line_spacing_rule: v })}
-            />
-            <SelectFieldInput
-              label="Alignment Paragraf"
-              value={data.spacing.paragraph_alignment?.toUpperCase() ?? null}
-              options={[
-                { value: "JUSTIFY", label: "Justify" },
-                { value: "LEFT",    label: "Left" },
-                { value: "CENTER",  label: "Center" },
-                { value: "RIGHT",   label: "Right" },
-              ]}
-              onChange={(v) => patch("spacing", { paragraph_alignment: v })}
-            />
-          </FieldRow>
-        </div>
-      </div>
+      {(() => {
+        const rule = data.spacing.line_spacing_rule?.toUpperCase() ?? null
+        const GRUP_A = ["SINGLE", "ONE_POINT_FIVE", "DOUBLE"]
+        const GRUP_C = ["AT_LEAST", "EXACTLY"]
+        const isGrupA = rule !== null && GRUP_A.includes(rule)
+        const isGrupC = rule !== null && GRUP_C.includes(rule)
+        const spasiBarisHint = isGrupA
+          ? "Dinonaktifkan — nilai sudah ditentukan oleh aturan"
+          : isGrupC
+          ? "Nilai dalam satuan pt (contoh: 14.0)"
+          : "Pengali desimal (contoh: 1.15)"
+        return (
+          <div>
+            <SectionHeader title="3. Spasi" />
+            <div className="mt-3 px-1">
+              <FieldRow>
+                <SelectFieldInput
+                  label="Aturan Spasi"
+                  value={rule}
+                  options={[
+                    { value: "SINGLE",          label: "Tunggal" },
+                    { value: "ONE_POINT_FIVE",  label: "1.5 Baris" },
+                    { value: "DOUBLE",          label: "Ganda" },
+                    { value: "MULTIPLE",        label: "Beberapa" },
+                    { value: "AT_LEAST",        label: "Sedikitnya" },
+                    { value: "EXACTLY",         label: "Tepat" },
+                  ]}
+                  onChange={(v) => {
+                    const grupA = ["SINGLE", "ONE_POINT_FIVE", "DOUBLE"]
+                    patch("spacing", {
+                      line_spacing_rule: v,
+                      ...(grupA.includes(v) ? { line_spacing: null } : {}),
+                    })
+                  }}
+                />
+                <NumberFieldInput
+                  label={isGrupC ? "Spasi Baris (pt)" : "Spasi Baris"}
+                  value={data.spacing.line_spacing}
+                  onChange={(v) => patch("spacing", { line_spacing: v })}
+                  disabled={isGrupA}
+                  placeholder={isGrupA ? "—" : isGrupC ? "contoh: 14.0" : "contoh: 1.15"}
+                  hint={spasiBarisHint}
+                />
+                <SelectFieldInput
+                  label="Alignment Paragraf"
+                  value={data.spacing.paragraph_alignment?.toUpperCase() ?? null}
+                  options={[
+                    { value: "JUSTIFY", label: "Justify" },
+                    { value: "LEFT",    label: "Left" },
+                    { value: "CENTER",  label: "Center" },
+                    { value: "RIGHT",   label: "Right" },
+                  ]}
+                  onChange={(v) => patch("spacing", { paragraph_alignment: v })}
+                />
+              </FieldRow>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── 4. Struktur Dokumen ── */}
       <div>

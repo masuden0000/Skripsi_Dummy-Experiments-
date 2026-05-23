@@ -166,12 +166,8 @@ def _get_orientation_string(orientation) -> str:
 # Mendefinisikan fungsi `_get_line_spacing_rule" untuk kebutuhan modul `docx_property_extractor`.
 # ---------------------------------------------------------------------------
 def _get_line_spacing_rule(line_spacing) -> str:
-    """Determine line spacing rule from the value."""
-    if line_spacing is None:
-        return "UNKNOWN"
-    # python-docx returns LineSpacing value in twips (1/20 of a point)
-    # or a float for MULTIPLE, or None for AT_LEAST
-    return "MULTIPLE"  # Most common for documents
+    """Deprecated stub — gunakan _resolve_line_spacing_info."""
+    return "MULTIPLE"
 
 
 # ---------------------------------------------------------------------------
@@ -217,6 +213,10 @@ def _resolve_font_name(run, para_style, doc: Document) -> str | None:
     return None
 
 
+# ---------------------------------------------------------------------------
+# Digunakan oleh: extract_docx_properties (di file ini)
+# Ekstrak font, ukuran, alignment dari paragraf & run aktual — hasilnya masuk ke DocxProperties.typography.
+# ---------------------------------------------------------------------------
 def _extract_typography(doc: Document) -> dict:
     """Extract typography properties dari actual paragraphs dan runs."""
     from collections import Counter
@@ -297,6 +297,10 @@ def _twips_to_cm(value_str: str | None) -> float | None:
         return None
 
 
+# ---------------------------------------------------------------------------
+# Digunakan oleh: extract_docx_properties (di file ini)
+# Ekstrak ukuran kertas, orientasi, dan margin dari section pertama dokumen → DocxProperties.page_layout.
+# ---------------------------------------------------------------------------
 def _extract_page_layout(doc: Document) -> dict:
     """Extract page layout properties from first section."""
     section = doc.sections[0]
@@ -356,24 +360,54 @@ def _extract_page_layout(doc: Document) -> dict:
 # Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
 # Mendefinisikan fungsi `_extract_spacing" untuk kebutuhan modul `docx_property_extractor`.
 # ---------------------------------------------------------------------------
-def _resolve_line_spacing(para) -> float | None:
-    """Resolve effective line spacing sebagai multiplier dari paragraf."""
+def _resolve_line_spacing_info(para) -> tuple[float | None, str]:
+    """Baca spasi baris dari XML paragraf.
+
+    Returns:
+        (line_spacing, line_spacing_rule) di mana:
+        - Grup A (SINGLE/ONE_POINT_FIVE/DOUBLE): line_spacing = None, rule = nama grup
+        - Grup B (MULTIPLE): line_spacing = desimal pengali, rule = "MULTIPLE"
+        - Grup C (AT_LEAST/EXACTLY): line_spacing = nilai pt, rule = "AT_LEAST"/"EXACTLY"
+    """
     from docx.oxml.ns import qn as _qn
     pPr = para._element.find(_qn("w:pPr"))
     if pPr is None:
-        return None
+        return None, "MULTIPLE"
     spacing_el = pPr.find(_qn("w:spacing"))
     if spacing_el is None:
-        return None
+        return None, "MULTIPLE"
     line_val = spacing_el.get(_qn("w:line"))
     line_rule = spacing_el.get(_qn("w:lineRule"))
     if line_val is None:
-        return None
-    # MULTIPLE: nilai dalam 240ths of a line (1 line = 240 units)
+        return None, "MULTIPLE"
+
+    line_int = int(line_val)
+
     if line_rule in (None, "auto"):
-        return round(int(line_val) / 240, 2)
-    # EXACT / AT_LEAST: nilai dalam twips → konversi ke pt (1 twip = 1/20 pt)
-    return round(int(line_val) / 20 / 12, 2)  # relatif terhadap 12pt baseline
+        # MULTIPLE: satuan 240ths-of-a-line → konversi ke multiplier
+        multiplier = round(line_int / 240, 2)
+        if abs(multiplier - 1.0) <= 0.02:
+            return None, "SINGLE"
+        elif abs(multiplier - 1.5) <= 0.02:
+            return None, "ONE_POINT_FIVE"
+        elif abs(multiplier - 2.0) <= 0.02:
+            return None, "DOUBLE"
+        return multiplier, "MULTIPLE"
+    elif line_rule == "exact":
+        # EXACTLY: satuan twips → pt (1 twip = 1/20 pt)
+        return round(line_int / 20, 2), "EXACTLY"
+    elif line_rule == "atLeast":
+        # AT_LEAST: satuan twips → pt
+        return round(line_int / 20, 2), "AT_LEAST"
+    else:
+        multiplier = round(line_int / 240, 2)
+        return multiplier, "MULTIPLE"
+
+
+def _resolve_line_spacing(para) -> float | None:
+    """Kompatibilitas mundur — gunakan _resolve_line_spacing_info."""
+    value, _ = _resolve_line_spacing_info(para)
+    return value
 
 
 def _build_paragraph_map(doc: Document) -> list[dict]:
@@ -461,7 +495,7 @@ def _extract_heading_caps_anomalies(para_map: list[dict]) -> list[HeadingCapsAno
 
 def _extract_spacing_anomalies(
     para_map: list[dict],
-    majority_spacing: float,
+    majority_spacing: float | None,
 ) -> list[SpacingAnomaly]:
     """Kumpulkan paragraf body yang line spacing-nya menyimpang dari majority_spacing."""
     if majority_spacing is None:
@@ -512,12 +546,18 @@ def _detect_daftar_sections(para_map: list[dict]) -> dict[str, bool]:
     return flags
 
 
+# ---------------------------------------------------------------------------
+# Digunakan oleh: extract_docx_properties (di file ini)
+# Ekstrak line spacing dominan, before/after paragraph, dan anomali spacing → DocxProperties.spacing.
+# ---------------------------------------------------------------------------
 def _extract_spacing(doc: Document) -> dict:
     """Extract spacing properties dari actual paragraphs (bukan hanya Normal style)."""
     from collections import Counter
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-    spacing_votes: Counter[float] = Counter()
+    # Votes untuk (line_spacing, line_spacing_rule) sekaligus
+    rule_votes: Counter[str] = Counter()
+    value_by_rule: dict[str, Counter] = {}
     alignment_votes: Counter[str] = Counter()
     indent_votes: Counter[float] = Counter()
 
@@ -527,10 +567,16 @@ def _extract_spacing(doc: Document) -> dict:
         if para.style.name.startswith("Heading"):
             continue
 
-        # Line spacing dari XML langsung
-        ls = _resolve_line_spacing(para)
-        if ls and 0.8 <= ls <= 4.0:
-            spacing_votes[ls] += 1
+        ls_val, ls_rule = _resolve_line_spacing_info(para)
+        rule_votes[ls_rule] += 1
+        if ls_val is not None:
+            # Sanity guard: tolak nilai di luar rentang wajar per tipe rule
+            valid = (
+                (ls_rule == "MULTIPLE" and 0.8 <= ls_val <= 4.0)
+                or (ls_rule in ("EXACTLY", "AT_LEAST") and 6.0 <= ls_val <= 144.0)
+            )
+            if valid:
+                value_by_rule.setdefault(ls_rule, Counter())[ls_val] += 1
 
         # Alignment
         align = para.alignment
@@ -547,13 +593,23 @@ def _extract_spacing(doc: Document) -> dict:
             except AttributeError:
                 pass
 
-    line_spacing = spacing_votes.most_common(1)[0][0] if spacing_votes else None
+    # Pilih rule paling dominan
+    dominant_rule = rule_votes.most_common(1)[0][0] if rule_votes else "MULTIPLE"
+
+    # Grup A: line_spacing = None (multiplier sudah di-encode oleh rule)
+    _GRUP_A = {"SINGLE", "ONE_POINT_FIVE", "DOUBLE"}
+    if dominant_rule in _GRUP_A:
+        line_spacing = None
+    else:
+        counts = value_by_rule.get(dominant_rule)
+        line_spacing = counts.most_common(1)[0][0] if counts else None
+
     paragraph_alignment = alignment_votes.most_common(1)[0][0] if alignment_votes else "JUSTIFY"
     first_line_indent = indent_votes.most_common(1)[0][0] if indent_votes else None
 
     return {
         "line_spacing": line_spacing,
-        "line_spacing_rule": "MULTIPLE",
+        "line_spacing_rule": dominant_rule,
         "paragraph_alignment": paragraph_alignment,
         "first_line_indent_cm": first_line_indent,
     }
@@ -745,8 +801,10 @@ def _extract_numbering(doc: Document) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Digunakan oleh: Dipakai internal di file ini atau dipanggil dari entrypoint runtime.
-# Mendefinisikan fungsi `extract_docx_properties` untuk kebutuhan modul `docx_property_extractor`.
+# Digunakan oleh: model_ai/validation/validator.py → validate_document
+# Entry point utama ekstraksi properti DOCX pada pipeline validasi.
+# Memanggil semua sub-extractor (_extract_typography, _extract_page_layout, _extract_spacing, dll.)
+# dan mengembalikan DocxProperties yang dibandingkan dengan ground truth document_metadata.payload.
 # ---------------------------------------------------------------------------
 def extract_docx_properties(docx_path: str | Path) -> DocxProperties:
     """Extract all formatting properties from a DOCX file.
