@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ReviewerSurfaceCard } from "./shared"
 import { Button } from "@/components/ui/button"
 import { Loader2Icon } from "@/components/icons/public-icons"
 import {
@@ -74,7 +74,7 @@ function QuickLinkCard({ item, url }: { item: QuickLinkItem; url: string }) {
   const linkUrl = url || "#"
 
   return (
-    <div className="group relative rounded-lg border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-sm">
+    <div className="group relative rounded-lg bg-gray-50 p-4 transition-all hover:shadow-sm">
       <div className="flex items-start gap-4">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           {item.icon}
@@ -149,28 +149,28 @@ export function QuickLinksCard({ className }: QuickLinksCardProps) {
 
   if (loading) {
     return (
-      <Card className={className}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Tautan Cepat</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center gap-3 pt-0">
+      <ReviewerSurfaceCard className={className}>
+        <div className="px-6 pt-6 pb-3">
+          <h3 className="text-base font-semibold">Tautan Cepat</h3>
+        </div>
+        <div className="px-6 pb-6 flex items-center gap-3">
           <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Memuat tautan...</span>
-        </CardContent>
-      </Card>
+        </div>
+      </ReviewerSurfaceCard>
     )
   }
 
   if (error) {
     return (
-      <Card className={className}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Tautan Cepat</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
+      <ReviewerSurfaceCard className={className}>
+        <div className="px-6 pt-6 pb-3">
+          <h3 className="text-base font-semibold">Tautan Cepat</h3>
+        </div>
+        <div className="px-6 pb-6">
           <p className="text-sm text-destructive">{error}</p>
-        </CardContent>
-      </Card>
+        </div>
+      </ReviewerSurfaceCard>
     )
   }
 
@@ -189,15 +189,15 @@ export function QuickLinksCard({ className }: QuickLinksCardProps) {
 
   if (assignments.length === 0) {
     return (
-      <Card className={className}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Tautan Cepat</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
+      <ReviewerSurfaceCard className={className}>
+        <div className="px-6 pt-6 pb-3">
+          <h3 className="text-base font-semibold">Tautan Cepat</h3>
+        </div>
+        <div className="px-6 pb-6 space-y-3">
           {links.map((link) => (
             <div
               key={link.id}
-              className="rounded-lg border bg-card p-4 opacity-60"
+              className="rounded-lg bg-gray-50 p-4 opacity-60"
             >
               <div className="flex items-start gap-4">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -218,21 +218,21 @@ export function QuickLinksCard({ className }: QuickLinksCardProps) {
               </div>
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </ReviewerSurfaceCard>
     )
   }
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Tautan Cepat</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 pt-0">
+    <ReviewerSurfaceCard className={className}>
+      <div className="px-6 pt-6 pb-3">
+        <h3 className="text-base font-semibold">Tautan Cepat</h3>
+      </div>
+      <div className="px-6 pb-6 space-y-3">
         {links.map((link) => (
           <QuickLinkCard key={link.id} item={link} url={link.url} />
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </ReviewerSurfaceCard>
   )
 }

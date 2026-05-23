@@ -1,7 +1,7 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useCallback, useState } from "react"
+import { ReviewerSurfaceCard } from "./shared"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -18,32 +18,17 @@ import {
   AlertCircleIcon,
   FileTextIcon,
 } from "@/components/icons/public-icons"
-import { getPkmSchemas, runDocumentValidation, type ValidationResult, type PkmSchema } from "@/lib/api/pkm"
+import { runDocumentValidation, type ValidationResult } from "@/lib/api/pkm"
+import { PKM_SCHEMES } from "@/lib/constants/pkm-schemes"
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
 export function DocumentValidator() {
-  const [schemas, setSchemas] = useState<PkmSchema[]>([])
   const [selectedSchemaId, setSelectedSchemaId] = useState<string>("")
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
-  const [schemasLoading, setSchemasLoading] = useState(true)
-  const [schemasError, setSchemasError] = useState<string | null>(null)
   const [result, setResult] = useState<ValidationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    async function loadSchemas() {
-      const res = await getPkmSchemas()
-      if (res.error) {
-        setSchemasError(res.error)
-      } else {
-        setSchemas(res.data || [])
-      }
-      setSchemasLoading(false)
-    }
-    loadSchemas()
-  }, [])
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0]
@@ -82,6 +67,11 @@ export function DocumentValidator() {
     e.preventDefault()
   }, [])
 
+  // Pipeline validasi (dipanggil saat tombol "Validasi Dokumen" ditekan):
+  //   Frontend → POST /api/pkm/validation/run (Express proxy)
+  //   → POST /api/validation/run (FastAPI ai-backend)
+  //   → validator.py: extract DOCX properties → compare_properties → ValidationResult
+  //   → Result dikembalikan sebagai JSON { valid, status, issues, checks, summary }
   const handleValidate = async () => {
     if (!selectedSchemaId || !file) {
       setError("Pilih skema PKM dan upload file proposal terlebih dahulu.")
@@ -92,6 +82,7 @@ export function DocumentValidator() {
     setError(null)
     setResult(null)
 
+    // Kirim file DOCX + schema_id ke backend; backend menentukan ground truth dari document_metadata
     const res = await runDocumentValidation({
       schemaId: selectedSchemaId,
       file,
@@ -102,6 +93,9 @@ export function DocumentValidator() {
     if (res.error) {
       setError(res.error)
     } else {
+      // result.valid = true jika semua pengecekan lulus (status === "pass")
+      // result.issues = array ValidationIssue dengan severity error/warning/info
+      // result.summary = ringkasan jumlah passed/total checks
       setResult(res.data)
     }
   }
@@ -114,38 +108,29 @@ export function DocumentValidator() {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-base flex items-center gap-2">
+    <ReviewerSurfaceCard>
+      <div className="px-6 pt-6 pb-4">
+        <h3 className="text-base font-semibold flex items-center gap-2">
           <FileTextIcon className="size-5 text-primary" />
           Validasi Dokumen Otomatis
-        </CardTitle>
-      </CardHeader>
+        </h3>
+      </div>
 
-      <CardContent className="space-y-4 pt-0">
+      <div className="px-6 pb-6 space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium">1. Pilih Skema PKM</label>
-          {schemasLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2Icon className="size-4 animate-spin" />
-              Memuat skema...
-            </div>
-          ) : schemasError ? (
-            <p className="text-sm text-destructive">{schemasError}</p>
-          ) : (
-            <Select value={selectedSchemaId} onValueChange={setSelectedSchemaId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih jenis PKM" />
-              </SelectTrigger>
-              <SelectContent>
-                {schemas.map((schema) => (
-                  <SelectItem key={schema.id} value={schema.id}>
-                    {schema.nama} ({schema.singkatan})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <Select value={selectedSchemaId} onValueChange={setSelectedSchemaId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih jenis PKM" />
+            </SelectTrigger>
+            <SelectContent>
+              {PKM_SCHEMES.map((schema) => (
+                <SelectItem key={schema.value} value={schema.value}>
+                  {schema.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
@@ -263,8 +248,8 @@ export function DocumentValidator() {
             )}
 
             {result.issues && result.issues.length > 0 && (
-              <div className="rounded-lg border bg-card">
-                <div className="px-4 py-3 border-b bg-muted/50">
+              <div className="rounded-lg bg-gray-50">
+                <div className="px-4 py-3 bg-gray-100 rounded-t-lg">
                   <h4 className="text-sm font-medium">
                     Detail Masalah ({result.issues.length})
                   </h4>
@@ -318,7 +303,7 @@ export function DocumentValidator() {
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </ReviewerSurfaceCard>
   )
 }

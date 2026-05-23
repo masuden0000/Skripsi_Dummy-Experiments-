@@ -7,6 +7,8 @@ Tujuan: Menyediakan alur end-to-end agar perintah docx menghasilkan file final k
 
 Input: output.json (dari extract), chunks (dari Supabase)
 Output: bytes DOCX — tidak disimpan ke filesystem lokal.
+
+Keyword: automated document generation
 """
 from pathlib import Path
 

@@ -1,3 +1,13 @@
+/**
+ * Halaman admin untuk membuat proposal PKM dan memulai pipeline generate DOCX.
+ *
+ * Peran dalam pipeline:
+ *   - Upload DOCX sumber → POST /api/projects (Express → FastAPI → ai-backend pipeline)
+ *   - Tampilkan status pipeline: setup → extraction → placeholders → docx
+ *   - Setelah ekstraksi selesai, render ExtractionValuesForm untuk review/edit metadata
+ *
+ * Keyword: automated document generation
+ */
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
@@ -19,6 +29,7 @@ import {
 import { YearPicker } from "@/components/ui/year-picker"
 import { DocumentIcon, FileTextIcon, UploadIcon, CheckCircleIcon, AlertCircleIcon, Loader2Icon, HistoryIcon } from "@/components/icons/public-icons"
 import { ExtractionValuesForm, type ExtractionPayload } from "@/components/proposal/ExtractionValuesForm"
+import { PKM_SCHEMES, getPkmSchemeLabel } from "@/lib/constants/pkm-schemes"
 
 // Types
 type ProjectStatus = "pending" | "uploading" | "extracting" | "extracted" | "generating" | "completed" | "failed" | "pending_upload"
@@ -62,18 +73,6 @@ type LogEntry = {
 const ACTIVE_PROJECT_KEY = "proposal_active_project_id"
 const RUN_SINCE_KEY = "proposal_run_since_id"
 
-const PKM_SCHEMES = [
-  { value: "pkm-re", label: "PKM-RE: Riset Eksakta" },
-  { value: "pkm-rsh", label: "PKM-RSH: Riset Sosial Humaniora" },
-  { value: "pkm-k", label: "PKM-K: Kewirausahaan" },
-  { value: "pkm-pm", label: "PKM-PM: Pengabdian Kepada Masyarakat" },
-  { value: "pkm-pi", label: "PKM-PI: Penerapan Iptek" },
-  { value: "pkm-kc", label: "PKM-KC: Karsa Cipta" },
-  { value: "pkm-ki", label: "PKM-KI: Karya Inovatif" },
-  { value: "pkm-vgk", label: "PKM-VGK: Video Gagasan Konstruktif" },
-  { value: "pkm-ai", label: "PKM-AI: Artikel Ilmiah" },
-  { value: "pkm-gft", label: "PKM-GFT: Gagasan Futuristik Tertulis" },
-]
 
 function isPdfFile(file: File): boolean {
   return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
@@ -155,7 +154,7 @@ export default function ProposalDocumentPage() {
         setResult({
           projectId: savedId,
           fileName: project.source_file ?? "",
-          skema: PKM_SCHEMES.find((s) => s.value === project.skema)?.label ?? project.skema,
+          skema: getPkmSchemeLabel(project.skema),
           tahun: project.tahun,
           sourceUrl: project.source_url,
           resultUrl: project.result_url,
@@ -451,7 +450,7 @@ export default function ProposalDocumentPage() {
       setResult({
         projectId: project_id,
         fileName: confirmedProject.source_file ?? selectedFile.name,
-        skema: PKM_SCHEMES.find((scheme) => scheme.value === confirmedProject.skema)?.label ?? confirmedProject.skema,
+        skema: getPkmSchemeLabel(confirmedProject.skema),
         tahun: confirmedProject.tahun,
         sourceUrl: confirmedProject.source_url,
         resultUrl: confirmedProject.result_url,

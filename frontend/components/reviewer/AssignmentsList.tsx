@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { ReviewerSurfaceCard } from "./shared"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, ChevronIcon, CheckIcon, CopyIcon, LinkIcon, Loader2Icon } from "@/components/icons/public-icons"
 import { getReviewerAssignments, type Assignment } from "@/lib/api/reviewer-assignments"
@@ -60,8 +60,8 @@ function AssignmentCard({ assignment }: AssignmentCardProps) {
   const active = isActive(assignment.periodMulai || "", assignment.periodSelesai || "")
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4 space-y-4">
+    <ReviewerSurfaceCard className="hover:shadow-md transition-shadow">
+      <div className="p-4 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -96,7 +96,7 @@ function AssignmentCard({ assignment }: AssignmentCardProps) {
         </div>
 
         {/* Links */}
-        <div className="space-y-2 pt-2 border-t">
+        <div className="rounded-lg bg-gray-50 px-3 py-3 space-y-2">
           <div className="flex items-center gap-2">
             <LinkIcon className="size-4 flex-none text-muted-foreground" />
             <span className="text-sm font-medium min-w-32">URL Proposal:</span>
@@ -136,8 +136,8 @@ function AssignmentCard({ assignment }: AssignmentCardProps) {
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </ReviewerSurfaceCard>
   )
 }
 
@@ -155,7 +155,7 @@ function CollapsibleSection({ title, count, expanded, onToggle, children }: Sect
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between py-3 border-b border-gray-100"
+        className="flex w-full items-center justify-between py-3"
       >
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-gray-700">{title}</span>
@@ -231,25 +231,25 @@ export function AssignmentsList() {
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
+      <ReviewerSurfaceCard>
+        <div className="p-6 text-center">
           <p className="text-destructive">{error}</p>
-        </CardContent>
-      </Card>
+        </div>
+      </ReviewerSurfaceCard>
     )
   }
 
   if (assignments.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
+      <ReviewerSurfaceCard>
+        <div className="p-6 text-center">
           <CalendarIcon className="size-10 mx-auto text-muted-foreground/50 mb-3" />
           <p className="text-muted-foreground">Belum ada penugasan</p>
           <p className="text-sm text-muted-foreground mt-1">
             Anda belum ditugaskan ke periode review manapun
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </ReviewerSurfaceCard>
     )
   }
 
@@ -264,7 +264,7 @@ export function AssignmentsList() {
               "rounded-full px-3 py-1 text-xs font-medium transition-colors",
               selectedYear === "all"
                 ? "bg-pkm-600 text-white"
-                : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50",
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200",
             ].join(" ")}
           >
             Semua
@@ -278,7 +278,7 @@ export function AssignmentsList() {
                 "rounded-full px-3 py-1 text-xs font-medium transition-colors",
                 selectedYear === year
                   ? "bg-pkm-600 text-white"
-                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50",
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200",
               ].join(" ")}
             >
               {year}

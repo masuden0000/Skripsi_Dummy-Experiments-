@@ -1,6 +1,8 @@
 /**
  * Projects Routes
  * Semua HTTP untuk projects masuk melalui Express, diteruskan ke AI Backend
+ *
+ * Keyword: automated document generation
  */
 import { Router } from "express"
 import * as projectsService from "../services/projects.service.js"

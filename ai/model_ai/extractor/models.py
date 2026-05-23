@@ -95,10 +95,44 @@ class PageLayoutInfo(PageLayoutExtracted):
 # Mendefinisikan class `SpacingExtracted` untuk kebutuhan modul `models`.
 # ---------------------------------------------------------------------------
 class SpacingExtracted(BaseModel):
+    # Grup A (SINGLE/ONE_POINT_FIVE/DOUBLE): line_spacing HARUS None — multiplier sudah encoded di rule.
+    # Grup B (MULTIPLE): line_spacing = desimal pengali (contoh: 1.15).
+    # Grup C (AT_LEAST/EXACTLY): line_spacing = nilai absolut dalam pt (contoh: 14.0).
     line_spacing: float | None = None
-    line_spacing_rule: str | None = None
+    line_spacing_rule: str | None = None  # SINGLE | ONE_POINT_FIVE | DOUBLE | MULTIPLE | AT_LEAST | EXACTLY
     paragraph_alignment: str | None = None
     first_line_indent_cm: float | None = None
+
+    # Peta normalisasi: nilai lama / variasi penulisan → nilai kanonis
+    _RULE_ALIASES: dict[str, str] = {
+        "EXACT":          "EXACTLY",
+        "AT LEAST":       "AT_LEAST",
+        "ONE POINT FIVE": "ONE_POINT_FIVE",
+        "1.5":            "ONE_POINT_FIVE",
+        "1.5 BARIS":      "ONE_POINT_FIVE",
+        "1,5 BARIS":      "ONE_POINT_FIVE",
+        "TUNGGAL":        "SINGLE",
+        "GANDA":          "DOUBLE",
+        "BEBERAPA":       "MULTIPLE",
+        "SEDIKITNYA":     "AT_LEAST",
+        "TEPAT":          "EXACTLY",
+    }
+    _VALID_RULES: frozenset[str] = frozenset(
+        {"SINGLE", "ONE_POINT_FIVE", "DOUBLE", "MULTIPLE", "AT_LEAST", "EXACTLY"}
+    )
+
+    @model_validator(mode="after")
+    def _normalize_rule(self) -> "SpacingExtracted":
+        if self.line_spacing_rule is None:
+            return self
+        raw = self.line_spacing_rule.strip().upper()
+        normalized = self._RULE_ALIASES.get(raw, raw)
+        self.line_spacing_rule = normalized if normalized in self._VALID_RULES else None
+
+        # Grup A: pastikan line_spacing = None
+        if self.line_spacing_rule in {"SINGLE", "ONE_POINT_FIVE", "DOUBLE"}:
+            self.line_spacing = None
+        return self
 
 
 # ---------------------------------------------------------------------------

@@ -4,6 +4,8 @@ Fungsi: Entry point CLI untuk menjalankan workflow setup, extract, schema-diff, 
 Digunakan oleh: Dijalankan langsung oleh pengguna via command line.
 
 Tujuan: Menyediakan satu pintu eksekusi agar pipeline bisa dijalankan konsisten dari command line.
+
+Keyword: automated document generation
 """
 import argparse
 import sys

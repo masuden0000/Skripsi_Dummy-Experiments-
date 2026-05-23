@@ -18,6 +18,13 @@ from model_ai.validation.models import DocxProperties, ValidationCheckResult, Va
 MARGIN_TOLERANCE_CM = 0.1
 LINE_SPACING_TOLERANCE = 0.01
 
+# Grup A: rule statis — multiplier sudah di-encode, line_spacing = None
+_GRUP_A_MULTIPLIER: dict[str, float] = {
+    "SINGLE": 1.0,
+    "ONE_POINT_FIVE": 1.5,
+    "DOUBLE": 2.0,
+}
+
 
 # ---------------------------------------------------------------------------
 # Helper: bandingkan dua nilai dengan toleransi opsional
@@ -252,12 +259,27 @@ def _validate_spacing(
         return
     s = metadata.spacing
     loc_global = "Seluruh dokumen (gaya Normal)"
+    rule = (s.line_spacing_rule or "MULTIPLE").upper()
 
-    _record_check(checks, issues, "spacing", "line_spacing",
-                  s.line_spacing, props.line_spacing,
-                  tolerance=LINE_SPACING_TOLERANCE,
-                  message=f"Line spacing: diharapkan {s.line_spacing}, ditemukan {props.line_spacing}",
+    # Validasi rule (berlaku untuk semua grup)
+    _record_check(checks, issues, "spacing", "line_spacing_rule",
+                  rule, (props.line_spacing_rule or "").upper(),
+                  message=f"Aturan spasi: diharapkan {rule}, ditemukan {props.line_spacing_rule}",
                   location=loc_global)
+
+    # Resolusi nilai efektif untuk referensi anomali per-paragraf
+    # Grup A: nilai sudah di-encode di rule; line_spacing metadata = None
+    if rule in _GRUP_A_MULTIPLIER:
+        effective_spacing = _GRUP_A_MULTIPLIER[rule]
+        # Untuk Grup A, line_spacing di props juga harus None (tidak dibandingkan numerik)
+    else:
+        # Grup B / C: line_spacing = nilai aktual (multiplier atau pt)
+        effective_spacing = s.line_spacing
+        _record_check(checks, issues, "spacing", "line_spacing",
+                      s.line_spacing, props.line_spacing,
+                      tolerance=LINE_SPACING_TOLERANCE,
+                      message=f"Nilai spasi: diharapkan {s.line_spacing}, ditemukan {props.line_spacing}",
+                      location=loc_global)
 
     _record_check(checks, issues, "spacing", "paragraph_alignment",
                   s.paragraph_alignment, props.paragraph_alignment,
@@ -270,29 +292,26 @@ def _validate_spacing(
                   message=f"First line indent: diharapkan {s.first_line_indent_cm}cm, ditemukan {props.first_line_indent_cm}cm",
                   location=loc_global)
 
-    # Per-paragraf spacing anomalies
-    metadata_spacing = s.line_spacing
+    # Per-paragraf spacing anomalies — gunakan effective_spacing sebagai referensi
     reported = 0
     for anomaly in props.spacing_anomalies:
-        if metadata_spacing is not None and abs(anomaly.actual - metadata_spacing) <= 0.05:
+        if effective_spacing is not None and abs(anomaly.actual - effective_spacing) <= 0.05:
             continue
         preview = f' Teks: "{anomaly.text_preview}..."' if anomaly.text_preview else ""
+        ref = effective_spacing or anomaly.expected
         msg = (
             f"Line spacing tidak konsisten di '{anomaly.location}': "
-            f"diharapkan {metadata_spacing or anomaly.expected}, "
-            f"ditemukan {anomaly.actual}.{preview}"
+            f"diharapkan {ref}, ditemukan {anomaly.actual}.{preview}"
         )
         checks.append(ValidationCheckResult(
             category="spacing", field="line_spacing_per_paragraph",
             status="warning",
-            expected=metadata_spacing or anomaly.expected,
-            actual=anomaly.actual,
+            expected=ref, actual=anomaly.actual,
             message=msg, location=anomaly.location,
         ))
         issues.append(ValidationIssue(
             category="spacing", field="line_spacing",
-            expected=metadata_spacing or anomaly.expected,
-            actual=anomaly.actual,
+            expected=ref, actual=anomaly.actual,
             severity="warning", message=msg, location=anomaly.location,
         ))
         reported += 1

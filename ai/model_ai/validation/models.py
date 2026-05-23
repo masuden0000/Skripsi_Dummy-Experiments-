@@ -232,8 +232,11 @@ class DocxProperties(BaseModel):
     columns: int | None = Field(default=None, description="Number of text columns per page")
 
     # Spacing
-    line_spacing: float | None = Field(default=None, description="Line spacing value")
-    line_spacing_rule: str | None = Field(default=None, description="Line spacing rule (MULTIPLE, EXACT, AT_LEAST)")
+    # Grup A (SINGLE/ONE_POINT_FIVE/DOUBLE): line_spacing = None (multiplier dari rule).
+    # Grup B (MULTIPLE): line_spacing = desimal pengali.
+    # Grup C (AT_LEAST/EXACTLY): line_spacing = nilai pt.
+    line_spacing: float | None = Field(default=None, description="Nilai spasi: None untuk Grup A, desimal untuk MULTIPLE, pt untuk AT_LEAST/EXACTLY")
+    line_spacing_rule: str | None = Field(default=None, description="Aturan spasi: SINGLE | ONE_POINT_FIVE | DOUBLE | MULTIPLE | AT_LEAST | EXACTLY")
     paragraph_alignment: str | None = Field(default=None, description="Default paragraph alignment")
     first_line_indent_cm: float | None = Field(default=None, description="First line indent in cm")
 

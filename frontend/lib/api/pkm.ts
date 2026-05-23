@@ -1,3 +1,12 @@
+/**
+ * Modul API client untuk fitur PKM (validasi dokumen dan skema).
+ *
+ * Alur pemanggilan dalam pipeline validasi:
+ *   getPkmSchemas()       → GET  /api/pkm/schemas        (Express → Supabase)
+ *   runDocumentValidation() → POST /api/pkm/validation/run (Express → FastAPI → Python validator)
+ *
+ * Digunakan oleh: frontend/components/reviewer/DocumentValidator.tsx
+ */
 import { apiRequest } from "./client"
 import { z } from "zod"
 
@@ -97,6 +106,8 @@ export interface ValidationPayload {
   file: File
 }
 
+// Kirim DOCX + schema_id ke Express proxy → FastAPI validation.py → ValidationResult
+// Menggunakan FormData (bukan JSON) karena payload berisi file binary
 export async function runDocumentValidation(
   payload: ValidationPayload
 ): Promise<{
@@ -104,8 +115,8 @@ export async function runDocumentValidation(
   error: string | null
 }> {
   const formData = new FormData()
-  formData.append("schema_id", payload.schemaId)
-  formData.append("file", payload.file)
+  formData.append("schema_id", payload.schemaId)  // singkatan skema (misal: PKM-K, PKM-T)
+  formData.append("file", payload.file)            // file DOCX yang divalidasi
 
   // Use apiFetch directly for FormData (bypass JSON content-type)
   const url = "/api/pkm/validation/run"
