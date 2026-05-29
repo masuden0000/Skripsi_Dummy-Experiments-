@@ -8,15 +8,17 @@ from pydantic import BaseModel
 from supabase import Client, create_client
 
 from model_ai.config import get_config
+from model_ai.shared import (
+    EMBED_MAX_RETRY_CYCLES,
+    EMBED_RATE_LIMIT_WAIT,
+    EMBEDDING_DIMENSION,
+    format_vector,
+)
 
 APP_DIR = Path(__file__).resolve().parents[2]
 CONFIG = get_config()
 EMBEDDING_MODEL_NAME = CONFIG.embedding_model_name
-EMBEDDING_DIMENSION = 768
 BATCH_SIZE = 20
-
-EMBED_MAX_RETRY_CYCLES = 5
-EMBED_RATE_LIMIT_WAIT = 60
 
 
 def get_chunks_file(project_id: str) -> Path:
@@ -99,9 +101,6 @@ def _embed_documents_with_retry(contents: list[str]) -> list[list[float]]:
         f"Embedding batch gagal setelah {EMBED_MAX_RETRY_CYCLES} siklus × {num_keys} key."
     )
 
-
-def format_vector(values: list[float]) -> str:
-    return "[" + ",".join(f"{value:.8f}" for value in values) + "]"
 
 
 def batched(items: list[ChunkRecord], size: int) -> list[list[ChunkRecord]]:

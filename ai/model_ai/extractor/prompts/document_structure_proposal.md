@@ -1,25 +1,30 @@
 ---
 queries:
-  - "Sistematika Proposal Kegiatan PKM lampiran daftar isi daftar pustaka"
   - "Sistematika Penulisan Proposal PKM lampiran daftar isi daftar pustaka"
-  - "format nama file PKM pengumpulan sistematika proposal"
-  - "4.1 anggaran biaya 4.2 jadwal kegiatan sub bab BAB 4 proposal PKM-KC rekapitulasi"
-top_k: 10
+  - "Sistematika Proposal Kegiatan PKM lampiran daftar isi"
+  - "format nama file PKM pengumpulan berkas proposal"
+  - "batas maksimum halaman bagian inti proposal PKM"
+  - "biaya jadwal kegiatan sub bab proposal PKM-KC"
+  - "rekapitulasi anggaran biaya format tabel PKM"
 section_focus:
   - "SISTEMATIKA PENULISAN PROPOSAL"
   - "SISTEMATIKA PROPOSAL KEGIATAN"
 ---
 
-# Extraction Task: Document Structure (Proposal PKM)
+# Tugas Ekstraksi: Struktur Dokumen Proposal PKM
 
-## Context
+## Konteks
 {context}
 
-## Task
-Ekstrak struktur dokumen untuk jenis **PROPOSAL PKM** dari konteks di atas.
-Susun `sections` dengan urutan munculnya section dalam dokumen.
+## Tugas
+Ekstrak struktur dokumen untuk jenis PROPOSAL PKM dari konteks di atas.
+Susun sections sesuai urutan kemunculannya dalam dokumen.
 
-## Chain of Thought — Lakukan Langkah Ini Secara Mental Sebelum Menulis Output
+Catatan: Konteks yang diterima bisa berupa bagian spesifik sistematika maupun konteks
+yang lebih luas. Gunakan Langkah 1 untuk menemukan section yang relevan terlebih dahulu
+sebelum mengekstrak data.
+
+## Langkah-Langkah Penalaran — Lakukan Langkah Ini Secara Nalar Sebelum Menulis Output
 
 **Langkah 1 — Temukan section sumber kebenaran (targeted scan):**
 Jangan scan seluruh konteks secara acak. Gunakan prioritas bertingkat berikut:
@@ -36,9 +41,9 @@ Jangan scan seluruh konteks secara acak. Gunakan prioritas bertingkat berikut:
 
 Contoh mental: *"Saya menemukan section 'Sistematika Penulisan Proposal' → saya gunakan section itu."*
 
-**Langkah 2 — Identifikasi semua sub-BAB dari section yang ditemukan:**
-Catat sub-BAB yang disebutkan beserta nomor dan judulnya.
-Contoh mental: *"Saya menemukan sub-BAB: 4.1 Anggaran Biaya, 4.2 Jadwal Kegiatan."*
+**Langkah 2 — Identifikasi semua sub-BAB dari section sistematika penulisan proposal yang ditemukan di Langkah 1:**
+Dari section sistematika tersebut, catat seluruh sub-BAB yang disebutkan beserta nomor dan judulnya.
+Contoh mental: *"Dari section 'Sistematika Penulisan Proposal', saya menemukan sub-BAB: 4.1 Anggaran Biaya, 4.2 Jadwal Kegiatan."*
 
 **Langkah 3 — Hitung dan daftarkan SEMUA lampiran dari section yang ditemukan:**
 Buat daftar semua lampiran yang disebutkan, terurut dari Lampiran 1 sampai lampiran terakhir.
