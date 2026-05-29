@@ -12,7 +12,15 @@ from pydantic import BaseModel
 from supabase import Client, create_client
 
 from model_ai.config import get_config
-from model_ai.constants import EXCLUDED_PARENTS
+from model_ai.shared import (
+    BATCH_PAUSE_EVERY,
+    BATCH_PAUSE_SECONDS,
+    EMBED_MAX_RETRY_CYCLES,
+    EMBED_RATE_LIMIT_WAIT,
+    EMBEDDING_DIMENSION,
+    EXCLUDED_PARENTS,
+    format_vector,
+)
 from model_ai.extractor.models import (
     DocumentMetadata,
     DocumentStructureExtracted,
@@ -45,14 +53,8 @@ from model_ai.extractor.prompts import (
 )
 
 APP_DIR = Path(__file__).resolve().parents[2]
-EMBEDDING_DIMENSION = 768
-BATCH_PAUSE_EVERY = 2
-BATCH_PAUSE_SECONDS = 30
 
 MAX_RATE_LIMIT_WAIT = 120
-
-EMBED_MAX_RETRY_CYCLES = 5
-EMBED_RATE_LIMIT_WAIT = 60
 
 CONFIG = get_config()
 LLM_MODEL = CONFIG.model_name
@@ -159,9 +161,6 @@ def _apply_typography_caps_heuristic(payload: dict[str, Any], chunks: list[dict]
 
     return payload
 
-
-def _format_vector(values: list[float]) -> str:
-    return "[" + ",".join(f"{v:.8f}" for v in values) + "]"
 
 
 def _build_llm():
@@ -322,7 +321,7 @@ def _retrieve_chunks_multi(queries: list[str], top_k: int, project_id: str | Non
     seen: dict[int, dict] = {}
     for query in queries:
         vector = _embed_query_with_retry(query)
-        rpc_params["query_embedding"] = _format_vector(vector)
+        rpc_params["query_embedding"] = format_vector(vector)
         result = client.rpc(
             "match_document_chunks",
             rpc_params,

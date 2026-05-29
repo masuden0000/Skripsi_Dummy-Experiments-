@@ -2,7 +2,7 @@
 import re
 from typing import Optional
 
-from model_ai.constants import TOC_SECTION_DENYLIST
+from model_ai.shared import TOC_SECTION_DENYLIST
 
 TOC_HEADING_VARIANTS = [
     "DAFTAR ISI",

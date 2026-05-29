@@ -5,11 +5,9 @@ from pathlib import Path
 from typing import Iterable
 
 from model_ai.extractor.doc_extractor import _build_llm, CONFIG, MAX_RATE_LIMIT_WAIT
+from model_ai.shared import BATCH_PAUSE_EVERY as _PLACEHOLDER_PAUSE_EVERY, BATCH_PAUSE_SECONDS as _PLACEHOLDER_PAUSE_SECONDS
 from model_ai.docx.chunk_loader import ChunkSource, match_sources_for_section
 from model_ai.extractor.models import DocumentMetadata, SectionItem
-
-_PLACEHOLDER_PAUSE_EVERY = 2
-_PLACEHOLDER_PAUSE_SECONDS = 30
 
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 _SYSTEM_PROMPT: str | None = None
