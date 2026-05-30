@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+# Tambahkan ai/model/ ke sys.path agar model_ai package bisa diimport dari backend
+_MODEL_DIR = str(Path(__file__).resolve().parent.parent / "model")
+if _MODEL_DIR not in sys.path:
+    sys.path.insert(0, _MODEL_DIR)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import projects, health, validation
