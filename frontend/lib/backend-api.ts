@@ -45,8 +45,8 @@ export async function proxyToBackend(
     })
 
     if (forwardSetCookie) {
-      for (const cookie of backendResponse.headers.getSetCookie()) {
-        response.headers.append("set-cookie", cookie)
+      for (const setCookieValue of backendResponse.headers.getSetCookie()) {
+        response.headers.append("set-cookie", setCookieValue)
       }
     }
 
