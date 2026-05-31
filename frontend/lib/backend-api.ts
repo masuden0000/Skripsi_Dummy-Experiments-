@@ -6,7 +6,8 @@ export function getBackendBaseUrl() {
   return process.env.NEXT_PUBLIC_BACKEND_URL || DEFAULT_BACKEND_URL
 }
 
-type ProxyOptions = Omit<RequestInit, "cache"> & {
+type ProxyOptions = Omit<RequestInit, "cache" | "headers"> & {
+  headers?: Record<string, string>
   /** Cookie header yang diteruskan ke backend (isi dengan request.headers.get("cookie")) */
   cookie?: string | null
   /** Jika true, header set-cookie dari backend diteruskan kembali ke browser */
@@ -23,9 +24,7 @@ export async function proxyToBackend(
 ): Promise<NextResponse> {
   const { cookie, forwardSetCookie, headers: extraHeaders, ...fetchOptions } = options
 
-  const headers: Record<string, string> = {
-    ...(extraHeaders as Record<string, string> ?? {}),
-  }
+  const headers: Record<string, string> = { ...(extraHeaders ?? {}) }
   if (cookie) {
     headers["cookie"] = cookie
   }
@@ -41,13 +40,14 @@ export async function proxyToBackend(
     const response = new NextResponse(responseText, {
       status: backendResponse.status,
       headers: {
-        "content-type": backendResponse.headers.get("content-type") ?? "application/json",
+        "content-type": backendResponse.headers.get("content-type") ?? "application/octet-stream",
       },
     })
 
     if (forwardSetCookie) {
-      const setCookie = backendResponse.headers.get("set-cookie")
-      if (setCookie) response.headers.set("set-cookie", setCookie)
+      for (const cookie of backendResponse.headers.getSetCookie()) {
+        response.headers.append("set-cookie", cookie)
+      }
     }
 
     return response
