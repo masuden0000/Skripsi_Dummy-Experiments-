@@ -1,4 +1,4 @@
-import { createAuthClient } from "../config/supabase.js"
+import { authClient } from "../config/supabase.js"
 import { ROLE_ROUTES, VALID_ROLES } from "../constants/roles.js"
 import { AppError } from "../utils/app-error.js"
 import { getProfileByUserId } from "./profile.service.js"
@@ -14,7 +14,6 @@ export async function loginWithPassword({ email, password, role }) {
     throw new AppError("Role yang dipilih tidak valid.", 400)
   }
 
-  const authClient = createAuthClient()
   const { data, error } = await authClient.auth.signInWithPassword({
     email,
     password,
