@@ -1,6 +1,6 @@
 import app from "./app.js"
 import { env } from "./config/env.js"
-import { adminClient, createAuthClient } from "./config/supabase.js"
+import { adminClient, authClient } from "./config/supabase.js"
 
 app.listen(env.PORT, async () => {
   console.log(`Backend server listening on http://127.0.0.1:${env.PORT}`)
@@ -16,7 +16,6 @@ app.listen(env.PORT, async () => {
   // Warm up auth API connection — login menggunakan endpoint /auth/v1/ yang berbeda
   // dari PostgREST, sehingga perlu warmup terpisah agar tidak ECONNRESET pada login pertama
   try {
-    const authClient = createAuthClient()
     await authClient.auth.getSession()
     console.log("Supabase auth connection warmed up.")
   } catch (err) {
