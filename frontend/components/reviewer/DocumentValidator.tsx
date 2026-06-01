@@ -20,11 +20,13 @@ import {
 } from "@/components/icons/public-icons"
 import { runDocumentValidation, type ValidationResult } from "@/lib/api/pkm"
 import { PKM_SCHEMES } from "@/lib/constants/pkm-schemes"
+import { YearPicker } from "@/components/ui/year-picker"
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
 export function DocumentValidator() {
   const [selectedSchemaId, setSelectedSchemaId] = useState<string>("")
+  const [selectedYear, setSelectedYear] = useState<string>("")
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ValidationResult | null>(null)
@@ -73,8 +75,8 @@ export function DocumentValidator() {
   //   → validator.py: extract DOCX properties → compare_properties → ValidationResult
   //   → Result dikembalikan sebagai JSON { valid, status, issues, checks, summary }
   const handleValidate = async () => {
-    if (!selectedSchemaId || !file) {
-      setError("Pilih skema PKM dan upload file proposal terlebih dahulu.")
+    if (!selectedSchemaId || !selectedYear || !file) {
+      setError("Pilih skema PKM, tahun, dan upload file proposal terlebih dahulu.")
       return
     }
 
@@ -82,9 +84,9 @@ export function DocumentValidator() {
     setError(null)
     setResult(null)
 
-    // Kirim file DOCX + schema_id ke backend; backend menentukan ground truth dari document_metadata
     const res = await runDocumentValidation({
       schemaId: selectedSchemaId,
+      year: selectedYear,
       file,
     })
 
@@ -102,6 +104,7 @@ export function DocumentValidator() {
 
   const handleReset = () => {
     setSelectedSchemaId("")
+    setSelectedYear("")
     setFile(null)
     setResult(null)
     setError(null)
@@ -134,7 +137,17 @@ export function DocumentValidator() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">2. Upload Proposal</label>
+          <label className="text-sm font-medium">2. Pilih Tahun</label>
+          <YearPicker
+            value={selectedYear}
+            onChange={setSelectedYear}
+            placeholder="Pilih tahun"
+            disabled={loading}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">3. Upload Proposal</label>
           <div
             className={[
               "relative rounded-lg border-2 border-dashed p-6 transition-colors",
@@ -190,7 +203,7 @@ export function DocumentValidator() {
         <div className="flex items-center gap-3">
           <Button
             onClick={handleValidate}
-            disabled={!selectedSchemaId || !file || loading}
+            disabled={!selectedSchemaId || !selectedYear || !file || loading}
             className="flex-1 sm:flex-none"
           >
             {loading ? (
