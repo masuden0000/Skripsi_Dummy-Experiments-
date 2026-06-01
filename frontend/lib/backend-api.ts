@@ -51,9 +51,11 @@ export async function proxyToBackend(
     }
 
     return response
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+    console.error("[proxyToBackend] fetch failed:", message, "→ path:", path)
     return NextResponse.json(
-      { error: "Tidak dapat menjangkau server backend." },
+      { error: "Tidak dapat menjangkau server backend.", detail: message },
       { status: 503 }
     )
   }

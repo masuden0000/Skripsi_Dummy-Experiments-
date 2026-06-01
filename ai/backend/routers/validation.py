@@ -40,59 +40,68 @@ async def run_validation(
     if not (file.filename or "").lower().endswith(".docx"):
         raise HTTPException(status_code=400, detail="File harus berformat DOCX (.docx).")
 
-    supabase = get_supabase()
-    today = date.today().isoformat()
+    try:
+        supabase = get_supabase()
+        today = date.today().isoformat()
 
-    # 1. Fetch active review period → ambil tahun dari tanggal_mulai
-    period_result = (
-        supabase.table("pkm_review_periods")
-        .select("id, nama, tanggal_mulai")
-        .lte("tanggal_mulai", today)
-        .gte("tanggal_selesai", today)
-        .limit(1)
-        .execute()
-    )
-    if not period_result.data:
-        raise HTTPException(
-            status_code=422,
-            detail="Tidak ada periode review yang aktif saat ini.",
+        # 1. Fetch active review period → ambil tahun dari tanggal_mulai
+        period_result = (
+            supabase.table("pkm_review_periods")
+            .select("id, nama, tanggal_mulai")
+            .lte("tanggal_mulai", today)
+            .gte("tanggal_selesai", today)
+            .limit(1)
+            .execute()
         )
-    year = period_result.data[0]["tanggal_mulai"][:4]
+        if not period_result.data:
+            raise HTTPException(
+                status_code=422,
+                detail="Tidak ada periode review yang aktif saat ini.",
+            )
+        year = period_result.data[0]["tanggal_mulai"][:4]
 
-    # schema_id IS the slug (e.g. "pkm-re") — matches projects.skema directly
-    skema_slug = schema_id
+        # schema_id IS the slug (e.g. "pkm-re") — matches projects.skema directly
+        skema_slug = schema_id
 
-    # 2. Cari project untuk skema + tahun (ambil yang terbaru)
-    project_result = (
-        supabase.table("projects")
-        .select("id")
-        .eq("skema", skema_slug)
-        .eq("tahun", year)
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not project_result.data:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Data referensi untuk {skema_slug} tahun {year} belum tersedia.",
+        # 2. Cari project untuk skema + tahun (ambil yang terbaru)
+        project_result = (
+            supabase.table("projects")
+            .select("id")
+            .eq("skema", skema_slug)
+            .eq("tahun", year)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
         )
-    project_id = project_result.data[0]["id"]
+        if not project_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Data referensi untuk {skema_slug} tahun {year} belum tersedia.",
+            )
+        project_id = project_result.data[0]["id"]
 
-    # 4. Ambil payload document_metadata
-    metadata_result = (
-        supabase.table("document_metadata")
-        .select("payload")
-        .eq("project_id", project_id)
-        .limit(1)
-        .execute()
-    )
-    if not metadata_result.data:
-        raise HTTPException(
-            status_code=404,
-            detail="Metadata format dokumen belum tersedia. Pastikan pipeline ekstraksi sudah selesai.",
+        # 4. Ambil payload document_metadata
+        metadata_result = (
+            supabase.table("document_metadata")
+            .select("payload")
+            .eq("project_id", project_id)
+            .limit(1)
+            .execute()
         )
-    payload = metadata_result.data[0]["payload"]
+        if not metadata_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Metadata format dokumen belum tersedia. Pastikan pipeline ekstraksi sudah selesai.",
+            )
+        payload = metadata_result.data[0]["payload"]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Gagal mengambil data dari database: {str(e)}",
+        )
 
     # 5. Simpan DOCX ke temp file, jalankan validator, hapus temp
     content = await file.read()
@@ -104,6 +113,13 @@ async def run_validation(
 
         from model_ai.validation import validate_document  # noqa: PLC0415
         result = validate_document(tmp_path, metadata_dict=payload)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Gagal menjalankan validasi dokumen: {str(e)}",
+        )
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)

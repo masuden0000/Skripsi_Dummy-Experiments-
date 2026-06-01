@@ -29,19 +29,18 @@ async def upload_file(bucket_name: str, file_content: bytes, file_name: str, pro
     Bucket dibuat via migration SQL — tidak perlu dibuat di sini.
     Returns the public URL of the uploaded file.
     """
-    client = get_supabase_client()
-
-    storage_path = f"{project_id}/{file_name}"
-
-    client.storage.from_(bucket_name).upload(
-        path=storage_path,
-        file=file_content,
-        file_options={"content-type": "application/octet-stream"}
-    )
-
-    public_url = client.storage.from_(bucket_name).get_public_url(storage_path)
-
-    return public_url
+    try:
+        client = get_supabase_client()
+        storage_path = f"{project_id}/{file_name}"
+        client.storage.from_(bucket_name).upload(
+            path=storage_path,
+            file=file_content,
+            file_options={"content-type": "application/octet-stream"}
+        )
+        public_url = client.storage.from_(bucket_name).get_public_url(storage_path)
+        return public_url
+    except Exception as e:
+        raise Exception(f"Gagal upload file ke storage '{bucket_name}': {str(e)}")
 
 
 async def delete_file(bucket_name: str, file_path: str) -> bool:
@@ -97,15 +96,21 @@ async def download_file(bucket_name: str, file_path: str) -> bytes:
     Download file from Supabase Storage.
     Returns file content as bytes.
     """
-    client = get_supabase_client()
-    response = client.storage.from_(bucket_name).download(file_path)
-    return response
+    try:
+        client = get_supabase_client()
+        response = client.storage.from_(bucket_name).download(file_path)
+        return response
+    except Exception as e:
+        raise Exception(f"Gagal download file '{file_path}' dari storage '{bucket_name}': {str(e)}")
 
 
 async def get_signed_url(bucket_name: str, file_path: str, expires_in: int = 3600) -> str:
     """
     Get a signed URL for downloading a file.
     """
-    client = get_supabase_client()
-    response = client.storage.from_(bucket_name).create_signed_url(file_path, expires_in)
-    return response["signedUrl"] if isinstance(response, dict) else response
+    try:
+        client = get_supabase_client()
+        response = client.storage.from_(bucket_name).create_signed_url(file_path, expires_in)
+        return response["signedUrl"] if isinstance(response, dict) else response
+    except Exception as e:
+        raise Exception(f"Gagal membuat signed URL untuk '{file_path}': {str(e)}")
