@@ -10,11 +10,17 @@ router = APIRouter()
 @router.get("/schemas")
 async def list_pkm_schemas():
     """Kembalikan daftar semua skema PKM dari tabel pkm_schemas."""
-    supabase = get_supabase()
-    result = (
-        supabase.table("pkm_schemas")
-        .select("singkatan, nama, renderer_type")
-        .order("singkatan")
-        .execute()
-    )
-    return JSONResponse(content={"success": True, "data": result.data or []})
+    try:
+        supabase = get_supabase()
+        result = (
+            supabase.table("pkm_schemas")
+            .select("singkatan, nama, renderer_type")
+            .order("singkatan")
+            .execute()
+        )
+        return JSONResponse(content={"success": True, "data": result.data or []})
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": f"Gagal mengambil daftar skema PKM: {str(e)}"},
+        )

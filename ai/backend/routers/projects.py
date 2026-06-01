@@ -278,15 +278,19 @@ async def list_projects():
     """
     List all projects.
     """
-    supabase = get_supabase()
-    result = supabase.table("projects").select("*").order("created_at", desc=True).execute()
-
-    projects = [map_project_row(row) for row in result.data]
-
-    return {
-        "success": True,
-        "data": [p.model_dump(mode="json") for p in projects]
-    }
+    try:
+        supabase = get_supabase()
+        result = supabase.table("projects").select("*").order("created_at", desc=True).execute()
+        projects = [map_project_row(row) for row in result.data]
+        return {
+            "success": True,
+            "data": [p.model_dump(mode="json") for p in projects]
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": f"Gagal mengambil daftar project: {str(e)}"}
+        )
 
 
 @router.get("/{project_id}")
@@ -294,21 +298,27 @@ async def get_project(project_id: str):
     """
     Get project details by ID (for polling status).
     """
-    supabase = get_supabase()
-    result = supabase.table("projects").select("*").eq("id", project_id).execute()
+    try:
+        supabase = get_supabase()
+        result = supabase.table("projects").select("*").eq("id", project_id).execute()
 
-    if not result.data:
+        if not result.data:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "data": None, "error": "Project not found"}
+            )
+
+        project = map_project_row(result.data[0])
+
+        return {
+            "success": True,
+            "data": project.model_dump(mode="json")
+        }
+    except Exception as e:
         return JSONResponse(
-            status_code=404,
-            content={"success": False, "data": None, "error": "Project not found"}
+            status_code=500,
+            content={"success": False, "data": None, "error": f"Gagal mengambil data project: {str(e)}"}
         )
-
-    project = map_project_row(result.data[0])
-
-    return {
-        "success": True,
-        "data": project.model_dump(mode="json")
-    }
 
 
 @router.get("/{project_id}/logs")
@@ -317,26 +327,32 @@ async def get_project_logs(project_id: str, since_id: int = Query(0, ge=0)):
     Get log entries for a project.
     Pass since_id to return only logs with id > since_id (for current-run filtering).
     """
-    supabase = get_supabase()
+    try:
+        supabase = get_supabase()
 
-    # Verify project exists
-    project_result = supabase.table("projects").select("id").eq("id", project_id).execute()
-    if not project_result.data:
+        # Verify project exists
+        project_result = supabase.table("projects").select("id").eq("id", project_id).execute()
+        if not project_result.data:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "error": "Project not found"}
+            )
+
+        # Get logs ordered by timestamp, optionally filtered by since_id
+        query = supabase.table("project_logs").select("*").eq("project_id", project_id)
+        if since_id > 0:
+            query = query.gt("id", since_id)
+        result = query.order("timestamp", desc=False).execute()
+
+        return {
+            "success": True,
+            "data": result.data or []
+        }
+    except Exception as e:
         return JSONResponse(
-            status_code=404,
-            content={"success": False, "error": "Project not found"}
+            status_code=500,
+            content={"success": False, "error": f"Gagal mengambil log project: {str(e)}"}
         )
-
-    # Get logs ordered by timestamp, optionally filtered by since_id
-    query = supabase.table("project_logs").select("*").eq("project_id", project_id)
-    if since_id > 0:
-        query = query.gt("id", since_id)
-    result = query.order("timestamp", desc=False).execute()
-
-    return {
-        "success": True,
-        "data": result.data or []
-    }
 
 
 @router.post("/{project_id}/generate")
@@ -345,32 +361,38 @@ async def generate_document(project_id: str, background_tasks: BackgroundTasks):
     Trigger DOCX generation for a project that has already been extracted.
     Called by frontend after user reviews and saves extraction results.
     """
-    supabase = get_supabase()
+    try:
+        supabase = get_supabase()
 
-    result = supabase.table("projects").select("id, status").eq("id", project_id).execute()
+        result = supabase.table("projects").select("id, status").eq("id", project_id).execute()
 
-    if not result.data:
+        if not result.data:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "error": "Project not found"}
+            )
+
+        current_status = result.data[0].get("status", "")
+        if current_status != "extracted":
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "error": f"Project harus dalam status 'extracted' untuk generate dokumen, status saat ini: '{current_status}'"
+                }
+            )
+
+        background_tasks.add_task(run_docx_pipeline, project_id)
+
         return JSONResponse(
-            status_code=404,
-            content={"success": False, "error": "Project not found"}
+            status_code=200,
+            content={"success": True, "message": "Document generation started"}
         )
-
-    current_status = result.data[0].get("status", "")
-    if current_status != "extracted":
+    except Exception as e:
         return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": f"Project harus dalam status 'extracted' untuk generate dokumen, status saat ini: '{current_status}'"
-            }
+            status_code=500,
+            content={"success": False, "error": f"Gagal memulai generate dokumen: {str(e)}"}
         )
-
-    background_tasks.add_task(run_docx_pipeline, project_id)
-
-    return JSONResponse(
-        status_code=200,
-        content={"success": True, "message": "Document generation started"}
-    )
 
 
 @router.get("/{project_id}/placeholders")
@@ -418,37 +440,43 @@ async def delete_project(project_id: str):
     """
     Delete a project and its associated data.
     """
-    supabase = get_supabase()
+    try:
+        supabase = get_supabase()
 
-    result = supabase.table("projects").select("*").eq("id", project_id).execute()
+        result = supabase.table("projects").select("*").eq("id", project_id).execute()
 
-    if not result.data:
-        return JSONResponse(
-            status_code=404,
-            content={"success": False, "error": "Project not found"}
-        )
+        if not result.data:
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "error": "Project not found"}
+            )
 
-    project = result.data[0]
+        project = result.data[0]
 
-    if project.get("source_url"):
-        source_path = f"{project_id}/{project.get('source_file', 'file')}"
-        await delete_file(BUCKET_SOURCE, source_path)
+        if project.get("source_url"):
+            source_path = f"{project_id}/{project.get('source_file', 'file')}"
+            await delete_file(BUCKET_SOURCE, source_path)
 
-    result_url = project.get("result_url")
-    if result_url:
-        # Ekstrak path dari URL: .../object/public/{bucket}/{path}
-        marker = f"/{BUCKET_OUTPUT}/"
-        idx = result_url.find(marker)
-        if idx != -1:
-            output_path = result_url[idx + len(marker):]
-            await delete_file(BUCKET_OUTPUT, output_path)
+        result_url = project.get("result_url")
+        if result_url:
+            # Ekstrak path dari URL: .../object/public/{bucket}/{path}
+            marker = f"/{BUCKET_OUTPUT}/"
+            idx = result_url.find(marker)
+            if idx != -1:
+                output_path = result_url[idx + len(marker):]
+                await delete_file(BUCKET_OUTPUT, output_path)
+            else:
+                # Fallback: hapus seluruh folder project di bucket output
+                await delete_folder(BUCKET_OUTPUT, project_id)
         else:
-            # Fallback: hapus seluruh folder project di bucket output
+            # Belum ada result_url (status extracted/failed), tetap bersihkan folder output
             await delete_folder(BUCKET_OUTPUT, project_id)
-    else:
-        # Belum ada result_url (status extracted/failed), tetap bersihkan folder output
-        await delete_folder(BUCKET_OUTPUT, project_id)
 
-    supabase.table("projects").delete().eq("id", project_id).execute()
+        supabase.table("projects").delete().eq("id", project_id).execute()
 
-    return {"success": True, "message": "Project deleted successfully"}
+        return {"success": True, "message": "Project deleted successfully"}
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": f"Gagal menghapus project: {str(e)}"}
+        )

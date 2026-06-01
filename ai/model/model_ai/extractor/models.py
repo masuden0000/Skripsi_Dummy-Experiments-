@@ -60,6 +60,7 @@ class SpacingExtracted(BaseModel):
     line_spacing_rule: str | None = None
     paragraph_alignment: str | None = None
     first_line_indent_cm: float | None = None
+    heading_alignment: str = "CENTER"
 
     _RULE_ALIASES: dict[str, str] = {
         "EXACT":          "EXACTLY",
@@ -78,6 +79,8 @@ class SpacingExtracted(BaseModel):
         {"SINGLE", "ONE_POINT_FIVE", "DOUBLE", "MULTIPLE", "AT_LEAST", "EXACTLY"}
     )
 
+    _VALID_HEADING_ALIGNMENTS: frozenset[str] = frozenset({"CENTER", "LEFT", "RIGHT"})
+
     @model_validator(mode="after")
     def _normalize_rule(self) -> "SpacingExtracted":
         if self.line_spacing_rule is None:
@@ -88,6 +91,9 @@ class SpacingExtracted(BaseModel):
 
         if self.line_spacing_rule in {"SINGLE", "ONE_POINT_FIVE", "DOUBLE"}:
             self.line_spacing = None
+
+        val = (self.heading_alignment or "CENTER").strip().upper()
+        self.heading_alignment = val if val in self._VALID_HEADING_ALIGNMENTS else "CENTER"
         return self
 
 
