@@ -103,11 +103,10 @@ export async function getPkmSchemas(): Promise<{
 // ============================================================================
 export interface ValidationPayload {
   schemaId: string
+  year: string
   file: File
 }
 
-// Kirim DOCX + schema_id ke Express proxy → FastAPI validation.py → ValidationResult
-// Menggunakan FormData (bukan JSON) karena payload berisi file binary
 export async function runDocumentValidation(
   payload: ValidationPayload
 ): Promise<{
@@ -115,8 +114,9 @@ export async function runDocumentValidation(
   error: string | null
 }> {
   const formData = new FormData()
-  formData.append("schema_id", payload.schemaId)  // singkatan skema (misal: PKM-K, PKM-T)
-  formData.append("file", payload.file)            // file DOCX yang divalidasi
+  formData.append("schema_id", payload.schemaId)
+  formData.append("tahun", payload.year)
+  formData.append("file", payload.file)
 
   // Use apiFetch directly for FormData (bypass JSON content-type)
   const url = "/api/pkm/validation/run"
