@@ -2,21 +2,19 @@
 Fungsi: FastAPI router untuk validasi format dokumen DOCX proposal mahasiswa.
 
 Pipeline validasi (dipanggil oleh reviewer):
-  1. Terima file DOCX + schema_slug dari frontend via Express proxy
-  2. Tentukan tahun aktif dari pkm_review_periods
-  3. Cari project referensi (skema + tahun) dari tabel projects
-  4. Muat payload document_metadata sebagai ground truth aturan format
-  5. Jalankan validator Python terhadap file DOCX yang diupload
-  6. Kembalikan ValidationResult (status, issues, checks) ke frontend
+  1. Terima file DOCX + schema_id + tahun dari frontend via Express proxy
+  2. Cari project referensi (skema + tahun) dari tabel projects
+  3. Muat payload document_metadata sebagai ground truth aturan format
+  4. Jalankan validator Python terhadap file DOCX yang diupload
+  5. Kembalikan ValidationResult (status, issues, checks) ke frontend
 
-schema_slug adalah value dari PKM_SCHEMES di frontend (mis. "pkm-re"),
+schema_id adalah value dari PKM_SCHEMES di frontend (mis. "PKM-KC"),
 yang harus cocok persis dengan kolom projects.skema di database.
 
 Digunakan oleh: backend/src/routes/pkm.routes.js (sebagai proxy)
 """
 import os
 import tempfile
-from datetime import date
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
@@ -28,42 +26,30 @@ router = APIRouter()
 @router.post("/run")
 async def run_validation(
     schema_id: str = Form(...),
+    tahun: str = Form(...),
     file: UploadFile = File(...),
 ):
     """
     Validasi format DOCX proposal mahasiswa terhadap aturan yang tersimpan
-    di document_metadata untuk skema dan tahun periode review aktif.
+    di document_metadata untuk skema dan tahun yang dipilih reviewer.
 
-    schema_id: slug PKM (mis. "pkm-re") yang cocok dengan projects.skema.
+    schema_id: slug PKM (mis. "PKM-KC") yang cocok dengan projects.skema.
+    tahun: tahun referensi (mis. "2025") yang cocok dengan projects.tahun.
     """
     # Validasi tipe file
     if not (file.filename or "").lower().endswith(".docx"):
         raise HTTPException(status_code=400, detail="File harus berformat DOCX (.docx).")
 
+    if not tahun.strip():
+        raise HTTPException(status_code=400, detail="Parameter tahun tidak boleh kosong.")
+
     try:
         supabase = get_supabase()
-        today = date.today().isoformat()
 
-        # 1. Fetch active review period → ambil tahun dari tanggal_mulai
-        period_result = (
-            supabase.table("pkm_review_periods")
-            .select("id, nama, tanggal_mulai")
-            .lte("tanggal_mulai", today)
-            .gte("tanggal_selesai", today)
-            .limit(1)
-            .execute()
-        )
-        if not period_result.data:
-            raise HTTPException(
-                status_code=422,
-                detail="Tidak ada periode review yang aktif saat ini.",
-            )
-        year = period_result.data[0]["tanggal_mulai"][:4]
-
-        # schema_id IS the slug (e.g. "pkm-re") — matches projects.skema directly
         skema_slug = schema_id
+        year = tahun.strip()
 
-        # 2. Cari project untuk skema + tahun (ambil yang terbaru)
+        # 1. Cari project untuk skema + tahun (ambil yang terbaru)
         project_result = (
             supabase.table("projects")
             .select("id")
@@ -80,7 +66,7 @@ async def run_validation(
             )
         project_id = project_result.data[0]["id"]
 
-        # 4. Ambil payload document_metadata
+        # 2. Ambil payload document_metadata
         metadata_result = (
             supabase.table("document_metadata")
             .select("payload")
@@ -103,7 +89,7 @@ async def run_validation(
             detail=f"Gagal mengambil data dari database: {str(e)}",
         )
 
-    # 5. Simpan DOCX ke temp file, jalankan validator, hapus temp
+    # 3. Simpan DOCX ke temp file, jalankan validator, hapus temp
     content = await file.read()
     tmp_path = None
     try:
@@ -124,7 +110,7 @@ async def run_validation(
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
-    # 6. Ubah ValidationResult ke dict dengan field `valid` tambahan
+    # 4. Ubah ValidationResult ke dict dengan field `valid` tambahan
     result_dict = result.to_dict()
     result_dict["valid"] = result_dict.get("status") == "pass"
     return result_dict

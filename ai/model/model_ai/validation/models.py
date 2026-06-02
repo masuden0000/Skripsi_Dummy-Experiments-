@@ -221,6 +221,8 @@ class DocxProperties(BaseModel):
     figure_caption_position: str | None = Field(default=None, description="Figure caption position (above/below)")
     table_count: int = Field(default=0, description="Number of tables in document")
     figure_count: int = Field(default=0, description="Number of figures in document")
+    figure_format: str | None = Field(default=None, description="Detected figure caption format (e.g. 'Gambar {n}')")
+    table_format: str | None = Field(default=None, description="Detected table caption format (e.g. 'Tabel {n}')")
 
     has_daftar_isi: bool = Field(default=False, description="Whether document has Daftar Isi")
     has_daftar_pustaka: bool = Field(default=False, description="Whether document has Daftar Pustaka")
