@@ -49,6 +49,7 @@ class PageLayoutExtracted(BaseModel):
     margin_right_cm: float | None = None
     paper_size: str | None = None
     orientation: str | None = None
+    columns: int | None = None
 
 
 class PageLayoutInfo(PageLayoutExtracted):
