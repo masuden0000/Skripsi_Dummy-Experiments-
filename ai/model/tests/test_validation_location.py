@@ -110,3 +110,39 @@ def test_validation_issue_occurrences_defaults_to_none():
         message="Font mismatch",
     )
     assert issue.occurrences is None
+
+
+from model_ai.validation.validocx_runner import _build_occurrences
+
+
+def test_build_occurrences_from_paragraph_details():
+    para_details = [
+        {
+            "para_idx": 4,
+            "page": 3,
+            "bab": "BAB 1 PENDAHULUAN",
+            "style": "Normal",
+            "text": "Latar belakang penelitian...",
+            "runs": [{"font_size": 11.0, "font_name": "Times New Roman", "text": "", "attributes": []}],
+        },
+        {
+            "para_idx": 22,
+            "page": 7,
+            "bab": "BAB 2 TINJAUAN PUSTAKA",
+            "style": "Normal",
+            "text": "Menurut teori...",
+            "runs": [{"font_size": 11.0, "font_name": "Times New Roman", "text": "", "attributes": []}],
+        },
+    ]
+    result = _build_occurrences(
+        para_details=para_details,
+        actual_str="11.0pt, Times New Roman",
+        expected_str="12pt, Times New Roman",
+    )
+    assert len(result) == 2
+    assert result[0]["page"] == 3
+    assert result[0]["bab"] == "BAB 1 PENDAHULUAN"
+    assert result[0]["para_idx"] == 4
+    assert result[0]["actual"] == "11.0pt, Times New Roman"
+    assert result[0]["expected"] == "12pt, Times New Roman"
+    assert result[1]["page"] == 7
