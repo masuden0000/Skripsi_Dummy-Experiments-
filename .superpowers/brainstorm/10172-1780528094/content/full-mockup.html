@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Mockup - Tampilan Validasi Baru</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; padding: 24px; color: #1e293b; }
+
+  .page-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .page-desc { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+
+  .card-outer { background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; }
+
+  /* Summary bar */
+  .summary-bar { display: flex; gap: 0; border-bottom: 1px solid #e2e8f0; }
+  .summary-item { flex: 1; padding: 12px 16px; text-align: center; border-right: 1px solid #e2e8f0; }
+  .summary-item:last-child { border-right: none; }
+  .summary-num { font-size: 22px; font-weight: 700; }
+  .summary-num.red { color: #dc2626; }
+  .summary-num.yellow { color: #d97706; }
+  .summary-num.green { color: #16a34a; }
+  .summary-num.gray { color: #94a3b8; }
+  .summary-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+  /* Two-panel layout */
+  .panels { display: grid; grid-template-columns: 320px 1fr; min-height: 480px; }
+  .panel-left { border-right: 1px solid #e2e8f0; overflow-y: auto; }
+  .panel-right { background: #f8fafc; overflow-y: auto; }
+
+  /* Left panel */
+  .panel-left-header { padding: 12px 16px; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; background: #fafafa; }
+  .issue-group { }
+  .issue-group-title { padding: 8px 16px; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
+  .issue-row { padding: 10px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.1s; display: flex; align-items: flex-start; gap: 10px; }
+  .issue-row:hover { background: #f0f9ff; }
+  .issue-row.active { background: #eff6ff; border-left: 3px solid #3b82f6; }
+  .issue-badge { flex-shrink: 0; margin-top: 2px; }
+  .badge-error { width: 18px; height: 18px; background: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+  .badge-warn { width: 18px; height: 18px; background: #fef3c7; color: #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+  .issue-info { flex: 1; min-width: 0; }
+  .issue-name { font-size: 13px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .issue-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .issue-count { flex-shrink: 0; background: #e2e8f0; color: #64748b; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; }
+  .issue-count.red { background: #fee2e2; color: #dc2626; }
+  .issue-count.yellow { background: #fef3c7; color: #d97706; }
+
+  /* Right panel */
+  .panel-right-header { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; background: white; }
+  .panel-right-title { font-size: 14px; font-weight: 700; color: #1e293b; }
+  .panel-right-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .panel-right-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* Location card */
+  .loc-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; }
+  .loc-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .loc-page { font-size: 11px; font-weight: 600; background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; }
+  .loc-bab { font-size: 11px; font-weight: 600; background: #f0fdf4; color: #15803d; padding: 2px 8px; border-radius: 4px; }
+  .loc-para { font-size: 11px; color: #94a3b8; }
+  .loc-style { font-size: 11px; color: #94a3b8; }
+  .loc-text { font-size: 12px; color: #374151; font-style: italic; padding: 6px 10px; background: #f8fafc; border-radius: 4px; border-left: 3px solid #cbd5e1; margin-bottom: 8px; }
+  .loc-values { display: flex; gap: 8px; flex-wrap: wrap; }
+  .val-actual { font-size: 11px; background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; }
+  .val-expected { font-size: 11px; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; }
+
+  /* Empty state */
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; color: #94a3b8; }
+  .empty-state svg { margin-bottom: 12px; opacity: 0.4; }
+  .empty-state p { font-size: 13px; }
+
+  /* Annotation notes */
+  .annotation { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #92400e; }
+  .annotation strong { display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="annotation">
+  <strong>📐 Ini adalah mockup tampilan baru — bukan halaman yang sudah jadi.</strong>
+  Panel kiri menampilkan daftar masalah. Klik salah satu → panel kanan menampilkan detail lokasi lengkap.
+</div>
+
+<div class="page-title">Validasi Dokumen Otomatis</div>
+<div class="page-desc">Validasi format dokumen DOCX proposal PKM terhadap aturan yang berlaku pada periode aktif</div>
+
+<!-- Upload area (tetap sama, tidak berubah) -->
+<div style="background:white;border-radius:12px;border:1px solid #e2e8f0;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+  <div style="font-size:13px;color:#64748b">📄 <strong style="color:#1e293b">proposal_pkm_kc_2024.docx</strong> &nbsp;·&nbsp; 3.2 MB &nbsp;·&nbsp; PKM-KC &nbsp;·&nbsp; 2024</div>
+  <div style="margin-left:auto;background:#ef4444;color:white;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600">❌ Ditemukan Masalah</div>
+</div>
+
+<!-- Summary bar -->
+<div class="card-outer" style="margin-bottom:16px">
+  <div class="summary-bar">
+    <div class="summary-item">
+      <div class="summary-num red">3</div>
+      <div class="summary-label">Error</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-num yellow">5</div>
+      <div class="summary-label">Peringatan</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-num green">12</div>
+      <div class="summary-label">Lulus</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-num gray">2</div>
+      <div class="summary-label">Dilewati</div>
+    </div>
+  </div>
+</div>
+
+<!-- Two-panel detail -->
+<div class="card-outer">
+  <div class="panels">
+
+    <!-- PANEL KIRI: Daftar masalah -->
+    <div class="panel-left">
+      <div class="panel-left-header">Detail Masalah (8)</div>
+
+      <!-- Grup: Typography -->
+      <div class="issue-group">
+        <div class="issue-group-title">🔤 Typography</div>
+
+        <!-- Issue aktif/terpilih -->
+        <div class="issue-row active" onclick="selectIssue(this, 'font-mismatch')">
+          <div class="issue-badge"><div class="badge-error">!</div></div>
+          <div class="issue-info">
+            <div class="issue-name">Font mismatch</div>
+            <div class="issue-meta">Normal: actual=11pt, expected=12pt</div>
+          </div>
+          <div class="issue-count red">3×</div>
+        </div>
+
+        <div class="issue-row" onclick="selectIssue(this, 'undefined-style')">
+          <div class="issue-badge"><div class="badge-warn">i</div></div>
+          <div class="issue-info">
+            <div class="issue-name">Undefined style</div>
+            <div class="issue-meta">'List Paragraph' tidak di-requirements</div>
+          </div>
+          <div class="issue-count yellow">20×</div>
+        </div>
+
+        <div class="issue-row" onclick="selectIssue(this, 'heading2-case')">
+          <div class="issue-badge"><div class="badge-warn">i</div></div>
+          <div class="issue-info">
+            <div class="issue-name">Heading 2 harus UPPERCASE</div>
+            <div class="issue-meta">14 heading tidak sesuai</div>
+          </div>
+          <div class="issue-count yellow">14×</div>
+        </div>
+
+        <div class="issue-row" onclick="selectIssue(this, 'undefined-style-2')">
+          <div class="issue-badge"><div class="badge-warn">i</div></div>
+          <div class="issue-info">
+            <div class="issue-name">Undefined style</div>
+            <div class="issue-meta">'Gambar (Lampiran)'</div>
+          </div>
+          <div class="issue-count yellow">13×</div>
+        </div>
+
+        <div class="issue-row" onclick="selectIssue(this, 'tof')">
+          <div class="issue-badge"><div class="badge-warn">i</div></div>
+          <div class="issue-info">
+            <div class="issue-name">Undefined style</div>
+            <div class="issue-meta">'table of figures'</div>
+          </div>
+          <div class="issue-count yellow">11×</div>
+        </div>
+      </div>
+
+      <!-- Grup: Page Layout -->
+      <div class="issue-group">
+        <div class="issue-group-title">📐 Page Layout</div>
+        <div class="issue-row" onclick="selectIssue(this, 'margin')">
+          <div class="issue-badge"><div class="badge-error">!</div></div>
+          <div class="issue-info">
+            <div class="issue-name">Margin kiri</div>
+            <div class="issue-meta">actual=3cm, expected=4cm</div>
+          </div>
+          <div class="issue-count red">1×</div>
+        </div>
+      </div>
+
+      <!-- Grup: Spacing -->
+      <div class="issue-group">
+        <div class="issue-group-title">↕ Spacing</div>
+        <div class="issue-row" onclick="selectIssue(this, 'spacing')">
+          <div class="issue-badge"><div class="badge-error">!</div></div>
+          <div class="issue-info">
+            <div class="issue-name">Line spacing</div>
+            <div class="issue-meta">actual=1.0, expected=1.5</div>
+          </div>
+          <div class="issue-count red">2×</div>
+        </div>
+        <div class="issue-row" onclick="selectIssue(this, 'indent')">
+          <div class="issue-badge"><div class="badge-warn">i</div></div>
+          <div class="issue-info">
+            <div class="issue-name">Indent paragraf diwarisi</div>
+            <div class="issue-meta">Tidak di-set eksplisit</div>
+          </div>
+          <div class="issue-count yellow">6×</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL KANAN: Detail lokasi -->
+    <div class="panel-right">
+      <div class="panel-right-header">
+        <div class="panel-right-title">Font mismatch — 3 lokasi ditemukan</div>
+        <div class="panel-right-sub">Normal: ukuran font 11pt · seharusnya 12pt (Times New Roman)</div>
+      </div>
+      <div class="panel-right-body" id="right-panel">
+
+        <!-- Lokasi 1 -->
+        <div class="loc-card">
+          <div class="loc-card-header">
+            <span class="loc-page">📄 Halaman 3</span>
+            <span class="loc-bab">📂 BAB 1 PENDAHULUAN</span>
+            <span class="loc-para">Paragraf ke-5</span>
+            <span class="loc-style">Style: Normal</span>
+          </div>
+          <div class="loc-text">"Latar belakang penelitian ini didasarkan pada meningkatnya kebutuhan akan sistem..."</div>
+          <div class="loc-values">
+            <span class="val-actual">❌ Ditemukan: 11.0pt, Times New Roman</span>
+            <span class="val-expected">✓ Harus: 12pt, Times New Roman</span>
+          </div>
+        </div>
+
+        <!-- Lokasi 2 -->
+        <div class="loc-card">
+          <div class="loc-card-header">
+            <span class="loc-page">📄 Halaman 7</span>
+            <span class="loc-bab">📂 BAB 2 TINJAUAN PUSTAKA</span>
+            <span class="loc-para">Paragraf ke-23</span>
+            <span class="loc-style">Style: Normal</span>
+          </div>
+          <div class="loc-text">"Menurut teori yang dikemukakan oleh Sutrisno (2021), sistem berbasis kecerdasan buatan..."</div>
+          <div class="loc-values">
+            <span class="val-actual">❌ Ditemukan: 11.0pt, Times New Roman</span>
+            <span class="val-expected">✓ Harus: 12pt, Times New Roman</span>
+          </div>
+        </div>
+
+        <!-- Lokasi 3 -->
+        <div class="loc-card">
+          <div class="loc-card-header">
+            <span class="loc-page">📄 Halaman 8</span>
+            <span class="loc-bab">📂 BAB 2 TINJAUAN PUSTAKA</span>
+            <span class="loc-para">Paragraf ke-25</span>
+            <span class="loc-style">Style: Normal</span>
+          </div>
+          <div class="loc-text">"Hal ini sejalan dengan penelitian sebelumnya yang dilakukan oleh..."</div>
+          <div class="loc-values">
+            <span class="val-actual">❌ Ditemukan: 11.0pt, Times New Roman</span>
+            <span class="val-expected">✓ Harus: 12pt, Times New Roman</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const issueData = {
+  'font-mismatch': {
+    title: 'Font mismatch — 3 lokasi ditemukan',
+    sub: 'Normal: ukuran font 11pt · seharusnya 12pt (Times New Roman)',
+    locations: [
+      { page: 3, bab: 'BAB 1 PENDAHULUAN', para: 5, style: 'Normal', text: '"Latar belakang penelitian ini didasarkan pada meningkatnya kebutuhan akan sistem..."', actual: '11.0pt, Times New Roman', expected: '12pt, Times New Roman' },
+      { page: 7, bab: 'BAB 2 TINJAUAN PUSTAKA', para: 23, style: 'Normal', text: '"Menurut teori yang dikemukakan oleh Sutrisno (2021), sistem berbasis kecerdasan buatan..."', actual: '11.0pt, Times New Roman', expected: '12pt, Times New Roman' },
+      { page: 8, bab: 'BAB 2 TINJAUAN PUSTAKA', para: 25, style: 'Normal', text: '"Hal ini sejalan dengan penelitian sebelumnya yang dilakukan oleh..."', actual: '11.0pt, Times New Roman', expected: '12pt, Times New Roman' },
+    ]
+  },
+  'heading2-case': {
+    title: 'Heading 2 harus UPPERCASE — 14 lokasi ditemukan',
+    sub: 'Heading level 2 harus ditulis dalam huruf kapital semua',
+    locations: [
+      { page: 3, bab: 'BAB 1 PENDAHULUAN', para: 12, style: 'Heading 2', text: '"1.1 Latar Belakang"', actual: 'Sentence Case', expected: 'UPPERCASE' },
+      { page: 4, bab: 'BAB 1 PENDAHULUAN', para: 18, style: 'Heading 2', text: '"1.2 Rumusan Masalah"', actual: 'Sentence Case', expected: 'UPPERCASE' },
+      { page: 5, bab: 'BAB 1 PENDAHULUAN', para: 24, style: 'Heading 2', text: '"1.3 Tujuan Penelitian"', actual: 'Sentence Case', expected: 'UPPERCASE' },
+    ]
+  },
+  'spacing': {
+    title: 'Line spacing — 2 lokasi ditemukan',
+    sub: 'Spasi baris: ditemukan 1.0 · seharusnya 1.5',
+    locations: [
+      { page: 6, bab: 'BAB 1 PENDAHULUAN', para: 30, style: 'Normal', text: '"Penelitian ini bertujuan untuk mengembangkan sistem yang mampu..."', actual: 'spacing=1.0', expected: 'spacing=1.5' },
+      { page: 9, bab: 'BAB 2 TINJAUAN PUSTAKA', para: 41, style: 'Normal', text: '"Framework yang digunakan dalam penelitian ini adalah..."', actual: 'spacing=1.0', expected: 'spacing=1.5' },
+    ]
+  }
+};
+
+function selectIssue(el, key) {
+  document.querySelectorAll('.issue-row').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+
+  const panel = document.getElementById('right-panel').parentElement;
+  const header = panel.querySelector('.panel-right-header');
+  const body = document.getElementById('right-panel');
+
+  const d = issueData[key];
+  if (!d) return;
+
+  header.innerHTML = `<div class="panel-right-title">${d.title}</div><div class="panel-right-sub">${d.sub}</div>`;
+
+  body.innerHTML = d.locations.map(loc => `
+    <div class="loc-card">
+      <div class="loc-card-header">
+        <span class="loc-page">📄 Halaman ${loc.page}</span>
+        <span class="loc-bab">📂 ${loc.bab}</span>
+        <span class="loc-para">Paragraf ke-${loc.para}</span>
+        <span class="loc-style">Style: ${loc.style}</span>
+      </div>
+      <div class="loc-text">${loc.text}</div>
+      <div class="loc-values">
+        <span class="val-actual">❌ Ditemukan: ${loc.actual}</span>
+        <span class="val-expected">✓ Harus: ${loc.expected}</span>
+      </div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>

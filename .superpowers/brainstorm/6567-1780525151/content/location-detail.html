@@ -1,0 +1,79 @@
+<h2>Informasi apa yang ditampilkan per lokasi kesalahan?</h2>
+<p class="subtitle">Saat Anda klik satu masalah di panel kiri, panel kanan menampilkan daftar lokasi. Pilih seberapa detail informasinya.</p>
+
+<div class="cards">
+
+  <!-- OPSI A: Minimal -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>A — Minimal: BAB + Nomor Paragraf</h3>
+      <p class="subtitle">Cukup tahu di BAB mana dan paragraf ke berapa</p>
+    </div>
+    <div class="mockup-body" style="padding:12px;font-size:13px;background:#f8fafc;border-radius:8px;margin-top:8px">
+      <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:8px">LOKASI — Font mismatch (3 kejadian)</div>
+      <div style="padding:8px 10px;background:white;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:6px">
+        <span style="color:#0369a1;font-weight:600">BAB 1</span>
+        <span style="color:#64748b;margin-left:8px">Paragraf ke-5</span>
+      </div>
+      <div style="padding:8px 10px;background:white;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:6px">
+        <span style="color:#0369a1;font-weight:600">BAB 2</span>
+        <span style="color:#64748b;margin-left:8px">Paragraf ke-23</span>
+      </div>
+      <div style="padding:8px 10px;background:white;border-radius:6px;border:1px solid #e2e8f0">
+        <span style="color:#0369a1;font-weight:600">BAB 2</span>
+        <span style="color:#64748b;margin-left:8px">Paragraf ke-25</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPSI B: Sedang -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>B — Sedang: BAB + Paragraf + Cuplikan Teks</h3>
+      <p class="subtitle">Tampilkan potongan kalimat awal paragraf yang bermasalah</p>
+    </div>
+    <div class="mockup-body" style="padding:12px;font-size:13px;background:#f8fafc;border-radius:8px;margin-top:8px">
+      <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:8px">LOKASI — Font mismatch (3 kejadian)</div>
+      <div style="padding:8px 10px;background:white;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:6px">
+        <div><span style="color:#0369a1;font-weight:600">BAB 1</span> <span style="color:#64748b;font-size:11px">· Paragraf ke-5 · Style: Normal</span></div>
+        <div style="color:#374151;margin-top:4px;font-size:12px;font-style:italic">"Latar belakang penelitian ini didasarkan pada..."</div>
+      </div>
+      <div style="padding:8px 10px;background:white;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:6px">
+        <div><span style="color:#0369a1;font-weight:600">BAB 2</span> <span style="color:#64748b;font-size:11px">· Paragraf ke-23 · Style: Normal</span></div>
+        <div style="color:#374151;margin-top:4px;font-size:12px;font-style:italic">"Menurut teori yang dikemukakan oleh..."</div>
+      </div>
+      <div style="padding:8px 10px;background:white;border-radius:6px;border:1px solid #e2e8f0">
+        <div><span style="color:#0369a1;font-weight:600">BAB 2</span> <span style="color:#64748b;font-size:11px">· Paragraf ke-25 · Style: Normal</span></div>
+        <div style="color:#374151;margin-top:4px;font-size:12px;font-style:italic">"Hal ini sejalan dengan penelitian sebelumnya..."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPSI C: Detail -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>C — Detail: BAB + Paragraf + Teks + Nilai Salah vs Benar</h3>
+      <p class="subtitle">Tampilkan juga apa nilai yang ditemukan vs nilai yang seharusnya, langsung di setiap lokasi</p>
+    </div>
+    <div class="mockup-body" style="padding:12px;font-size:13px;background:#f8fafc;border-radius:8px;margin-top:8px">
+      <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:8px">LOKASI — Font mismatch (3 kejadian)</div>
+      <div style="padding:8px 10px;background:white;border-radius:6px;border:1px solid #fecaca;margin-bottom:6px">
+        <div><span style="color:#0369a1;font-weight:600">BAB 1</span> <span style="color:#64748b;font-size:11px">· Paragraf ke-5 · Style: Normal</span></div>
+        <div style="color:#374151;margin-top:4px;font-size:12px;font-style:italic">"Latar belakang penelitian ini didasarkan pada..."</div>
+        <div style="display:flex;gap:12px;margin-top:6px;font-size:11px">
+          <span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:4px">Ditemukan: 11pt, Times New Roman</span>
+          <span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:4px">Harus: 12pt, Times New Roman</span>
+        </div>
+      </div>
+      <div style="padding:8px 10px;background:white;border-radius:6px;border:1px solid #fecaca;margin-bottom:6px">
+        <div><span style="color:#0369a1;font-weight:600">BAB 2</span> <span style="color:#64748b;font-size:11px">· Paragraf ke-23 · Style: Normal</span></div>
+        <div style="color:#374151;margin-top:4px;font-size:12px;font-style:italic">"Menurut teori yang dikemukakan oleh..."</div>
+        <div style="display:flex;gap:12px;margin-top:6px;font-size:11px">
+          <span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:4px">Ditemukan: 11pt, Times New Roman</span>
+          <span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:4px">Harus: 12pt, Times New Roman</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

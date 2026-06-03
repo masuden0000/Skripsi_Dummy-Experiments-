@@ -1,0 +1,105 @@
+<h2>Bagaimana cara mengelompokkan daftar masalah?</h2>
+<p class="subtitle">Pilih struktur yang paling memudahkan Anda saat debugging dokumen</p>
+
+<div class="cards">
+
+  <!-- OPSI A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>A — Dikelompokkan per BAB</h3>
+      <p class="subtitle">Masalah diurutkan berdasarkan posisi di dokumen (BAB 1, BAB 2, dst.)</p>
+    </div>
+    <div class="mockup-body" style="padding:12px;font-size:13px;line-height:1.6;background:#f8fafc;border-radius:8px;margin-top:8px">
+      <div style="background:#e0f2fe;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:600;color:#0369a1">
+        📂 BAB 1 PENDAHULUAN — 3 masalah
+      </div>
+      <div style="padding:6px 10px;border-left:3px solid #ef4444;margin-bottom:4px;background:white;border-radius:4px">
+        <span style="color:#ef4444;font-size:11px">● ERROR</span> &nbsp; Font mismatch: ukuran 11pt, seharusnya 12pt<br>
+        <span style="font-size:11px;color:#64748b">📍 Paragraf ke-5 · "Latar belakang penelitian ini..."</span>
+      </div>
+      <div style="padding:6px 10px;border-left:3px solid #f59e0b;margin-bottom:4px;background:white;border-radius:4px">
+        <span style="color:#f59e0b;font-size:11px">⚠ WARNING</span> &nbsp; Heading 2 bukan UPPERCASE<br>
+        <span style="font-size:11px;color:#64748b">📍 Paragraf ke-12 · "1.1 Latar Belakang"</span>
+      </div>
+      <div style="background:#e0f2fe;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:600;color:#0369a1;margin-top:10px">
+        📂 BAB 2 TINJAUAN PUSTAKA — 5 masalah
+      </div>
+      <div style="padding:6px 10px;border-left:3px solid #ef4444;background:white;border-radius:4px">
+        <span style="color:#ef4444;font-size:11px">● ERROR</span> &nbsp; Font mismatch (3x)<br>
+        <span style="font-size:11px;color:#64748b">📍 Paragraf ke-23, 25, 28</span>
+      </div>
+    </div>
+    <div class="pros-cons" style="margin-top:10px">
+      <div class="pros"><h4>Kelebihan</h4><ul><li>Langsung tahu "di BAB mana masalahnya"</li><li>Urutan sesuai alur dokumen</li></ul></div>
+      <div class="cons"><h4>Kekurangan</h4><ul><li>Masalah yang sama (misal font) tersebar di banyak BAB</li></ul></div>
+    </div>
+  </div>
+
+  <!-- OPSI B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>B — Dikelompokkan per Kategori + Info Lokasi</h3>
+      <p class="subtitle">Sama seperti sekarang (per kategori), tapi setiap baris menampilkan info BAB & paragraf</p>
+    </div>
+    <div class="mockup-body" style="padding:12px;font-size:13px;line-height:1.6;background:#f8fafc;border-radius:8px;margin-top:8px">
+      <div style="background:#fef3c7;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:600;color:#92400e">
+        🔤 TYPOGRAPHY — 4 masalah
+      </div>
+      <div style="padding:8px 10px;border-left:3px solid #ef4444;margin-bottom:4px;background:white;border-radius:4px">
+        <span style="color:#ef4444;font-size:11px">● ERROR</span> &nbsp;<strong>Font mismatch</strong>: 11pt → harus 12pt (3x)<br>
+        <span style="font-size:11px;color:#64748b">📍 BAB 1 Paragraf 5 · BAB 2 Paragraf 23, 25</span>
+      </div>
+      <div style="padding:8px 10px;border-left:3px solid #f59e0b;background:white;border-radius:4px;margin-bottom:10px">
+        <span style="color:#f59e0b;font-size:11px">⚠ WARNING</span> &nbsp;<strong>Heading 2 Case</strong><br>
+        <span style="font-size:11px;color:#64748b">📍 BAB 1 Paragraf 12 · BAB 3 Paragraf 45</span>
+      </div>
+      <div style="background:#fce7f3;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:600;color:#9d174d">
+        📐 PAGE LAYOUT — 1 masalah
+      </div>
+      <div style="padding:8px 10px;border-left:3px solid #ef4444;background:white;border-radius:4px">
+        <span style="color:#ef4444;font-size:11px">● ERROR</span> &nbsp;<strong>Margin kiri</strong>: 3cm → harus 4cm<br>
+        <span style="font-size:11px;color:#64748b">📍 Seluruh dokumen</span>
+      </div>
+    </div>
+    <div class="pros-cons" style="margin-top:10px">
+      <div class="pros"><h4>Kelebihan</h4><ul><li>Mudah lihat semua masalah sejenis sekaligus</li><li>Perubahan ke kode lebih efisien (fix satu masalah untuk semua)</li></ul></div>
+      <div class="cons"><h4>Kekurangan</h4><ul><li>Perlu cek manual lokasi satu per satu</li></ul></div>
+    </div>
+  </div>
+
+  <!-- OPSI C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>C — Dua Panel: Ringkasan + Detail Lokasi</h3>
+      <p class="subtitle">Klik satu masalah di kiri → panel kanan tampil semua lokasi spesifik masalah itu</p>
+    </div>
+    <div class="mockup-body" style="padding:12px;font-size:13px;line-height:1.6;background:#f8fafc;border-radius:8px;margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:6px">DAFTAR MASALAH</div>
+        <div style="padding:6px 8px;border-left:3px solid #ef4444;background:#fee2e2;border-radius:4px;margin-bottom:4px;cursor:pointer">
+          <strong>Font mismatch</strong> (3x)
+        </div>
+        <div style="padding:6px 8px;border-left:3px solid #f59e0b;background:white;border-radius:4px;margin-bottom:4px;cursor:pointer">
+          Heading 2 case (14x)
+        </div>
+        <div style="padding:6px 8px;border-left:3px solid #f59e0b;background:white;border-radius:4px;cursor:pointer">
+          Undefined style (20x)
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:6px">LOKASI (Font mismatch)</div>
+        <div style="padding:5px 8px;background:white;border-radius:4px;margin-bottom:3px;border:1px solid #fecaca;font-size:12px">
+          📂 BAB 1<br>↳ Paragraf 5: "Latar belakang..."
+        </div>
+        <div style="padding:5px 8px;background:white;border-radius:4px;margin-bottom:3px;border:1px solid #fecaca;font-size:12px">
+          📂 BAB 2<br>↳ Paragraf 23: "Menurut teori..."<br>↳ Paragraf 25: "Hal ini..."
+        </div>
+      </div>
+    </div>
+    <div class="pros-cons" style="margin-top:10px">
+      <div class="pros"><h4>Kelebihan</h4><ul><li>Paling detail dan interaktif</li><li>Ringkasan + detail dalam satu layar</li></ul></div>
+      <div class="cons"><h4>Kekurangan</h4><ul><li>Lebih kompleks untuk dibuat</li><li>Perlu klik untuk lihat detail</li></ul></div>
+    </div>
+  </div>
+
+</div>
