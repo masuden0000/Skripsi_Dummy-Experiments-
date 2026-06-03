@@ -99,6 +99,33 @@ def _para_location(paragraphs: list[dict]) -> str | None:
     return f"Paragraf ke-{first['para_idx'] + 1} (style: {first.get('style', '?')})"
 
 
+def _build_occurrences(
+    para_details: list[dict],
+    actual_str: str | None = None,
+    expected_str: str | None = None,
+) -> list[dict]:
+    """Bangun list occurrence dari paragraph_details.
+
+    Setiap occurrence berisi: page, bab, para_idx, style, text, actual, expected.
+    para_details adalah list dict hasil _inject_para_details() yang sudah
+    menyertakan field 'page' dan 'bab' dari debug_report._get_para_details().
+    """
+    result = []
+    for detail in para_details:
+        if not isinstance(detail, dict):
+            continue
+        result.append({
+            "page"     : detail.get("page"),
+            "bab"      : detail.get("bab"),
+            "para_idx" : detail.get("para_idx"),
+            "style"    : detail.get("style"),
+            "text"     : (detail.get("text") or "")[:100],
+            "actual"   : actual_str,
+            "expected" : expected_str,
+        })
+    return result
+
+
 def _build_issues_checks(
     report: dict,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
@@ -130,9 +157,23 @@ def _build_issues_checks(
         example_str = f' Contoh: "{examples[0]}"' if examples else ""
         msg = f"{key} ({count}x mismatch).{example_str}"
 
+        # Parse actual/expected dari format key: "Style.attr: actual=X expected=Y"
+        actual_str = None
+        expected_str = None
+        m_actual = re.search(r"actual=(\S+)", key)
+        if m_actual:
+            actual_str = m_actual.group(1)
+        m_expected = re.search(r"expected=(\S+)", key)
+        if m_expected:
+            expected_str = m_expected.group(1)
+
+        valid_paras = paras if isinstance(paras, list) and paras and isinstance(paras[0], dict) else []
+        occurrences = _build_occurrences(valid_paras, actual_str, expected_str) or None
+
         issues.append(ValidationIssue(
             category=category, field=field,
             severity="error", message=msg, location=location,
+            occurrences=occurrences,
         ))
         checks.append(ValidationCheckResult(
             category=category, field=field,
@@ -150,9 +191,23 @@ def _build_issues_checks(
         example_str = f' Contoh: "{examples[0]}"' if examples else ""
         msg = f"Font mismatch: {key} ({count}x).{example_str}"
 
+        # Pisahkan actual/expected dari key: "Style: actual=[X] expected=[Y]"
+        actual_str = None
+        expected_str = None
+        m_actual = re.search(r"actual=\[([^\]]+)\]", key)
+        if m_actual:
+            actual_str = m_actual.group(1)
+        m_expected = re.search(r"expected=\[([^\]]+)\]", key)
+        if m_expected:
+            expected_str = m_expected.group(1)
+
+        valid_paras = paras if isinstance(paras, list) and paras and isinstance(paras[0], dict) else []
+        occurrences = _build_occurrences(valid_paras, actual_str, expected_str) or None
+
         issues.append(ValidationIssue(
             category="typography", field="font_per_paragraph",
             severity="error", message=msg, location=location,
+            occurrences=occurrences,
         ))
         checks.append(ValidationCheckResult(
             category="typography", field="font_per_paragraph",
@@ -163,10 +218,16 @@ def _build_issues_checks(
     for item in report["warnings"].get("undefined_styles", []):
         style = item.get("style", "?")
         count = item.get("count", 1)
+        paras = item.get("paragraph_details", []) or []
         msg = f"Style tidak terdefinisi di requirements: '{style}' ({count}x paragraf)"
+
+        valid_paras = paras if isinstance(paras, list) and paras and isinstance(paras[0], dict) else []
+        occurrences = _build_occurrences(valid_paras, actual_str=style, expected_str=None) or None
+
         issues.append(ValidationIssue(
             category="typography", field="undefined_style",
             severity="warning", message=msg,
+            occurrences=occurrences,
         ))
         checks.append(ValidationCheckResult(
             category="typography", field="undefined_style",
@@ -177,10 +238,16 @@ def _build_issues_checks(
     for item in report["warnings"].get("attr_inherited", []):
         attr = item.get("attribute", "?")
         count = item.get("count", 1)
+        paras = item.get("paragraph_details", []) or []
         msg = f"Atribut '{attr}' tidak di-set eksplisit (diwarisi dari Word default), {count}x"
+
+        valid_paras = paras if isinstance(paras, list) and paras and isinstance(paras[0], dict) else []
+        occurrences = _build_occurrences(valid_paras, actual_str="inherited", expected_str="explicit") or None
+
         issues.append(ValidationIssue(
             category="spacing", field="paragraph_inherited",
             severity="warning", message=msg,
+            occurrences=occurrences,
         ))
         checks.append(ValidationCheckResult(
             category="spacing", field="paragraph_inherited",
