@@ -52,24 +52,43 @@ class Validator(object):
                     pass  # section attribute OK, tidak perlu dicatat
 
     def validate_styles(self, style_requirements):
-        """Validate styles of a document, i.e. font and paragraph."""
+        """Validate styles of a document, i.e. font and paragraph.
+
+        Jika style paragraf tidak terdaftar di requirements, fallback ke
+        requirements 'Normal' (jika tersedia). Ini memastikan semua paragraf
+        isi — termasuk yang menggunakan custom style seperti 'DaftarParagraf'
+        atau 'TabelGambar' — tetap divalidasi dengan aturan format dasar.
+        Hanya jika 'Normal' pun tidak terdaftar, baru dicatat sebagai warning.
+        """
+        _FALLBACK_STYLE = "Normal"
 
         for para_idx, paragraph in enumerate(self._docx.iter_paragraphs()):
-            if paragraph.style.name in style_requirements:
-                req = style_requirements[paragraph.style.name]
+            style_name = paragraph.style.name
 
-                # Cek exclude rule — skip paragraf yang cocok dengan pola teks
-                exclude_pattern = req.get('exclude', {}).get('text_regex')
-                if exclude_pattern and re.match(exclude_pattern, paragraph.text):
-                    logger.info("SKIP para#{0} (excluded by text_regex): '{1}'".format(
-                        para_idx, paragraph.text.strip()))
-                    continue
-
-                self.validate_paragraph(paragraph, req['paragraph'], para_idx)
-                self.validate_font(paragraph, req['font'], para_idx)
+            if style_name in style_requirements:
+                req = style_requirements[style_name]
+            elif _FALLBACK_STYLE in style_requirements:
+                # Style tidak dikenal → validasi sebagai Normal (format dasar)
+                logger.info(
+                    "Style '{0}' [para#{1}] tidak terdaftar, "
+                    "divalidasi sebagai '{2}'.".format(
+                        style_name, para_idx, _FALLBACK_STYLE)
+                )
+                req = style_requirements[_FALLBACK_STYLE]
             else:
                 logger.warning("Undefined style: '{0}' [para#{1}].".format(
-                    paragraph.style.name, para_idx))
+                    style_name, para_idx))
+                continue
+
+            # Cek exclude rule — skip paragraf yang cocok dengan pola teks
+            exclude_pattern = req.get('exclude', {}).get('text_regex')
+            if exclude_pattern and re.match(exclude_pattern, paragraph.text):
+                logger.info("SKIP para#{0} (excluded by text_regex): '{1}'".format(
+                    para_idx, paragraph.text.strip()))
+                continue
+
+            self.validate_paragraph(paragraph, req['paragraph'], para_idx)
+            self.validate_font(paragraph, req['font'], para_idx)
 
     def validate_font(self, paragraph, font_requirements, para_idx=None):
         """Validate font in a specified paragraph."""

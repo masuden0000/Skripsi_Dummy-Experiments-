@@ -52,30 +52,51 @@ def _resolve_line_spacing(metadata: DocumentMetadata) -> float:
     return s.line_spacing if s.line_spacing is not None else 1.15
 
 
-def _build_font_attributes(metadata: DocumentMetadata, is_heading: bool, heading_level: int = 1) -> list[Any]:
-    """Hasilkan list attribute font untuk validocx (size + family + flags optional).
+def _build_heading_font_attrs(metadata: DocumentMetadata, level: int) -> list[Any]:
+    """Font attributes untuk Heading 1–2 (mengikuti setting admin).
 
-    all_caps hanya berlaku untuk Heading 1 (BAB) — Heading 2+ menggunakan sentence/title case.
+    Bold hanya dicek jika admin mengaktifkan heading_bold.
+    Heading 3–5 tidak menggunakan fungsi ini — mereka pakai normal font.
     """
     t = metadata.typography
     attrs: list[Any] = []
     if t is None:
         return attrs
-
-    size = t.font_size_heading_pt if is_heading else t.font_size_body_pt
+    size = t.font_size_heading_pt
     if size is not None:
         attrs.append(int(size))
     if t.font_family:
         attrs.append(t.font_family)
-    if is_heading and t.heading_bold:
+    # Bold hanya ditambahkan untuk H1–H2 jika admin mengaktifkannya.
+    # H3–H5 tidak pernah mewajibkan bold (normal_style tidak menyertakannya).
+    if level <= 2 and t.heading_bold:
         attrs.append("bold")
-    # all_caps tidak dicek — uppercase via Capslock dan via font property all_caps
-    # menghasilkan visual yang sama, tidak bisa dibedakan lewat font property check.
+    return attrs
+
+
+def _build_normal_font_attrs(metadata: DocumentMetadata) -> list[Any]:
+    """Font attributes untuk style Normal dan H3–H5 (TNR 12pt tanpa bold)."""
+    t = metadata.typography
+    attrs: list[Any] = []
+    if t is None:
+        return attrs
+    if t.font_size_body_pt is not None:
+        attrs.append(int(t.font_size_body_pt))
+    if t.font_family:
+        attrs.append(t.font_family)
+    # Tidak ada bold — normal paragraf tidak pernah diwajibkan bold.
     return attrs
 
 
 def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
-    """Bangun dict requirements (styles + sections) sesuai schema validocx."""
+    """Bangun dict requirements (styles + sections) sesuai schema validocx.
+
+    Dua template digunakan:
+    ─ heading_style  : Heading 1–2, mengikuti setting admin (font, alignment,
+                       bold opsional). Tidak dicek line_spacing.
+    ─ normal_style   : Normal + Heading 3–5 + semua style paragraf lain.
+                       Font TNR 12pt, alignment JUSTIFY, line_spacing 1.15.
+    """
     s = metadata.spacing
     l = metadata.page_layout
 
@@ -87,36 +108,82 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
     )
     line_spacing = _resolve_line_spacing(metadata)
 
-    styles: dict[str, dict] = {
-        "Normal": {
-            "exclude": {"text_regex": r"^\s*(\d{1,3})?\s*$"},
-            "font": {
-                "unit": "pt",
-                "attributes": _build_font_attributes(metadata, is_heading=False),
+    # ── Template Normal ───────────────────────────────────────────────────────
+    # Dipakai oleh: Normal, Heading 3–5, dan semua alias style paragraf.
+    normal_font_attrs = _build_normal_font_attrs(metadata)
+    normal_style: dict = {
+        "exclude": {"text_regex": r"^\s*(\d{1,3})?\s*$"},
+        "font": {
+            "unit": "pt",
+            "attributes": normal_font_attrs,
+        },
+        "paragraph": {
+            "unit": "cm",
+            "attributes": {
+                "alignment": body_alignment,
+                "line_spacing": line_spacing,
             },
-            "paragraph": {
-                "unit": "cm",
-                "attributes": {
-                    "alignment": body_alignment,
-                    "line_spacing": line_spacing,
-                },
-            },
-        }
+        },
     }
 
-    for level in (1, 2, 3):
-        styles[f"Heading {level}"] = {
+    # ── Template Heading (H1–H2) ──────────────────────────────────────────────
+    # Alignment dari admin; tidak dicek line_spacing; bold hanya jika admin set.
+    def _make_heading_style(level: int) -> dict:
+        return {
             "font": {
                 "unit": "pt",
-                "attributes": _build_font_attributes(metadata, is_heading=True, heading_level=level),
+                "attributes": _build_heading_font_attrs(metadata, level),
             },
             "paragraph": {
                 "unit": "cm",
                 "attributes": {
-                    "alignment": heading_alignment if level == 1 else body_alignment,
+                    # H1 dan H2 sama-sama mengikuti alignment dari admin.
+                    "alignment": heading_alignment,
                 },
             },
         }
+
+    styles: dict[str, dict] = {
+        "Normal": normal_style,
+    }
+
+    # H1–H2: template heading (ikut admin)
+    for level in (1, 2):
+        styles[f"Heading {level}"] = _make_heading_style(level)
+
+    # H3–H5: template normal (TNR 12pt 1.15 justify, tanpa bold)
+    for level in (3, 4, 5):
+        styles[f"Heading {level}"] = {
+            k: v for k, v in normal_style.items() if k != "exclude"
+        }
+
+    # ── Alias style template Word Indonesia (Judul1–5) ────────────────────────
+    # Dokumen PKM sering menggunakan style "JudulN" alih-alih "Heading N".
+    for level in (1, 2):
+        styles[f"Judul{level}"] = _make_heading_style(level)
+        styles[f"Judul {level}"] = _make_heading_style(level)
+    for level in (3, 4, 5):
+        no_exclude = {k: v for k, v in normal_style.items() if k != "exclude"}
+        styles[f"Judul{level}"] = no_exclude
+        styles[f"Judul {level}"] = no_exclude
+
+    # ── Caption tabel dan gambar — default CENTER ─────────────────────────────
+    # Caption biasanya berada di bawah/atas objek dan rata tengah.
+    # Tidak mewajibkan line_spacing karena caption umumnya satu baris.
+    caption_style: dict = {
+        "font": {
+            "unit": "pt",
+            "attributes": normal_font_attrs,
+        },
+        "paragraph": {
+            "unit": "cm",
+            "attributes": {
+                "alignment": _ALIGNMENT_MAP["CENTER"],
+            },
+        },
+    }
+    for name in ("Tabel", "Gambar", "TabelGambar", "Caption", "Figure", "Table"):
+        styles[name] = caption_style
 
     section_attrs: dict[str, Any] = {}
     if l is not None:
