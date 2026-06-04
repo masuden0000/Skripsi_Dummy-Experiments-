@@ -29,13 +29,32 @@ import { YearPicker } from "@/components/ui/year-picker"
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
-const CATEGORY_CONFIG: Record<string, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   typography        : "Typography",
   page_layout       : "Page Layout",
   spacing           : "Spacing",
   document_structure: "Struktur Dokumen",
   numbering         : "Penomoran",
   figures_tables    : "Gambar & Tabel",
+}
+
+// Peta nama field teknis (dari backend) → label Indonesia yang ramah dibaca.
+// Dipakai di panel kiri supaya tidak tampil nama teknis seperti "figure_caption_position".
+const FIELD_LABELS: Record<string, string> = {
+  font_per_paragraph      : "Font paragraf",
+  undefined_style         : "Style tidak terdefinisi",
+  paragraph_inherited     : "Atribut diwarisi (inherited)",
+  paragraph_attribute     : "Atribut paragraf",
+  section_attribute       : "Atribut halaman",
+  section_missing         : "Section tidak ditemukan",
+  heading_1_case          : "Kapitalisasi Heading 1",
+  heading_2_case          : "Kapitalisasi Heading 2",
+  heading_case            : "Kapitalisasi heading",
+  figure_caption_position : "Posisi caption gambar",
+  figure_caption_format   : "Format caption gambar",
+  table_caption_position  : "Posisi caption tabel",
+  table_caption_format    : "Format caption tabel",
+  caption                 : "Caption gambar/tabel",
 }
 
 // ── SummaryBar ───────────────────────────────────────────────────────────────
@@ -163,7 +182,7 @@ function IssueListPanel({
 
       <div className="flex-1">
         {Object.entries(grouped).map(([cat, items]) => {
-          const label = CATEGORY_CONFIG[cat] ?? cat
+          const label = CATEGORY_LABELS[cat] ?? cat
           return (
             <div key={cat}>
               {/* Category divider — subtle, no emoji */}
@@ -202,7 +221,7 @@ function IssueListPanel({
 
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm truncate ${isActive ? "font-semibold text-pkm-900" : "font-medium text-gray-800"}`}>
-                        {issue.field ?? issue.category}
+                        {FIELD_LABELS[issue.field ?? ""] ?? issue.field ?? CATEGORY_LABELS[issue.category] ?? issue.category}
                       </p>
                       <p className="text-[11px] text-gray-400 truncate mt-0.5 leading-tight">
                         {issue.message}
@@ -254,7 +273,7 @@ function LocationPanel({ issue }: { issue: ValidationIssue | null }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-800 truncate">
-              {issue.field ?? issue.category}
+              {FIELD_LABELS[issue.field ?? ""] ?? issue.field ?? CATEGORY_LABELS[issue.category] ?? issue.category}
             </p>
             <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{issue.message}</p>
           </div>
@@ -511,7 +530,7 @@ export function DocumentValidator() {
           {allIssues.length > 0 && (
             <div className="border-t border-border">
               <SummaryBar result={result} />
-              <div className="grid grid-cols-[300px_1fr] border-t border-border" style={{ minHeight: 400, maxHeight: 600 }}>
+              <div className="grid grid-cols-[300px_1fr] border-t border-border" style={{ minHeight: 400, maxHeight: 680 }}>
                 <IssueListPanel
                   issues={allIssues}
                   selectedIdx={selectedIssueIdx}
