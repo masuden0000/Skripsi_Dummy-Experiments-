@@ -108,18 +108,6 @@ function OccurrenceCard({
             </span>
           </>
         )}
-        {occ.para_idx != null && (
-          <>
-            <span className="text-gray-300 text-xs">·</span>
-            <span className="text-[11px] text-gray-500">Paragraf ke-{occ.para_idx + 1}</span>
-          </>
-        )}
-        {occ.style && (
-          <>
-            <span className="text-gray-300 text-xs">·</span>
-            <span className="text-[11px] text-gray-400">{occ.style}</span>
-          </>
-        )}
       </div>
 
       {/* Body */}
