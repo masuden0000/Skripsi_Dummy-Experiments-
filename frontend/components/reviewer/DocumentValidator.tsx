@@ -42,15 +42,27 @@ const CATEGORY_LABELS: Record<string, string> = {
 // Peta nama field teknis (dari backend) → label Indonesia yang ramah dibaca.
 // Dipakai di panel kiri supaya tidak tampil nama teknis seperti "figure_caption_position".
 const FIELD_LABELS: Record<string, string> = {
-  font_per_paragraph      : "Font paragraf",
+  // ── Typography ──────────────────────────────────────────────────────────
+  font_per_paragraph      : "Font elemen teks",
   undefined_style         : "Style tidak terdefinisi",
   paragraph_inherited     : "Atribut diwarisi (inherited)",
-  paragraph_attribute     : "Atribut paragraf",
+  paragraph_attribute     : "Atribut elemen teks",
+  // ── Numbering ───────────────────────────────────────────────────────────
+  preliminary_format      : "Format nomor halaman awal (romawi, sebelum Bab 1)",
+  preliminary_location    : "Posisi nomor halaman awal (romawi)",
+  preliminary_start       : "Titik mulai nomor halaman awal",
+  content_format          : "Format nomor halaman isi (angka arab, mulai Bab 1)",
+  content_location        : "Posisi nomor halaman isi (angka arab)",
+  content_start           : "Titik mulai nomor halaman isi",
+  page_number             : "Nomor halaman",
+  // ── Layout ──────────────────────────────────────────────────────────────
   section_attribute       : "Atribut halaman",
   section_missing         : "Section tidak ditemukan",
+  // ── Heading ─────────────────────────────────────────────────────────────
   heading_1_case          : "Kapitalisasi Heading 1",
   heading_2_case          : "Kapitalisasi Heading 2",
   heading_case            : "Kapitalisasi heading",
+  // ── Figures & Tables ────────────────────────────────────────────────────
   figure_caption_position : "Posisi caption gambar",
   figure_caption_format   : "Format caption gambar",
   table_caption_position  : "Posisi caption tabel",
@@ -58,12 +70,50 @@ const FIELD_LABELS: Record<string, string> = {
   caption                 : "Caption gambar/tabel",
 }
 
+// Terjemahan nama parameter teknis validocx → label Indonesia
+const PARAM_LABELS: Record<string, string> = {
+  font          : "Jenis huruf",
+  alignment     : "Rata teks",
+  line_spacing  : "Spasi baris",
+  first_line_indent : "Indentasi baris pertama",
+  space_before  : "Jarak sebelum",
+  space_after   : "Jarak sesudah",
+  left_indent   : "Indentasi kiri",
+  right_indent  : "Indentasi kanan",
+}
+
+// Terjemahan nama style Word bawaan (bahasa Inggris) → Indonesia
+const WORD_STYLE_LABELS: Record<string, string> = {
+  "Normal"                 : "Normal",
+  "Default Paragraph Font" : "Font default",
+  "Heading 1"              : "Heading 1",
+  "Heading 2"              : "Heading 2",
+  "Heading 3"              : "Heading 3",
+  "Body Text"              : "Teks isi",
+  "Caption"                : "Caption",
+  "Table Paragraph"        : "Teks tabel",
+}
+
 // Konversi nama field teknis ke label Indonesia.
 // Menangani field dari FIELD_LABELS, field validocx_param.*, dan raw field name.
 function formatFieldLabel(field: string): string {
   if (FIELD_LABELS[field]) return FIELD_LABELS[field]
   if (field.startsWith("validocx_param.")) {
-    const stripped = field.replace("validocx_param.", "").replace(/_/g, " ")
+    // Format asli: "validocx_param.font_(Default_Paragraph_Font)"
+    // Tujuan: "Jenis huruf — Font default"
+    const inner = field.replace("validocx_param.", "")
+    // Pisahkan param dan style: "font_(Default_Paragraph_Font)" → ["font", "Default Paragraph Font"]
+    const match = inner.match(/^(\S+?)_\((.+)\)$/)
+    if (match) {
+      const rawParam = match[1]
+      const rawStyle = match[2].replace(/_/g, " ")
+      const param = PARAM_LABELS[rawParam] ?? rawParam.replace(/_/g, " ")
+      const style = WORD_STYLE_LABELS[rawStyle] ?? rawStyle
+      const paramLabel = param.charAt(0).toUpperCase() + param.slice(1)
+      return `${paramLabel} — ${style}`
+    }
+    // Fallback jika format tak cocok
+    const stripped = inner.replace(/_/g, " ")
     return stripped.charAt(0).toUpperCase() + stripped.slice(1)
   }
   return field
@@ -73,29 +123,52 @@ function formatFieldLabel(field: string): string {
 function SummaryBar({
   result,
   viewMode,
+  onErrorClick,
+  onWarningClick,
   onPassedClick,
 }: {
   result: ValidationResult
-  viewMode: "issues" | "passed"
+  viewMode: "error" | "warning" | "passed"
+  onErrorClick: () => void
+  onWarningClick: () => void
   onPassedClick: () => void
 }) {
   const errors   = result.issues?.filter((i) => i.severity === "error").length   ?? 0
   const warnings = result.issues?.filter((i) => i.severity === "warning").length ?? 0
   const passed   = result.summary?.passed ?? 0
   const skipped  = result.issues?.filter((i) => i.severity === "info").length ?? 0
-  const isPassedActive = viewMode === "passed"
+  const isErrorActive   = viewMode === "error"
+  const isWarningActive = viewMode === "warning"
+  const isPassedActive  = viewMode === "passed"
 
   return (
     <div className="grid grid-cols-4 divide-x divide-border border-t border-border">
-      <div className="flex flex-col items-center py-4 bg-red-50">
+      <button
+        type="button"
+        onClick={onErrorClick}
+        className={[
+          "flex flex-col items-center py-4 transition-colors cursor-pointer",
+          isErrorActive ? "bg-red-100 ring-1 ring-inset ring-red-200" : "bg-red-50 hover:bg-red-100/70",
+        ].join(" ")}
+      >
         <span className="text-2xl font-bold tabular-nums text-red-600">{errors}</span>
-        <span className="mt-0.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide">Error</span>
-      </div>
-      <div className="flex flex-col items-center py-4 bg-amber-50">
+        <span className={["mt-0.5 text-[11px] font-medium uppercase tracking-wide", isErrorActive ? "text-red-700" : "text-gray-400"].join(" ")}>
+          Error{isErrorActive ? " ▾" : ""}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={onWarningClick}
+        className={[
+          "flex flex-col items-center py-4 transition-colors cursor-pointer",
+          isWarningActive ? "bg-amber-100 ring-1 ring-inset ring-amber-200" : "bg-amber-50 hover:bg-amber-100/70",
+        ].join(" ")}
+      >
         <span className="text-2xl font-bold tabular-nums text-amber-600">{warnings}</span>
-        <span className="mt-0.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide">Peringatan</span>
-      </div>
-      {/* Tile "Lulus" bisa diklik untuk menampilkan daftar pengecekan yang lolos */}
+        <span className={["mt-0.5 text-[11px] font-medium uppercase tracking-wide", isWarningActive ? "text-amber-700" : "text-gray-400"].join(" ")}>
+          Peringatan{isWarningActive ? " ▾" : ""}
+        </span>
+      </button>
       <button
         type="button"
         onClick={onPassedClick}
@@ -322,7 +395,7 @@ function LocationPanel({ issue }: { issue: ValidationIssue | null }) {
         ) : (
           <div className="rounded-lg border border-border bg-white p-4">
             <p className="text-sm text-gray-500">
-              Masalah ini berlaku untuk seluruh dokumen, bukan pada paragraf tertentu.
+              Masalah ini berlaku untuk seluruh dokumen, bukan pada elemen tertentu.
             </p>
             {(issue.expected || issue.actual) && (
               <div className="flex flex-wrap gap-2 mt-3">
@@ -486,8 +559,8 @@ export function DocumentValidator() {
   const [result, setResult]                     = useState<ValidationResult | null>(null)
   const [error, setError]                       = useState<string | null>(null)
   const [selectedIssueIdx, setSelectedIssueIdx] = useState<number | null>(null)
-  // viewMode: "issues" = tampil masalah (default), "passed" = tampil yang lolos
-  const [viewMode, setViewMode]                 = useState<"issues" | "passed">("issues")
+  // viewMode: "error" = tampil error (default), "warning" = tampil peringatan, "passed" = tampil yang lolos
+  const [viewMode, setViewMode]                 = useState<"error" | "warning" | "passed">("error")
   const [selectedCheckIdx, setSelectedCheckIdx] = useState<number | null>(null)
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -535,7 +608,7 @@ export function DocumentValidator() {
     setError(null)
     setResult(null)
     setSelectedIssueIdx(null)
-    setViewMode("issues")
+    setViewMode("error")
     setSelectedCheckIdx(null)
 
     const res = await runDocumentValidation({ schemaId: selectedSchemaId, year: selectedYear, file })
@@ -555,11 +628,16 @@ export function DocumentValidator() {
     setResult(null)
     setError(null)
     setSelectedIssueIdx(null)
-    setViewMode("issues")
+    setViewMode("error")
     setSelectedCheckIdx(null)
   }
 
   const allIssues = result?.issues ?? []
+  const filteredIssues = viewMode === "error"
+    ? allIssues.filter((i) => i.severity === "error")
+    : viewMode === "warning"
+    ? allIssues.filter((i) => i.severity === "warning")
+    : allIssues
 
   // Ambil semua checks yang lulus dari result.report (diratakan dari semua kategori)
   const passedChecks: ValidationCheck[] = Object.values(result?.report ?? {})
@@ -698,8 +776,16 @@ export function DocumentValidator() {
               <SummaryBar
                 result={result}
                 viewMode={viewMode}
+                onErrorClick={() => {
+                  setViewMode("error")
+                  setSelectedIssueIdx(null)
+                }}
+                onWarningClick={() => {
+                  setViewMode((m) => m === "warning" ? "error" : "warning")
+                  setSelectedIssueIdx(null)
+                }}
                 onPassedClick={() => {
-                  setViewMode((m) => m === "passed" ? "issues" : "passed")
+                  setViewMode((m) => m === "passed" ? "error" : "passed")
                   setSelectedCheckIdx(null)
                 }}
               />
@@ -718,12 +804,12 @@ export function DocumentValidator() {
                 ) : (
                   <>
                     <IssueListPanel
-                      issues={allIssues}
+                      issues={filteredIssues}
                       selectedIdx={selectedIssueIdx}
                       onSelect={setSelectedIssueIdx}
                     />
                     <LocationPanel
-                      issue={selectedIssueIdx !== null ? allIssues[selectedIssueIdx] : null}
+                      issue={selectedIssueIdx !== null ? filteredIssues[selectedIssueIdx] : null}
                     />
                   </>
                 )}

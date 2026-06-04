@@ -53,6 +53,61 @@ _NUM_FORMAT_DISPLAY: dict[str, str] = {
     "upperLetter": "huruf besar (A, B, C, ...)",
 }
 
+# ── Human-readable labels untuk nilai atribut ─────────────────────────────────
+# Alignment: python-docx WD_ALIGN_PARAGRAPH integer → label Indonesia
+_ALIGNMENT_LABELS: dict[str, str] = {
+    "0": "rata kiri (LEFT)",
+    "1": "rata tengah (CENTER)",
+    "2": "rata kanan (RIGHT)",
+    "3": "rata kanan-kiri (JUSTIFY)",
+    # Nama enum (kadang muncul di actual)
+    "LEFT":    "rata kiri (LEFT)",
+    "CENTER":  "rata tengah (CENTER)",
+    "RIGHT":   "rata kanan (RIGHT)",
+    "JUSTIFY": "rata kanan-kiri (JUSTIFY)",
+}
+
+# Line spacing: float string → label
+_LINE_SPACING_LABELS: dict[str, str] = {
+    "1.0":  "1.0 (spasi tunggal)",
+    "1.15": "1.15",
+    "1.5":  "1.5 (satu setengah)",
+    "2.0":  "2.0 (spasi ganda)",
+}
+
+
+def _humanize_attr_value(attr_name: str, raw_value: str | None) -> str | None:
+    """Konversi nilai atribut mentah ke label yang mudah dibaca manusia.
+
+    Contoh:
+        _humanize_attr_value("alignment", "1")    → "rata tengah (CENTER)"
+        _humanize_attr_value("alignment", "JUSTIFY") → "rata kanan-kiri (JUSTIFY)"
+        _humanize_attr_value("line_spacing", "1.15") → "1.15"
+        _humanize_attr_value("font_size", "12")   → "12"
+    """
+    if raw_value is None:
+        return None
+    key = raw_value.strip().upper()
+    attr_lower = (attr_name or "").lower()
+
+    if "alignment" in attr_lower:
+        # Coba match numeric (0-3) atau nama enum
+        label = _ALIGNMENT_LABELS.get(raw_value.strip()) or _ALIGNMENT_LABELS.get(key)
+        if label:
+            return label
+
+    if "line_spacing" in attr_lower or "spacing" in attr_lower:
+        # Bulatkan ke 2 desimal untuk lookup
+        try:
+            rounded = f"{float(raw_value.strip()):.2f}".rstrip("0").rstrip(".")
+            label = _LINE_SPACING_LABELS.get(rounded) or _LINE_SPACING_LABELS.get(raw_value.strip())
+            if label:
+                return label
+        except ValueError:
+            pass
+
+    return raw_value
+
 
 def _vm_category(key: str) -> tuple[str, str]:
     """Tentukan category/field untuk value_mismatch berdasarkan key report."""
@@ -96,7 +151,7 @@ def _para_location(paragraphs: list[dict]) -> str | None:
     if not paragraphs:
         return None
     first = paragraphs[0]
-    return f"Paragraf ke-{first['para_idx'] + 1} (style: {first.get('style', '?')})"
+    return f"Elemen ke-{first['para_idx'] + 1} (style: {first.get('style', '?')})"
 
 
 def _build_occurrences(
@@ -166,8 +221,16 @@ def _build_issues_checks(
         # Parse actual/expected dari format key: "Style.attr: actual=X expected=Y"
         vm_actual = re.search(r"actual=(\S+)", key)
         vm_expected = re.search(r"expected=(\S+)", key)
-        vm_actual_str = vm_actual.group(1) if vm_actual else None
-        vm_expected_str = vm_expected.group(1) if vm_expected else None
+        vm_actual_raw = vm_actual.group(1) if vm_actual else None
+        vm_expected_raw = vm_expected.group(1) if vm_expected else None
+
+        # Ekstrak nama atribut dari key (mis. "Heading 2.alignment: ..." → "alignment")
+        attr_match = re.search(r"\.(\w+)\s*:", key)
+        attr_name = attr_match.group(1) if attr_match else ""
+
+        # Konversi ke label yang mudah dibaca (mis. "1" → "rata tengah (CENTER)")
+        vm_actual_str   = _humanize_attr_value(attr_name, vm_actual_raw)
+        vm_expected_str = _humanize_attr_value(attr_name, vm_expected_raw)
 
         valid_paras = paras if isinstance(paras, list) and paras and isinstance(paras[0], dict) else []
         occurrences = _build_occurrences(valid_paras, vm_actual_str, vm_expected_str) or None
@@ -222,7 +285,7 @@ def _build_issues_checks(
         style = item.get("style", "?")
         count = item.get("count", 1)
         paras = item.get("paragraph_details", []) or []
-        msg = f"Style tidak terdefinisi di requirements: '{style}' ({count}x paragraf)"
+        msg = f"Style tidak terdefinisi di requirements: '{style}' ({count}x elemen)"
 
         valid_paras = paras if isinstance(paras, list) and paras and isinstance(paras[0], dict) else []
         occurrences = _build_occurrences(valid_paras, actual_str=style, expected_str=known_styles_label) or None
@@ -264,7 +327,7 @@ def _build_issues_checks(
                 category="typography",
                 field=f"validocx_param.{ps['parameter'].replace(' ', '_')}",
                 status="passed",
-                message=f"{ps['parameter']}: {ps['pass']} paragraf lolos",
+                message=f"{ps['parameter']}: {ps['pass']} elemen lolos",
             ))
 
     # ── Summary check ────────────────────────────────────────────────────────
@@ -582,11 +645,18 @@ def _check_document_structure(
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _template_to_regex(template: str) -> re.Pattern:
-    """Konversi template caption seperti 'Gambar {n}. {title}' ke regex."""
+    """Konversi template caption seperti 'Gambar {n}. {title}' ke regex.
+
+    Titik (.) yang memisahkan nomor bab/urutan diizinkan diikuti spasi opsional,
+    sehingga '4.1.' dan '4. 1.' sama-sama diterima.
+    """
     escaped = re.escape(template)
     escaped = escaped.replace(r'\{n\}', r'\d+')
     escaped = escaped.replace(r'\{bab\}', r'\d+')
     escaped = escaped.replace(r'\{title\}', r'.+')
+    # Izinkan spasi opsional setelah setiap titik literal agar format
+    # "4.1." maupun "4. 1." sama-sama cocok dengan pola.
+    escaped = escaped.replace(r'\.', r'\.\s*')
     return re.compile(r'^' + escaped, re.IGNORECASE)
 
 
@@ -896,13 +966,19 @@ def _check_figures_tables(
 # Page Numbering Check
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _get_pgnum_fmt(sectPr) -> str | None:
-    """Ambil format nomor halaman dari elemen sectPr (w:pgNumType w:fmt)."""
+def _get_pgnum_fmt(sectPr) -> str:
+    """Ambil format nomor halaman dari elemen sectPr (w:pgNumType w:fmt).
+
+    Mengembalikan 'decimal' sebagai default apabila elemen w:pgNumType tidak
+    ada atau atribut w:fmt tidak di-set — sesuai perilaku default Microsoft
+    Word (OOXML spec: nilai default w:fmt adalah 'decimal').
+    """
     from docx.oxml.ns import qn
     pgNumType = sectPr.find(qn('w:pgNumType'))
     if pgNumType is not None:
-        return pgNumType.get(qn('w:fmt'))
-    return None
+        fmt = pgNumType.get(qn('w:fmt'))
+        return fmt if fmt else "decimal"
+    return "decimal"
 
 
 def _hdrftr_has_page_field(hdrftr) -> bool:
@@ -914,6 +990,140 @@ def _hdrftr_has_page_field(hdrftr) -> bool:
         if 'PAGE' in (instrText.text or '').upper():
             return True
     return False
+
+
+def _scan_numbering_zones(doc) -> tuple[dict | None, dict | None]:
+    """Identifikasi zone preliminary dan content berdasarkan posisi BAB 1.
+
+    Mengembalikan tuple (prelim_info, content_info) di mana masing-masing
+    adalah dict {'fmt', 'has_header_page', 'has_footer_page'} atau None.
+
+    Strategi content-aware:
+    1. Scan semua elemen body untuk mengumpulkan section boundaries (sectPr).
+    2. Cari paragraf Heading 1 yang teksnya diawali "BAB" → ini adalah awal
+       section content (BAB 1).
+    3. Section yang MENGANDUNG BAB 1 = content zone.
+    4. Section yang berakhir SEBELUM BAB 1 = preliminary zone.
+    5. Jika BAB 1 tidak ditemukan, semua section dianggap content.
+    """
+    from docx.oxml.ns import qn
+
+    body = doc.element.body
+    all_children = list(body)
+
+    # ── Kumpulkan section boundaries ─────────────────────────────────────────
+    # Setiap entry: (last_element_idx, sectPr_element)
+    # Inline sectPr di pPr → mengakhiri section di paragraf tersebut.
+    # Body-level sectPr → mengakhiri section terakhir.
+    boundaries: list[tuple[int, object]] = []
+    for idx, child in enumerate(all_children):
+        if child.tag.endswith('}p') or child.tag == 'p':
+            pPr = child.find(qn('w:pPr'))
+            if pPr is not None:
+                inline_spr = pPr.find(qn('w:sectPr'))
+                if inline_spr is not None:
+                    boundaries.append((idx, inline_spr))
+    body_spr = body.find(qn('w:sectPr'))
+    if body_spr is not None:
+        boundaries.append((len(all_children) - 1, body_spr))
+
+    if not boundaries:
+        return None, None
+
+    # ── Cari BAB 1 ────────────────────────────────────────────────────────────
+    # Cari paragraf yang teksnya diawali "BAB" DAN memiliki style heading.
+    # Style heading bisa bermacam-macam tergantung template Word yang dipakai:
+    #   - Standar Word : "Heading 1", "Heading1", "heading1"
+    #   - Template PKM : "Judul1", "Judul 1", "BAB"
+    # Untuk robustness, kita cek style yang mengandung kata "heading" atau
+    # "judul" atau "bab", ATAU teksnya dimulai "BAB" dan berada di level
+    # atas (style tidak kosong — bukan paragraf isi biasa).
+    _HEADING_STYLE_KEYWORDS = ("heading", "judul", "bab")
+
+    bab1_idx: int | None = None
+    for idx, child in enumerate(all_children):
+        if not (child.tag.endswith('}p') or child.tag == 'p'):
+            continue
+        pPr = child.find(qn('w:pPr'))
+        style_val = ''
+        if pPr is not None:
+            pStyle = pPr.find(qn('w:pStyle'))
+            if pStyle is not None:
+                style_val = (pStyle.get(qn('w:val')) or '').lower()
+        full_text = ''.join(
+            (t.text or '') for t in child.iter(qn('w:t'))
+        ).strip()
+        full_upper = full_text.upper()
+        if not full_upper.startswith('BAB'):
+            continue
+        # Teks dimulai "BAB" — cek apakah ini heading (ada style) atau
+        # hanya teks biasa yang kebetulan dimulai "BAB"
+        is_heading_style = any(k in style_val for k in _HEADING_STYLE_KEYWORDS)
+        is_styled = bool(style_val)  # memiliki style apapun (bukan Normal/kosong)
+        if is_heading_style or is_styled:
+            bab1_idx = idx
+            break
+
+    # ── Tentukan section mana yang berisi BAB 1 ───────────────────────────────
+    def _section_info(sectPr, doc_obj) -> dict:
+        """Buat dict info section dari sectPr-nya."""
+        fmt = _get_pgnum_fmt(sectPr)
+        has_own_hdr = bool(sectPr.findall(qn('w:headerReference')))
+        has_own_ftr = bool(sectPr.findall(qn('w:footerReference')))
+
+        # Cari section python-docx yang sectPr-nya sama
+        has_header_page = False
+        has_footer_page = False
+        for sec in doc_obj.sections:
+            if sec._sectPr is sectPr:
+                if has_own_hdr:
+                    try:
+                        has_header_page = _hdrftr_has_page_field(sec.header)
+                    except Exception:
+                        pass
+                if has_own_ftr:
+                    try:
+                        has_footer_page = _hdrftr_has_page_field(sec.footer)
+                    except Exception:
+                        pass
+                break
+        return {
+            "fmt": fmt,
+            "has_header_page": has_header_page,
+            "has_footer_page": has_footer_page,
+            "has_any_page": has_header_page or has_footer_page,
+        }
+
+    # Tentukan: section mana preliminary, mana content
+    # Section boundaries diurutkan menaik berdasarkan indeks.
+    prev_end = -1
+    prelim_info: dict | None = None
+    content_info: dict | None = None
+
+    for i, (end_idx, sectPr) in enumerate(boundaries):
+        sec_start = prev_end + 1
+        sec_end = end_idx
+
+        info = _section_info(sectPr, doc)
+
+        if bab1_idx is None:
+            # Tidak ada BAB 1 terdeteksi → semua dianggap content
+            content_info = info
+        else:
+            if bab1_idx > sec_end:
+                # BAB 1 belum dimulai di section ini → preliminary
+                prelim_info = info
+            elif sec_start <= bab1_idx <= sec_end:
+                # BAB 1 ada di section ini → content
+                content_info = info
+            else:
+                # Section setelah BAB 1 (masih content)
+                if content_info is None:
+                    content_info = info
+
+        prev_end = sec_end
+
+    return prelim_info, content_info
 
 
 def _check_numbering(
@@ -941,7 +1151,7 @@ def _check_numbering(
         checks.append(ValidationCheckResult(
             category="numbering", field="page_number",
             status="skipped",
-            message="Data preliminary dan content numbering kosong di metadata",
+            message="Data nomor halaman awal (romawi) dan isi (angka arab) kosong di metadata",
             skip_reason="Tidak ada nilai di metadata",
         ))
         return issues, checks
@@ -950,32 +1160,46 @@ def _check_numbering(
         from docx import Document as DocxDocument
         doc = DocxDocument(str(docx_path))
 
-        # Kumpulkan info tiap section: format nomor halaman + letak (header/footer)
-        section_infos: list[dict] = []
-        for section in doc.sections:
-            fmt = _get_pgnum_fmt(section._sectPr)
+        # Gunakan pendekatan content-aware: cari BAB 1 lalu tentukan zone
+        # preliminary dan content berdasarkan posisi di dokumen.
+        prelim_zone, content_zone = _scan_numbering_zones(doc)
 
-            has_header_page = False
-            has_footer_page = False
-            try:
-                if not section.header_is_linked_to_previous:
-                    has_header_page = _hdrftr_has_page_field(section.header)
-            except Exception:
-                pass
-            try:
-                if not section.footer_is_linked_to_previous:
-                    has_footer_page = _hdrftr_has_page_field(section.footer)
-            except Exception:
-                pass
+        # Fallback: jika scan gagal, bangun section_infos biasa
+        if prelim_zone is None and content_zone is None:
+            from docx.oxml.ns import qn as _qn
+            section_infos = []
+            for section in doc.sections:
+                sectPr = section._sectPr
+                fmt = _get_pgnum_fmt(sectPr)
+                has_own_hdr = bool(sectPr.findall(_qn('w:headerReference')))
+                has_own_ftr = bool(sectPr.findall(_qn('w:footerReference')))
+                has_header_page = False
+                has_footer_page = False
+                if has_own_hdr:
+                    try:
+                        has_header_page = _hdrftr_has_page_field(section.header)
+                    except Exception:
+                        pass
+                if has_own_ftr:
+                    try:
+                        has_footer_page = _hdrftr_has_page_field(section.footer)
+                    except Exception:
+                        pass
+                section_infos.append({
+                    "fmt": fmt,
+                    "has_header_page": has_header_page,
+                    "has_footer_page": has_footer_page,
+                    "has_any_page": has_header_page or has_footer_page,
+                })
+            # Tebak zone: section pertama = preliminary, terakhir = content
+            prelim_zone = section_infos[0] if section_infos else None
+            content_zone = section_infos[-1] if len(section_infos) > 1 else None
 
-            section_infos.append({
-                "fmt": fmt,
-                "has_header_page": has_header_page,
-                "has_footer_page": has_footer_page,
-                "has_any_page": has_header_page or has_footer_page,
-            })
-
-        all_formats = {s["fmt"] for s in section_infos if s["fmt"]}
+        all_formats: set[str] = set()
+        if prelim_zone:
+            all_formats.add(prelim_zone["fmt"])
+        if content_zone:
+            all_formats.add(content_zone["fmt"])
 
         # ── Preliminary (romawi) ──────────────────────────────────────────────
         if prelim:
@@ -983,78 +1207,72 @@ def _check_numbering(
             exp_loc = (prelim.location or "").upper()  # "HEADER" atau "FOOTER"
             exp_start = prelim.start_at_section  # e.g. "daftar_isi"
 
-            prelim_sections = [s for s in section_infos if s["fmt"] == exp_fmt]
-            wrong_fmt_sections = [
-                s for s in section_infos
-                if s["has_any_page"] and s["fmt"] not in (exp_fmt, content.format if content else None)
-            ]
+            zone = prelim_zone
+            fmt_match = zone is not None and zone["fmt"] == exp_fmt
 
-            if prelim_sections:
+            if fmt_match:
                 checks.append(ValidationCheckResult(
                     category="numbering", field="preliminary_format",
                     status="passed",
                     message=(
-                        f"Format nomor halaman preliminary '{exp_fmt}' "
-                        f"({_NUM_FORMAT_DISPLAY.get(exp_fmt, exp_fmt)}): "
-                        f"ditemukan di {len(prelim_sections)} section"
+                        f"Format nomor halaman awal '{exp_fmt}' "
+                        f"({_NUM_FORMAT_DISPLAY.get(exp_fmt, exp_fmt)}): sesuai"
                     ),
                     expected=exp_fmt,
                 ))
                 # Cek lokasi
-                if exp_loc in ("HEADER", "FOOTER"):
-                    loc_ok = [
-                        s for s in prelim_sections
-                        if (exp_loc == "HEADER" and s["has_header_page"])
-                        or (exp_loc == "FOOTER" and s["has_footer_page"])
-                    ]
-                    loc_wrong = [
-                        s for s in prelim_sections
-                        if s["has_any_page"] and s not in loc_ok
-                    ]
-                    if loc_wrong:
+                if exp_loc in ("HEADER", "FOOTER") and zone["has_any_page"]:
+                    loc_ok = (
+                        (exp_loc == "HEADER" and zone["has_header_page"])
+                        or (exp_loc == "FOOTER" and zone["has_footer_page"])
+                    )
+                    if not loc_ok:
+                        actual_loc = "HEADER" if zone["has_header_page"] else "FOOTER"
                         msg = (
-                            f"Nomor halaman preliminary seharusnya di {exp_loc}. "
-                            f"{len(loc_wrong)} section menggunakan lokasi berbeda."
+                            f"Nomor halaman awal seharusnya di {exp_loc}, "
+                            f"tetapi ditemukan di {actual_loc}."
                         )
                         issues.append(ValidationIssue(
                             category="numbering", field="preliminary_location",
                             severity="warning", message=msg, expected=exp_loc,
+                            actual=actual_loc,
                         ))
                         checks.append(ValidationCheckResult(
                             category="numbering", field="preliminary_location",
                             status="warning", message=msg, expected=exp_loc,
+                            actual=actual_loc,
                         ))
-                    elif loc_ok:
+                    else:
                         checks.append(ValidationCheckResult(
                             category="numbering", field="preliminary_location",
                             status="passed",
-                            message=f"Lokasi nomor halaman preliminary ({exp_loc}): sesuai",
+                            message=f"Lokasi nomor halaman awal ({exp_loc}): sesuai",
                             expected=exp_loc,
                         ))
             else:
-                # Format preliminary tidak ditemukan sama sekali
+                actual_fmt = zone["fmt"] if zone else None
                 found_fmts = sorted(all_formats)
                 msg = (
-                    f"Format nomor halaman preliminary '{exp_fmt}' "
-                    f"({_NUM_FORMAT_DISPLAY.get(exp_fmt, exp_fmt)}) tidak ditemukan. "
+                    f"Format nomor halaman awal '{exp_fmt}' "
+                    f"({_NUM_FORMAT_DISPLAY.get(exp_fmt, exp_fmt)}) tidak ditemukan "
+                    f"di bagian sebelum BAB 1. "
                     + (f"Format yang ada: {found_fmts}" if found_fmts else "Tidak ada nomor halaman terdeteksi.")
                 )
                 issues.append(ValidationIssue(
                     category="numbering", field="preliminary_format",
                     severity="error", message=msg,
                     expected=exp_fmt,
-                    actual=str(found_fmts[0]) if found_fmts else None,
+                    actual=actual_fmt,
                 ))
                 checks.append(ValidationCheckResult(
                     category="numbering", field="preliminary_format",
                     status="failed", message=msg,
                     expected=exp_fmt,
-                    actual=str(found_fmts[0]) if found_fmts else None,
+                    actual=actual_fmt,
                 ))
 
-            # Cek titik mulai: verifikasi section start_at_section ada di dokumen
             if exp_start:
-                _check_start_section(exp_start, doc, issues, checks, zone="preliminary")
+                _check_start_section(exp_start, doc, issues, checks, zone="awal")
 
         # ── Content (angka arab) ──────────────────────────────────────────────
         if content:
@@ -1062,44 +1280,43 @@ def _check_numbering(
             exp_loc = (content.location or "").upper()
             exp_start = content.start_at_section  # e.g. "bab_1"
 
-            content_sections = [s for s in section_infos if s["fmt"] == exp_fmt]
+            zone = content_zone
+            fmt_match = zone is not None and zone["fmt"] == exp_fmt
 
-            if content_sections:
+            if fmt_match:
                 checks.append(ValidationCheckResult(
                     category="numbering", field="content_format",
                     status="passed",
                     message=(
                         f"Format nomor halaman isi '{exp_fmt}' "
-                        f"({_NUM_FORMAT_DISPLAY.get(exp_fmt, exp_fmt)}): "
-                        f"ditemukan di {len(content_sections)} section"
+                        f"({_NUM_FORMAT_DISPLAY.get(exp_fmt, exp_fmt)}): sesuai "
+                        f"(ditemukan mulai BAB 1)"
                     ),
                     expected=exp_fmt,
                 ))
                 # Cek lokasi
-                if exp_loc in ("HEADER", "FOOTER"):
-                    loc_ok = [
-                        s for s in content_sections
-                        if (exp_loc == "HEADER" and s["has_header_page"])
-                        or (exp_loc == "FOOTER" and s["has_footer_page"])
-                    ]
-                    loc_wrong = [
-                        s for s in content_sections
-                        if s["has_any_page"] and s not in loc_ok
-                    ]
-                    if loc_wrong:
+                if exp_loc in ("HEADER", "FOOTER") and zone["has_any_page"]:
+                    loc_ok = (
+                        (exp_loc == "HEADER" and zone["has_header_page"])
+                        or (exp_loc == "FOOTER" and zone["has_footer_page"])
+                    )
+                    if not loc_ok:
+                        actual_loc = "HEADER" if zone["has_header_page"] else "FOOTER"
                         msg = (
-                            f"Nomor halaman isi seharusnya di {exp_loc}. "
-                            f"{len(loc_wrong)} section menggunakan lokasi berbeda."
+                            f"Nomor halaman isi seharusnya di {exp_loc}, "
+                            f"tetapi ditemukan di {actual_loc}."
                         )
                         issues.append(ValidationIssue(
                             category="numbering", field="content_location",
                             severity="warning", message=msg, expected=exp_loc,
+                            actual=actual_loc,
                         ))
                         checks.append(ValidationCheckResult(
                             category="numbering", field="content_location",
                             status="warning", message=msg, expected=exp_loc,
+                            actual=actual_loc,
                         ))
-                    elif loc_ok:
+                    else:
                         checks.append(ValidationCheckResult(
                             category="numbering", field="content_location",
                             status="passed",
@@ -1107,27 +1324,29 @@ def _check_numbering(
                             expected=exp_loc,
                         ))
             else:
+                actual_fmt = zone["fmt"] if zone else None
                 found_fmts = sorted(all_formats)
                 msg = (
                     f"Format nomor halaman isi '{exp_fmt}' "
-                    f"({_NUM_FORMAT_DISPLAY.get(exp_fmt, exp_fmt)}) tidak ditemukan. "
+                    f"({_NUM_FORMAT_DISPLAY.get(exp_fmt, exp_fmt)}) tidak ditemukan "
+                    f"di section yang mengandung BAB 1. "
                     + (f"Format yang ada: {found_fmts}" if found_fmts else "Tidak ada nomor halaman terdeteksi.")
                 )
                 issues.append(ValidationIssue(
                     category="numbering", field="content_format",
                     severity="error", message=msg,
                     expected=exp_fmt,
-                    actual=str(found_fmts[0]) if found_fmts else None,
+                    actual=actual_fmt,
                 ))
                 checks.append(ValidationCheckResult(
                     category="numbering", field="content_format",
                     status="failed", message=msg,
                     expected=exp_fmt,
-                    actual=str(found_fmts[0]) if found_fmts else None,
+                    actual=actual_fmt,
                 ))
 
             if exp_start:
-                _check_start_section(exp_start, doc, issues, checks, zone="content")
+                _check_start_section(exp_start, doc, issues, checks, zone="isi")
 
     except Exception as exc:
         checks.append(ValidationCheckResult(
