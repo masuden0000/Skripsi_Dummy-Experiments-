@@ -158,17 +158,13 @@ def _build_issues_checks(
         msg = f"{key} ({count}x mismatch).{example_str}"
 
         # Parse actual/expected dari format key: "Style.attr: actual=X expected=Y"
-        actual_str = None
-        expected_str = None
-        m_actual = re.search(r"actual=(\S+)", key)
-        if m_actual:
-            actual_str = m_actual.group(1)
-        m_expected = re.search(r"expected=(\S+)", key)
-        if m_expected:
-            expected_str = m_expected.group(1)
+        vm_actual = re.search(r"actual=(\S+)", key)
+        vm_expected = re.search(r"expected=(\S+)", key)
+        vm_actual_str = vm_actual.group(1) if vm_actual else None
+        vm_expected_str = vm_expected.group(1) if vm_expected else None
 
         valid_paras = paras if isinstance(paras, list) and paras and isinstance(paras[0], dict) else []
-        occurrences = _build_occurrences(valid_paras, actual_str, expected_str) or None
+        occurrences = _build_occurrences(valid_paras, vm_actual_str, vm_expected_str) or None
 
         issues.append(ValidationIssue(
             category=category, field=field,
@@ -192,17 +188,13 @@ def _build_issues_checks(
         msg = f"Font mismatch: {key} ({count}x).{example_str}"
 
         # Pisahkan actual/expected dari key: "Style: actual=[X] expected=[Y]"
-        actual_str = None
-        expected_str = None
-        m_actual = re.search(r"actual=\[([^\]]+)\]", key)
-        if m_actual:
-            actual_str = m_actual.group(1)
-        m_expected = re.search(r"expected=\[([^\]]+)\]", key)
-        if m_expected:
-            expected_str = m_expected.group(1)
+        fm_actual = re.search(r"actual=\[([^\]]+)\]", key)
+        fm_expected = re.search(r"expected=\[([^\]]+)\]", key)
+        fm_actual_str = fm_actual.group(1) if fm_actual else None
+        fm_expected_str = fm_expected.group(1) if fm_expected else None
 
         valid_paras = paras if isinstance(paras, list) and paras and isinstance(paras[0], dict) else []
-        occurrences = _build_occurrences(valid_paras, actual_str, expected_str) or None
+        occurrences = _build_occurrences(valid_paras, fm_actual_str, fm_expected_str) or None
 
         issues.append(ValidationIssue(
             category="typography", field="font_per_paragraph",

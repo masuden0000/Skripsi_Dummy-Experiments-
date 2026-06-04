@@ -420,7 +420,7 @@ export function DocumentValidator() {
                   </p>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setFile(null); setResult(null) }}
+                    onClick={(e) => { e.stopPropagation(); handleReset() }}
                     className="mt-2 text-xs text-destructive hover:underline"
                   >
                     Hapus file
