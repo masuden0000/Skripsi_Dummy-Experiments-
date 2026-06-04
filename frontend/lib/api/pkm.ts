@@ -59,12 +59,34 @@ export const validationSummarySchema = z.object({
   errors: z.number().optional(),
 })
 
+// Schema untuk satu hasil pengecekan (passed/failed/skipped) dari backend.
+// `expected` dan `actual` bisa berupa string/number/boolean dari Python,
+// dikonversi ke string via transform agar konsisten di frontend.
+const _coerceStr = z.union([z.string(), z.number(), z.boolean()])
+  .transform((v) => String(v))
+  .nullable()
+  .optional()
+
+export const validationCheckSchema = z.object({
+  category: z.string(),
+  field: z.string(),
+  status: z.enum(["passed", "failed", "warning", "skipped"]),
+  message: z.string().optional().default(""),
+  expected: _coerceStr,
+  actual: _coerceStr,
+  location: z.string().nullable().optional(),
+  skip_reason: z.string().nullable().optional(),
+})
+
 export const validationResultSchema = z.object({
   valid: z.boolean(),
   status: z.enum(["pass", "fail", "warning"]),
   issues: z.array(validationIssueSchema).optional().default([]),
   summary: validationSummarySchema.optional(),
   validated_at: z.string().optional(),
+  // report: hasil lengkap semua pengecekan dikelompokkan per kategori.
+  // Dipakai untuk menampilkan daftar pengecekan yang lulus di panel "Lulus".
+  report: z.record(z.string(), z.array(validationCheckSchema)).optional(),
 })
 
 // ============================================================================
@@ -74,6 +96,7 @@ export type PkmSchema = z.infer<typeof pkmSchemaSchema>
 export type ActivePeriod = z.infer<typeof activePeriodSchema>
 export type ValidationIssue = z.infer<typeof validationIssueSchema>
 export type ValidationOccurrence = z.infer<typeof validationOccurrenceSchema>
+export type ValidationCheck = z.infer<typeof validationCheckSchema>
 export type ValidationResult = z.infer<typeof validationResultSchema>
 
 // ============================================================================

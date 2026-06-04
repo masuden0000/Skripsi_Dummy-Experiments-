@@ -23,6 +23,7 @@ import {
   type ValidationResult,
   type ValidationIssue,
   type ValidationOccurrence,
+  type ValidationCheck,
 } from "@/lib/api/pkm"
 import { PKM_SCHEMES } from "@/lib/constants/pkm-schemes"
 import { YearPicker } from "@/components/ui/year-picker"
@@ -57,26 +58,61 @@ const FIELD_LABELS: Record<string, string> = {
   caption                 : "Caption gambar/tabel",
 }
 
+// Konversi nama field teknis ke label Indonesia.
+// Menangani field dari FIELD_LABELS, field validocx_param.*, dan raw field name.
+function formatFieldLabel(field: string): string {
+  if (FIELD_LABELS[field]) return FIELD_LABELS[field]
+  if (field.startsWith("validocx_param.")) {
+    const stripped = field.replace("validocx_param.", "").replace(/_/g, " ")
+    return stripped.charAt(0).toUpperCase() + stripped.slice(1)
+  }
+  return field
+}
+
 // ── SummaryBar ───────────────────────────────────────────────────────────────
-function SummaryBar({ result }: { result: ValidationResult }) {
+function SummaryBar({
+  result,
+  viewMode,
+  onPassedClick,
+}: {
+  result: ValidationResult
+  viewMode: "issues" | "passed"
+  onPassedClick: () => void
+}) {
   const errors   = result.issues?.filter((i) => i.severity === "error").length   ?? 0
   const warnings = result.issues?.filter((i) => i.severity === "warning").length ?? 0
   const passed   = result.summary?.passed ?? 0
   const skipped  = result.issues?.filter((i) => i.severity === "info").length ?? 0
+  const isPassedActive = viewMode === "passed"
 
   return (
     <div className="grid grid-cols-4 divide-x divide-border border-t border-border">
-      {[
-        { count: errors,   label: "Error",      num: "text-red-600",  bg: "bg-red-50"   },
-        { count: warnings, label: "Peringatan", num: "text-amber-600", bg: "bg-amber-50" },
-        { count: passed,   label: "Lulus",      num: "text-pkm-600",  bg: "bg-pkm-50"   },
-        { count: skipped,  label: "Dilewati",   num: "text-gray-400", bg: ""            },
-      ].map(({ count, label, num, bg }) => (
-        <div key={label} className={`flex flex-col items-center py-4 ${bg}`}>
-          <span className={`text-2xl font-bold tabular-nums ${num}`}>{count}</span>
-          <span className="mt-0.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide">{label}</span>
-        </div>
-      ))}
+      <div className="flex flex-col items-center py-4 bg-red-50">
+        <span className="text-2xl font-bold tabular-nums text-red-600">{errors}</span>
+        <span className="mt-0.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide">Error</span>
+      </div>
+      <div className="flex flex-col items-center py-4 bg-amber-50">
+        <span className="text-2xl font-bold tabular-nums text-amber-600">{warnings}</span>
+        <span className="mt-0.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide">Peringatan</span>
+      </div>
+      {/* Tile "Lulus" bisa diklik untuk menampilkan daftar pengecekan yang lolos */}
+      <button
+        type="button"
+        onClick={onPassedClick}
+        className={[
+          "flex flex-col items-center py-4 transition-colors cursor-pointer",
+          isPassedActive ? "bg-pkm-100 ring-1 ring-inset ring-pkm-200" : "bg-pkm-50 hover:bg-pkm-100/70",
+        ].join(" ")}
+      >
+        <span className="text-2xl font-bold tabular-nums text-pkm-600">{passed}</span>
+        <span className={["mt-0.5 text-[11px] font-medium uppercase tracking-wide", isPassedActive ? "text-pkm-700" : "text-gray-400"].join(" ")}>
+          Lulus{isPassedActive ? " ▾" : ""}
+        </span>
+      </button>
+      <div className="flex flex-col items-center py-4">
+        <span className="text-2xl font-bold tabular-nums text-gray-400">{skipped}</span>
+        <span className="mt-0.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide">Dilewati</span>
+      </div>
     </div>
   )
 }
@@ -312,6 +348,136 @@ function LocationPanel({ issue }: { issue: ValidationIssue | null }) {
 }
 
 // ── DocumentValidator (komponen utama) ───────────────────────────────────────
+// ── PassedListPanel ──────────────────────────────────────────────────────────
+// Panel kiri saat mode "Lulus": menampilkan semua pengecekan yang lolos,
+// dikelompokkan per kategori. `checks` adalah flat list dari result.report.
+function PassedListPanel({
+  checks,
+  selectedIdx,
+  onSelect,
+}: {
+  checks: ValidationCheck[]
+  selectedIdx: number | null
+  onSelect: (idx: number) => void
+}) {
+  const grouped = checks.reduce<Record<string, Array<{ check: ValidationCheck; idx: number }>>>(
+    (acc, check, idx) => {
+      const cat = check.category ?? "other"
+      if (!acc[cat]) acc[cat] = []
+      acc[cat].push({ check, idx })
+      return acc
+    },
+    {}
+  )
+
+  return (
+    <div className="border-r border-border overflow-y-auto flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-border sticky top-0 z-10">
+        <span className="text-sm font-semibold text-gray-700">Pengecekan Lulus</span>
+        <span className="text-xs font-semibold bg-pkm-100 text-pkm-700 px-2 py-0.5 rounded-full">
+          {checks.length}
+        </span>
+      </div>
+      <div className="flex-1">
+        {Object.entries(grouped).map(([cat, items]) => (
+          <div key={cat}>
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b border-border/40">
+              <span className="size-1.5 rounded-full bg-pkm-400 shrink-0" />
+              <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.07em]">
+                {CATEGORY_LABELS[cat] ?? cat}
+              </span>
+            </div>
+            {items.map(({ check, idx }) => {
+              const isActive = selectedIdx === idx
+              return (
+                <button
+                  key={idx}
+                  onClick={() => onSelect(idx)}
+                  className={[
+                    "w-full text-left px-4 py-3 border-b border-border/40 flex items-start gap-3 transition-colors",
+                    isActive
+                      ? "bg-pkm-50 border-l-[3px] border-l-pkm-600"
+                      : "hover:bg-gray-50 border-l-[3px] border-l-transparent",
+                  ].join(" ")}
+                >
+                  <span className="shrink-0 mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-pkm-100 text-pkm-700">
+                    OK
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm truncate ${isActive ? "font-semibold text-pkm-900" : "font-medium text-gray-800"}`}>
+                      {formatFieldLabel(check.field)}
+                    </p>
+                    <p className="text-[11px] text-gray-400 truncate mt-0.5 leading-tight">
+                      {check.message}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── PassedDetailPanel ────────────────────────────────────────────────────────
+// Panel kanan saat mode "Lulus": detail pengecekan yang dipilih.
+// Menampilkan nilai yang ditemukan di dokumen dan nilai yang diharapkan.
+function PassedDetailPanel({ check }: { check: ValidationCheck | null }) {
+  if (!check) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[320px] bg-gray-50/60 gap-3">
+        <div className="size-10 rounded-full bg-pkm-100 flex items-center justify-center">
+          <CheckCircleIcon className="size-5 text-pkm-500" />
+        </div>
+        <p className="text-sm text-gray-400">Pilih pengecekan di kiri untuk melihat detail</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col overflow-y-auto bg-gray-50/40">
+      {/* Header */}
+      <div className="px-5 py-3.5 border-b border-border bg-white sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <span className="size-4 rounded-full bg-pkm-100 flex items-center justify-center shrink-0">
+            <CheckCircleIcon className="size-3 text-pkm-600" />
+          </span>
+          <p className="text-sm font-semibold text-gray-800">{formatFieldLabel(check.field)}</p>
+        </div>
+        <p className="text-xs text-gray-400 mt-1 ml-6">{check.message}</p>
+      </div>
+
+      {/* Detail nilai */}
+      <div className="p-4 space-y-3">
+        <div className="rounded-lg border border-pkm-100 bg-white p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold bg-pkm-100 text-pkm-700 px-2 py-0.5 rounded-full">Lolos ✓</span>
+            <span className="text-xs text-gray-500">Pengecekan ini sesuai dengan aturan</span>
+          </div>
+          {(check.expected || check.actual) && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {check.actual && (
+                <span className="inline-flex items-center gap-1.5 text-xs bg-pkm-50 text-pkm-700 px-2.5 py-1 rounded-md border border-pkm-100">
+                  <span className="size-1.5 rounded-full bg-pkm-400 shrink-0" />
+                  <span className="font-medium">Ditemukan:</span>&nbsp;{check.actual}
+                </span>
+              )}
+              {check.expected && (
+                <span className="inline-flex items-center gap-1.5 text-xs bg-pkm-50 text-pkm-700 px-2.5 py-1 rounded-md border border-pkm-100">
+                  <span className="size-1.5 rounded-full bg-pkm-400 shrink-0" />
+                  <span className="font-medium">Seharusnya:</span>&nbsp;{check.expected}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function DocumentValidator() {
   const [selectedSchemaId, setSelectedSchemaId] = useState<string>("")
   const [selectedYear, setSelectedYear]         = useState<string>("")
@@ -320,6 +486,9 @@ export function DocumentValidator() {
   const [result, setResult]                     = useState<ValidationResult | null>(null)
   const [error, setError]                       = useState<string | null>(null)
   const [selectedIssueIdx, setSelectedIssueIdx] = useState<number | null>(null)
+  // viewMode: "issues" = tampil masalah (default), "passed" = tampil yang lolos
+  const [viewMode, setViewMode]                 = useState<"issues" | "passed">("issues")
+  const [selectedCheckIdx, setSelectedCheckIdx] = useState<number | null>(null)
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0]
@@ -366,6 +535,8 @@ export function DocumentValidator() {
     setError(null)
     setResult(null)
     setSelectedIssueIdx(null)
+    setViewMode("issues")
+    setSelectedCheckIdx(null)
 
     const res = await runDocumentValidation({ schemaId: selectedSchemaId, year: selectedYear, file })
     setLoading(false)
@@ -384,9 +555,16 @@ export function DocumentValidator() {
     setResult(null)
     setError(null)
     setSelectedIssueIdx(null)
+    setViewMode("issues")
+    setSelectedCheckIdx(null)
   }
 
   const allIssues = result?.issues ?? []
+
+  // Ambil semua checks yang lulus dari result.report (diratakan dari semua kategori)
+  const passedChecks: ValidationCheck[] = Object.values(result?.report ?? {})
+    .flat()
+    .filter((c) => c.status === "passed")
 
   return (
     <ReviewerSurfaceCard>
@@ -517,16 +695,38 @@ export function DocumentValidator() {
 
           {allIssues.length > 0 && (
             <div className="border-t border-border">
-              <SummaryBar result={result} />
+              <SummaryBar
+                result={result}
+                viewMode={viewMode}
+                onPassedClick={() => {
+                  setViewMode((m) => m === "passed" ? "issues" : "passed")
+                  setSelectedCheckIdx(null)
+                }}
+              />
               <div className="grid grid-cols-[300px_1fr] border-t border-border overflow-hidden" style={{ height: 680 }}>
-                <IssueListPanel
-                  issues={allIssues}
-                  selectedIdx={selectedIssueIdx}
-                  onSelect={setSelectedIssueIdx}
-                />
-                <LocationPanel
-                  issue={selectedIssueIdx !== null ? allIssues[selectedIssueIdx] : null}
-                />
+                {viewMode === "passed" ? (
+                  <>
+                    <PassedListPanel
+                      checks={passedChecks}
+                      selectedIdx={selectedCheckIdx}
+                      onSelect={setSelectedCheckIdx}
+                    />
+                    <PassedDetailPanel
+                      check={selectedCheckIdx !== null ? passedChecks[selectedCheckIdx] : null}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <IssueListPanel
+                      issues={allIssues}
+                      selectedIdx={selectedIssueIdx}
+                      onSelect={setSelectedIssueIdx}
+                    />
+                    <LocationPanel
+                      issue={selectedIssueIdx !== null ? allIssues[selectedIssueIdx] : null}
+                    />
+                  </>
+                )}
               </div>
             </div>
           )}
