@@ -61,6 +61,9 @@ const FIELD_LABELS: Record<string, string> = {
   // ── Heading ─────────────────────────────────────────────────────────────
   heading_1_case          : "Kapitalisasi Heading 1",
   heading_2_case          : "Kapitalisasi Heading 2",
+  heading_3_case          : "Kapitalisasi Heading 3",
+  heading_4_case          : "Kapitalisasi Heading 4",
+  heading_5_case          : "Kapitalisasi Heading 5",
   heading_case            : "Kapitalisasi heading",
   // ── Figures & Tables ────────────────────────────────────────────────────
   figure_caption_position : "Posisi caption gambar",
@@ -68,6 +71,13 @@ const FIELD_LABELS: Record<string, string> = {
   table_caption_position  : "Posisi caption tabel",
   table_caption_format    : "Format caption tabel",
   caption                 : "Caption gambar/tabel",
+  lampiran_separator      : "Format penulisan judul lampiran",
+  lampiran_format         : "Atribut judul lampiran",
+  lampiran_alignment      : "Rata teks judul lampiran",
+  lampiran_font           : "Font judul lampiran",
+  lampiran_font_size      : "Ukuran font judul lampiran",
+  lampiran_spacing        : "Spasi judul lampiran",
+  halaman_inti            : "Jumlah halaman inti",
 }
 
 // Terjemahan nama parameter teknis validocx → label Indonesia
@@ -136,13 +146,12 @@ function SummaryBar({
   const errors   = result.issues?.filter((i) => i.severity === "error").length   ?? 0
   const warnings = result.issues?.filter((i) => i.severity === "warning").length ?? 0
   const passed   = result.summary?.passed ?? 0
-  const skipped  = result.issues?.filter((i) => i.severity === "info").length ?? 0
   const isErrorActive   = viewMode === "error"
   const isWarningActive = viewMode === "warning"
   const isPassedActive  = viewMode === "passed"
 
   return (
-    <div className="grid grid-cols-4 divide-x divide-border border-t border-border">
+    <div className="grid grid-cols-3 divide-x divide-border border-t border-border">
       <button
         type="button"
         onClick={onErrorClick}
@@ -182,10 +191,6 @@ function SummaryBar({
           Lulus{isPassedActive ? " ▾" : ""}
         </span>
       </button>
-      <div className="flex flex-col items-center py-4">
-        <span className="text-2xl font-bold tabular-nums text-gray-400">{skipped}</span>
-        <span className="mt-0.5 text-[11px] font-medium text-gray-400 uppercase tracking-wide">Dilewati</span>
-      </div>
     </div>
   )
 }
@@ -618,6 +623,7 @@ export function DocumentValidator() {
       setError(res.error)
     } else {
       setResult(res.data)
+      if (res.data?.valid) setViewMode("passed")
     }
   }
 
@@ -771,8 +777,7 @@ export function DocumentValidator() {
             )}
           </div>
 
-          {allIssues.length > 0 && (
-            <div className="border-t border-border">
+          <div className="border-t border-border">
               <SummaryBar
                 result={result}
                 viewMode={viewMode}
@@ -815,7 +820,6 @@ export function DocumentValidator() {
                 )}
               </div>
             </div>
-          )}
         </>
       )}
     </ReviewerSurfaceCard>

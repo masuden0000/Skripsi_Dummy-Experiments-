@@ -250,8 +250,6 @@ def _apply_base_styles(document: Document, typography: dict, spacing: dict) -> N
     body_font    = typography.get("font_family", "Times New Roman")
     body_size    = typography.get("font_size_body_pt", 12)
     heading_size  = typography.get("font_size_heading_pt", body_size)
-    heading_bold  = typography.get("heading_bold", True)
-    heading_caps  = typography.get("heading_all_caps", True)
     h1_case = (typography.get("heading_1_case") or "").upper()
     h2_case = (typography.get("heading_2_case") or "").upper()
     line_spacing  = spacing.get("line_spacing", 1.15)
@@ -275,15 +273,18 @@ def _apply_base_styles(document: Document, typography: dict, spacing: dict) -> N
             continue
         h.font.name      = body_font
         h.font.size      = Pt(heading_size)
-        h.font.bold      = heading_bold
         if style_name == "Heading 1":
-            h.font.all_caps = (h1_case == "UPPERCASE") or (not h1_case and heading_caps)
+            h.font.all_caps = (h1_case == "UPPERCASE")
         elif style_name == "Heading 2":
             h.font.all_caps = (h2_case == "UPPERCASE")
         else:
             h.font.all_caps = False
         h.font.color.rgb = RGBColor(0, 0, 0)
-        h.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # H1 = CENTER, H2–H4 = JUSTIFY (ikut body)
+        if style_name == "Heading 1":
+            h.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        else:
+            h.paragraph_format.alignment = _map_alignment(alignment_str)
         h.paragraph_format.space_before = Pt(0)
         h.paragraph_format.space_after  = Pt(0)
 
@@ -360,7 +361,7 @@ def _render_preliminary_pages(
         elif sec_type == "daftar_tabel":
             _render_daftar_tabel_example(document, page_layout, typography, figures_tables)
         elif sec_type == "daftar_lampiran":
-            _render_daftar_lampiran_example(document, page_layout, typography)
+            _render_daftar_lampiran_example(document, page_layout, typography, figures_tables)
         else:
             placeholder_text = instructional_placeholders.get(
                 instruction_key,
@@ -538,17 +539,34 @@ def _render_daftar_tabel_example(
         run.font.color.rgb = RGBColor(0, 0, 0)
 
 
-def _render_daftar_lampiran_example(document: Document, page_layout: dict, typography: dict) -> None:
+def _render_daftar_lampiran_example(
+    document: Document,
+    page_layout: dict,
+    typography: dict,
+    figures_tables: dict | None = None,
+) -> None:
     paper_width, _ = _get_paper_dimensions(page_layout.get("paper_size"))
     text_width_cm = paper_width - page_layout.get("margin_left_cm", 4.0) - page_layout.get("margin_right_cm", 3.0)
     body_font = typography.get("font_family", "Times New Roman")
     body_size = typography.get("font_size_body_pt", 12)
 
-    sample_entries = [
-        ("Lampiran 1 [Judul Lampiran Pertama]", "11"),
-        ("Lampiran 2 [Judul Lampiran Kedua]", "12"),
-        ("Lampiran 3 [Judul Lampiran Ketiga]", "13"),
+    fmt = None
+    if figures_tables:
+        fmt = figures_tables.get("caption_format_lampiran")
+    if not fmt:
+        fmt = "Lampiran {n}. {title}"
+
+    sample_titles = [
+        "Biodata Ketua dan Anggota Tim",
+        "Justifikasi Anggaran Kegiatan",
+        "Surat Pernyataan Ketua Pelaksana",
     ]
+    sample_pages = ["11", "12", "13"]
+    sample_entries = [
+        (fmt.replace("{n}", str(i + 1)).replace("{title}", f"[{title}]"), page)
+        for i, (title, page) in enumerate(zip(sample_titles, sample_pages))
+    ]
+
     for entry_text, page_num in sample_entries:
         p = document.add_paragraph()
         p.paragraph_format.tab_stops.add_tab_stop(
@@ -585,6 +603,11 @@ def _render_proposal_body(
     instructional_placeholders: dict[str, str],
     typography: dict | None = None,
 ) -> None:
+    # Separator antara nomor dan judul lampiran — dibaca dari doc_structure,
+    # fallback ke "." jika tidak ada (paling umum di PKM).
+    lampiran_sep = doc_structure.get("lampiran_heading_separator")
+    if lampiran_sep is None:
+        lampiran_sep = "."
     typography = typography or {}
     for section in doc_structure.get("sections", []):
         if section["type"] == "bab":
@@ -606,7 +629,7 @@ def _render_proposal_body(
         elif section["type"] == "sub_bab":
             _render_sub_bab_section(document, section, page_layout, spacing, figures_tables, instructional_placeholders, typography)
         elif section["type"] == "item_lampiran":
-            _render_item_lampiran_section(document, section, page_layout, spacing, instructional_placeholders, typography)
+            _render_item_lampiran_section(document, section, page_layout, spacing, instructional_placeholders, typography, lampiran_sep, figures_tables)
 
 
 def _render_bab_section(
@@ -771,7 +794,7 @@ def _render_sub_bab_section(
     _apply_line_spacing(sep.paragraph_format, spacing)
 
     heading = document.add_heading(heading_text, level=2)
-    heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    heading.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     _force_paragraph_runs_black(heading)
     bm_id = _bookmark_id("sub_bab")
     bm_name = _bookmark_name("sub_bab", sub_num)
@@ -871,11 +894,28 @@ def _render_item_lampiran_section(
     spacing: dict,
     instructional_placeholders: dict[str, str],
     typography: dict | None = None,
+    lampiran_separator: str = ".",
+    figures_tables: dict | None = None,
 ) -> None:
     typography = typography or {}
-    lampiran_number = (section.get("lampiran_number") or "Lampiran ?").title()
-    title           = (section.get("title") or "[LAMPIRAN_TANPA_JUDUL]").title()
-    heading_text    = _apply_heading_case(f"{lampiran_number}. {title}".strip(), typography.get("heading_2_case"))
+    lampiran_number_raw = (section.get("lampiran_number") or "Lampiran ?").title()
+    title               = (section.get("title") or "[LAMPIRAN_TANPA_JUDUL]").title()
+
+    lampiran_fmt = (figures_tables or {}).get("caption_format_lampiran")
+    if lampiran_fmt:
+        # Ekstrak ordinal dari "Lampiran 1" → "1", "Lampiran A" → "A"
+        parts = lampiran_number_raw.strip().split(None, 1)
+        ordinal = parts[1] if len(parts) == 2 and parts[0].upper() == "LAMPIRAN" else lampiran_number_raw
+        heading_text = _apply_heading_case(
+            lampiran_fmt.replace("{n}", ordinal).replace("{title}", title),
+            typography.get("heading_2_case"),
+        )
+    else:
+        sep_str = f"{lampiran_separator} " if lampiran_separator else " "
+        heading_text = _apply_heading_case(
+            f"{lampiran_number_raw}{sep_str}{title}".strip(),
+            typography.get("heading_2_case"),
+        )
 
     sep = document.add_paragraph()
     sep.paragraph_format.space_before = Pt(0)
@@ -883,7 +923,7 @@ def _render_item_lampiran_section(
     _apply_line_spacing(sep.paragraph_format, spacing)
 
     heading = document.add_heading(heading_text, level=2)
-    heading.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    heading.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     _force_paragraph_runs_black(heading)
     bm_id = _bookmark_id("lampiran")
     bm_name = _bookmark_name("lampiran", lampiran_number)

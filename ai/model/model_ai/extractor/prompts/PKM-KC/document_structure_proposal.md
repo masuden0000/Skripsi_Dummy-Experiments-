@@ -61,10 +61,18 @@ Jika ada yang terlewat, tambahkan sebelum finalisasi output.
 - Judul sub-BAB menggunakan Title Case (huruf awal tiap kata besar): "Anggaran Biaya", "Jadwal Kegiatan"
 - Nilai bool: true atau false (bukan string)
 - required: true = wajib ada; false = opsional (sertakan jika ada konten)
+- lampiran_heading_separator: string `"."`, `""`, atau null (bukan bool, bukan integer)
 
 ## Output Fields (top-level)
 - sections: daftar section berurutan (lihat format di bawah)
 - format_nama_file: format nama file untuk pengumpulan (string)
+- lampiran_heading_separator: separator antara nomor dan judul lampiran (string atau null)
+  Cara menentukan:
+  1. **Cari perintah eksplisit** di section sistematika: "penomoran lampiran menggunakan titik", dsb.
+  2. **Jika tidak ada perintah eksplisit**, cari contoh penulisan lampiran di daftar lampiran atau sistematika.
+     - Contoh "Lampiran 1. Biodata..." → separator = `"."`
+     - Contoh "Lampiran 1 Biodata..." (tanpa titik) → separator = `""`
+  3. Jika tidak ada contoh sama sekali → `null` (sistem akan pakai default `"."`).
 
 ## Format sections
 Setiap entry di `sections` adalah objek dengan fields berikut:

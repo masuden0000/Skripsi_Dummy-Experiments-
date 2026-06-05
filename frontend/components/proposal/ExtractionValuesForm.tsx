@@ -54,10 +54,11 @@ export type ExtractionPayload = {
     font_family: string | null
     font_size_body_pt: number | null
     font_size_heading_pt: number | null
-    heading_bold: boolean | null
-    heading_all_caps: boolean | null
     heading_1_case: "UPPERCASE" | "LOWERCASE" | "SENTENCE_CASE" | "TOGGLE_CASE" | null
     heading_2_case: "UPPERCASE" | "LOWERCASE" | "SENTENCE_CASE" | "TOGGLE_CASE" | null
+    heading_3_case: "UPPERCASE" | "LOWERCASE" | "SENTENCE_CASE" | "TOGGLE_CASE" | null
+    heading_4_case: "UPPERCASE" | "LOWERCASE" | "SENTENCE_CASE" | "TOGGLE_CASE" | null
+    heading_5_case: "UPPERCASE" | "LOWERCASE" | "SENTENCE_CASE" | "TOGGLE_CASE" | null
   }
   page_layout: {
     margin_top_cm: number | null
@@ -71,11 +72,11 @@ export type ExtractionPayload = {
     line_spacing: number | null
     line_spacing_rule: string | null
     paragraph_alignment: string | null
-    first_line_indent_cm: number | null
   }
   document_structure_proposal: {
     sections: SectionItem[]
     format_nama_file: string | null
+    lampiran_heading_separator: string | null
     user_placeholders?: Record<string, string>
   }
   numbering: {
@@ -89,6 +90,7 @@ export type ExtractionPayload = {
     figure_caption_position: string | null
     caption_format_figure: string | null
     caption_format_table: string | null
+    caption_format_lampiran: string | null
   }
   page_count_limits: {
     proposal_halaman_inti_maks: number | null
@@ -597,7 +599,7 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
       {/* ── 6. Gambar & Tabel ── */}
       <div>
         <div className="flex items-center gap-2">
-          <SectionHeader title="6. Gambar & Tabel" />
+          <SectionHeader title="6. Gambar, Tabel & Lampiran" />
           <button
             type="button"
             onClick={() => setShowFormatInfo((v) => !v)}
@@ -617,9 +619,9 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
             </p>
             <div className="mb-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
               <code className="rounded bg-muted px-1 self-start">{"{n}"}</code>
-              <span>Nomor urut gambar / tabel (1, 2, 3, …)</span>
+              <span>Nomor urut gambar / tabel / lampiran (1, 2, 3, …)</span>
               <code className="rounded bg-muted px-1 self-start">{"{title}"}</code>
-              <span>Judul gambar / tabel</span>
+              <span>Judul gambar / tabel / lampiran</span>
               <code className="rounded bg-muted px-1 self-start">{"{source}"}</code>
               <span>Sumber / credit — khusus gambar</span>
               <code className="rounded bg-muted px-1 self-start">{"{bab}"}</code>
@@ -639,6 +641,16 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
               Contoh gambar dengan sumber:{" "}
               <code className="rounded bg-muted px-1">{"Gambar {n}. {title} (Sumber: {source})"}</code>
               {" "}→ <em>Gambar 3. Diagram Alir (Sumber: Dokumentasi Tim).</em>
+            </p>
+            <p className="mt-0.5 text-[10px]">
+              Contoh lampiran:{" "}
+              <code className="rounded bg-muted px-1">{"Lampiran {n}. {title}"}</code>
+              {" "}→ <em>Lampiran 1. Biodata Tim Pengusul.</em>
+            </p>
+            <p className="mt-1.5 text-[10px] text-muted-foreground">
+              <strong>Lampiran:</strong> Format ini digunakan untuk entri di Daftar Lampiran dan heading tiap lampiran.
+              Gunakan <code className="rounded bg-muted px-1">{"{n}"}</code> untuk nomor lampiran
+              dan <code className="rounded bg-muted px-1">{"{title}"}</code> untuk judul.
             </p>
           </div>
         )}
@@ -673,6 +685,13 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
               value={data.figures_and_tables.caption_format_table}
               onChange={(v) => patch("figures_and_tables", { caption_format_table: v })}
             />
+            <TextFieldInput
+              label="Format Judul Lampiran"
+              value={data.figures_and_tables.caption_format_lampiran}
+              onChange={(v) => patch("figures_and_tables", { caption_format_lampiran: v })}
+              placeholder="contoh: Lampiran {n}. {title}"
+              hint="Gunakan {n} untuk nomor dan {title} untuk judul. Klik ⓘ untuk panduan lengkap."
+            />
           </FieldRow>
         </div>
       </div>
@@ -690,23 +709,31 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
             />
             <SelectFieldInput
               label="Style Huruf Heading 2"
-              value={data.typography.heading_2_case ?? ""}
+              value={data.typography.heading_2_case ?? "SENTENCE_CASE"}
               options={HEADING_CASE_OPTIONS}
               onChange={(v) => patch("typography", { heading_2_case: (v || null) as ExtractionPayload["typography"]["heading_2_case"] })}
             />
           </FieldRow>
-        </div>
-        <div className="px-1 flex flex-col">
-          <BoolFieldInput
-            label="Heading Bold"
-            value={data.typography.heading_bold}
-            onChange={(v) => patch("typography", { heading_bold: v })}
-          />
-          <BoolFieldInput
-            label="Heading All Caps (lama)"
-            value={data.typography.heading_all_caps}
-            onChange={(v) => patch("typography", { heading_all_caps: v })}
-          />
+          <FieldRow>
+            <SelectFieldInput
+              label="Style Huruf Heading 3"
+              value={data.typography.heading_3_case ?? "SENTENCE_CASE"}
+              options={HEADING_CASE_OPTIONS}
+              onChange={(v) => patch("typography", { heading_3_case: (v || null) as ExtractionPayload["typography"]["heading_3_case"] })}
+            />
+            <SelectFieldInput
+              label="Style Huruf Heading 4"
+              value={data.typography.heading_4_case ?? "SENTENCE_CASE"}
+              options={HEADING_CASE_OPTIONS}
+              onChange={(v) => patch("typography", { heading_4_case: (v || null) as ExtractionPayload["typography"]["heading_4_case"] })}
+            />
+            <SelectFieldInput
+              label="Style Huruf Heading 5"
+              value={data.typography.heading_5_case ?? "SENTENCE_CASE"}
+              options={HEADING_CASE_OPTIONS}
+              onChange={(v) => patch("typography", { heading_5_case: (v || null) as ExtractionPayload["typography"]["heading_5_case"] })}
+            />
+          </FieldRow>
         </div>
       </div>
 

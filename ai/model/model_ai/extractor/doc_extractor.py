@@ -79,18 +79,6 @@ def _build_key_registry(
     ]
 
 
-_BOLD_HEADING_PATTERNS = (
-    re.compile(r"\*\*\s*BAB\b", re.IGNORECASE),
-    re.compile(r"\*\*\s*DAFTAR\b", re.IGNORECASE),
-    re.compile(r"\*\*\s*RINGKASAN\b", re.IGNORECASE),
-)
-_EXPLICIT_NOT_BOLD_PATTERN = re.compile(
-    r"(judul|heading|bab).{0,40}(tidak|bukan).{0,20}(bold|tebal)|"
-    r"(judul|heading|bab).{0,40}cetak normal",
-    re.IGNORECASE,
-)
-
-
 def build_sources(chunks: list[dict]) -> list[Source]:
     return [
         Source(
@@ -110,65 +98,6 @@ def render_prompt(template: str, chunks: list[dict]) -> str:
     return template.replace("{context}", context)
 
 
-def _context_has_markdown_bold_heading(chunks: list[dict]) -> bool:
-    for chunk in chunks:
-        content = str(chunk.get("content", ""))
-        for pattern in _BOLD_HEADING_PATTERNS:
-            if pattern.search(content):
-                return True
-    return False
-
-
-def _context_explicitly_says_heading_not_bold(chunks: list[dict]) -> bool:
-    for chunk in chunks:
-        content = str(chunk.get("content", ""))
-        if _EXPLICIT_NOT_BOLD_PATTERN.search(content):
-            return True
-    return False
-
-
-def _apply_typography_heading_bold_heuristic(payload: dict[str, Any], chunks: list[dict]) -> dict[str, Any]:
-    """Force heading_bold=True when markdown heading markers imply bold styling.
-
-    Why: beberapa panduan tidak menulis kata "bold" secara eksplisit, tapi
-    struktur BAB/DAFTAR ditulis dalam markdown tebal (`**...**`). Itu dipakai
-    sebagai sinyal deterministik untuk heading style.
-    """
-    if payload.get("heading_bold") is True:
-        return payload
-    if _context_explicitly_says_heading_not_bold(chunks):
-        return payload
-    if not _context_has_markdown_bold_heading(chunks):
-        return payload
-
-    patched = dict(payload)
-    patched["heading_bold"] = True
-    return patched
-
-
-def _apply_typography_caps_heuristic(payload: dict[str, Any], chunks: list[dict]) -> dict[str, Any]:
-    """Force heading_all_caps=True when BAB headings are written in ALL CAPS.
-
-    Why: beberapa panduan menulis BAB dalam format ALL CAPS (misal "BAB 1. PENDAHULUAN").
-    Jika konteks mengandung heading BAB dengan huruf besar semua, maka set heading_all_caps=True.
-    Ini heuristic tambahan karena tidak semua panduan menulis eksplisit aturan uppercase.
-    """
-    if payload.get("heading_all_caps") is True:
-        return payload
-
-    import re
-    caps_pattern = re.compile(
-        r"(?:^|\s|\*+)BAB\s+[\dIVX]+\.?\s+[A-Z]{2,}",
-        re.MULTILINE
-    )
-    for chunk in chunks:
-        content = str(chunk.get("content", ""))
-        if caps_pattern.search(content):
-            patched = dict(payload)
-            patched["heading_all_caps"] = True
-            return patched
-
-    return payload
 
 
 
@@ -403,10 +332,6 @@ def _extract_key(
         raise RuntimeError(f"Gagal setelah {max_retries} percobaan karena rate limit.")
 
     payload = extracted.model_dump()
-    if extracted_cls is TypographyExtracted:
-        payload = _apply_typography_heading_bold_heuristic(payload, chunks)
-        payload = _apply_typography_caps_heuristic(payload, chunks)
-
     sources = build_sources(chunks)
     return info_cls(**payload, sources=sources)
 

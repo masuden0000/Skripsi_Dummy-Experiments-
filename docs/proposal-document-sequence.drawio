@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mxGraphModel dx="1422" dy="762" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1060" pageHeight="1300" math="0" shadow="0">
+<mxGraphModel dx="1422" dy="762" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1160" pageHeight="1300" math="0" shadow="0">
   <root>
     <mxCell id="0" />
     <mxCell id="1" parent="0" />
@@ -18,10 +18,10 @@
     <mxCell id="h_be" value=":Backend" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#555555;fontStyle=1;fontSize=11;fontColor=#000000;" vertex="1" parent="1">
       <mxGeometry x="330" y="30" width="110" height="40" as="geometry" />
     </mxCell>
-    <mxCell id="h_pl" value=":Pipeline" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#555555;fontStyle=1;fontSize=11;fontColor=#000000;" vertex="1" parent="1">
+    <mxCell id="h_pl" value=":AI Backend" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#555555;fontStyle=1;fontSize=11;fontColor=#000000;" vertex="1" parent="1">
       <mxGeometry x="500" y="30" width="110" height="40" as="geometry" />
     </mxCell>
-    <mxCell id="h_mg" value=":manage.py" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#555555;fontStyle=1;fontSize=11;fontColor=#000000;" vertex="1" parent="1">
+    <mxCell id="h_mg" value=":Model" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#555555;fontStyle=1;fontSize=11;fontColor=#000000;" vertex="1" parent="1">
       <mxGeometry x="670" y="30" width="110" height="40" as="geometry" />
     </mxCell>
     <mxCell id="h_sb" value=":Supabase" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#555555;fontStyle=1;fontSize=11;fontColor=#000000;" vertex="1" parent="1">
@@ -118,13 +118,12 @@
     </mxCell>
 
     <!-- ======================================================== -->
-    <!-- FASE 1: PENGISIAN FORM & UNGGAH FILE                     -->
+    <!-- FASE 1: PENGISIAN FORM & UNGGAH BERKAS                   -->
     <!-- ======================================================== -->
-    <mxCell id="f1" value="FASE 1 — Pengisian Form &amp; Unggah File" style="text;html=1;fillColor=#f0f0f0;strokeColor=#999999;align=left;fontStyle=1;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+    <mxCell id="f1" value="Pengisian Form &amp; Unggah Berkas" style="text;html=1;fillColor=#f0f0f0;strokeColor=#999999;align=left;fontStyle=1;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
       <mxGeometry x="30" y="100" width="740" height="20" as="geometry" />
     </mxCell>
 
-    <!-- Sync calls: garis utuh + arrowhead solid (block) -->
     <mxCell id="m01" value="1: pilih skema, tahun, dan file PDF" style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="55" y="128" as="sourcePoint"/><mxPoint x="210" y="128" as="targetPoint"/></mxGeometry>
     </mxCell>
@@ -141,12 +140,10 @@
       <mxGeometry relative="1" as="geometry"><mxPoint x="385" y="236" as="sourcePoint"/><mxPoint x="905" y="236" as="targetPoint"/></mxGeometry>
     </mxCell>
 
-    <!-- Return: garis putus + arrowhead terbuka (open) -->
     <mxCell id="m05" value="5: return {project_id, signed_url}" style="endArrow=open;endFill=0;dashed=1;strokeColor=#555555;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="905" y="272" as="sourcePoint"/><mxPoint x="215" y="272" as="targetPoint"/></mxGeometry>
     </mxCell>
 
-    <!-- Sync: upload langsung ke storage (sama dengan sync lainnya) -->
     <mxCell id="m06" value="6: PUT file PDF langsung ke Storage  (bypass Backend)" style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="312" as="sourcePoint"/><mxPoint x="905" y="312" as="targetPoint"/></mxGeometry>
     </mxCell>
@@ -155,20 +152,18 @@
       <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="348" as="sourcePoint"/><mxPoint x="380" y="348" as="targetPoint"/></mxGeometry>
     </mxCell>
 
-    <!-- Async: garis utuh + arrowhead terbuka (open, tidak filled) -->
     <mxCell id="m07b" value="run_pipeline()  «async»" style="endArrow=open;endFill=0;strokeColor=#000000;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="385" y="372" as="sourcePoint"/><mxPoint x="550" y="372" as="targetPoint"/></mxGeometry>
     </mxCell>
 
-    <!-- Return -->
     <mxCell id="m08" value="8: return 200 OK" style="endArrow=open;endFill=0;dashed=1;strokeColor=#555555;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="385" y="400" as="sourcePoint"/><mxPoint x="215" y="400" as="targetPoint"/></mxGeometry>
     </mxCell>
 
     <!-- ======================================================== -->
-    <!-- FASE 2+3: PIPELINE BACKGROUND                            -->
+    <!-- FASE 2: PRAPEMROSESAN DOKUMEN                            -->
     <!-- ======================================================== -->
-    <mxCell id="f2" value="FASE 2+3 — Pipeline: Setup, Ekstraksi, &amp; Generate Placeholder  (Background)" style="text;html=1;fillColor=#f0f0f0;strokeColor=#999999;align=left;fontStyle=1;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+    <mxCell id="f2" value="Prapemrosesan Dokumen" style="text;html=1;fillColor=#f0f0f0;strokeColor=#999999;align=left;fontStyle=1;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
       <mxGeometry x="30" y="440" width="990" height="20" as="geometry" />
     </mxCell>
 
@@ -178,6 +173,13 @@
 
     <mxCell id="m10" value="10: setup — chunk PDF + embed ke Supabase" style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="555" y="504" as="sourcePoint"/><mxPoint x="720" y="504" as="targetPoint"/></mxGeometry>
+    </mxCell>
+
+    <!-- ======================================================== -->
+    <!-- FASE 3: EKSTRAKSI ATURAN BERBASIS AI                     -->
+    <!-- ======================================================== -->
+    <mxCell id="f3" value="Ekstraksi Aturan Berbasis AI  (LLM Based Structured Extraction)" style="text;html=1;fillColor=#f0f0f0;strokeColor=#999999;align=left;fontStyle=1;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="30" y="524" width="990" height="20" as="geometry" />
     </mxCell>
 
     <mxCell id="m11" value="11: ekstraksi metadata  (RAG + LLM, skema-aware)" style="endArrow=block;endFill=1;strokeColor=#000000;fontSize=10;" edge="1" parent="1">
@@ -193,13 +195,12 @@
     </mxCell>
 
     <!-- ======================================================== -->
-    <!-- FASE 4: REVIEW HASIL EKSTRAKSI                           -->
+    <!-- FASE 4: PENINJAUAN HASIL & GENERASI                      -->
     <!-- ======================================================== -->
-    <mxCell id="f4" value="FASE 4 — Review Hasil Ekstraksi" style="text;html=1;fillColor=#f0f0f0;strokeColor=#999999;align=left;fontStyle=1;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+    <mxCell id="f4" value="Peninjauan Hasil &amp; Generasi" style="text;html=1;fillColor=#f0f0f0;strokeColor=#999999;align=left;fontStyle=1;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
       <mxGeometry x="30" y="652" width="990" height="20" as="geometry" />
     </mxCell>
 
-    <!-- Return/notifikasi polling -->
     <mxCell id="m14" value="14: polling → status=extracted" style="endArrow=open;endFill=0;dashed=1;strokeColor=#555555;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="905" y="680" as="sourcePoint"/><mxPoint x="215" y="680" as="targetPoint"/></mxGeometry>
     </mxCell>
@@ -243,12 +244,10 @@
       <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="928" as="sourcePoint"/><mxPoint x="380" y="928" as="targetPoint"/></mxGeometry>
     </mxCell>
 
-    <!-- Async -->
     <mxCell id="m20b" value="run_docx_pipeline()  «async»" style="endArrow=open;endFill=0;strokeColor=#000000;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="385" y="952" as="sourcePoint"/><mxPoint x="550" y="952" as="targetPoint"/></mxGeometry>
     </mxCell>
 
-    <!-- Return -->
     <mxCell id="m21" value="21: return 200 OK" style="endArrow=open;endFill=0;dashed=1;strokeColor=#555555;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="385" y="980" as="sourcePoint"/><mxPoint x="215" y="980" as="targetPoint"/></mxGeometry>
     </mxCell>
@@ -261,9 +260,15 @@
       <mxGeometry relative="1" as="geometry"><mxPoint x="555" y="1052" as="sourcePoint"/><mxPoint x="905" y="1052" as="targetPoint"/></mxGeometry>
     </mxCell>
 
-    <!-- Return/notifikasi polling -->
+    <!-- ======================================================== -->
+    <!-- FASE 5: UNDUH DOKUMEN                                    -->
+    <!-- ======================================================== -->
+    <mxCell id="f5" value="Unduh Dokumen" style="text;html=1;fillColor=#f0f0f0;strokeColor=#999999;align=left;fontStyle=1;fontSize=10;fontColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="30" y="1072" width="990" height="20" as="geometry" />
+    </mxCell>
+
     <mxCell id="m24" value="24: polling → completed → unduh dokumen" style="endArrow=open;endFill=0;dashed=1;strokeColor=#555555;fontSize=10;" edge="1" parent="1">
-      <mxGeometry relative="1" as="geometry"><mxPoint x="905" y="1088" as="sourcePoint"/><mxPoint x="55" y="1088" as="targetPoint"/></mxGeometry>
+      <mxGeometry relative="1" as="geometry"><mxPoint x="905" y="1092" as="sourcePoint"/><mxPoint x="55" y="1092" as="targetPoint"/></mxGeometry>
     </mxCell>
 
     <!-- separator -->
@@ -284,7 +289,6 @@
       <mxGeometry relative="1" as="geometry"><mxPoint x="215" y="1188" as="sourcePoint"/><mxPoint x="905" y="1188" as="targetPoint"/></mxGeometry>
     </mxCell>
 
-    <!-- Return -->
     <mxCell id="t03" value="T3: return 200 OK" style="endArrow=open;endFill=0;dashed=1;strokeColor=#555555;fontSize=10;" edge="1" parent="1">
       <mxGeometry relative="1" as="geometry"><mxPoint x="905" y="1220" as="sourcePoint"/><mxPoint x="215" y="1220" as="targetPoint"/></mxGeometry>
     </mxCell>

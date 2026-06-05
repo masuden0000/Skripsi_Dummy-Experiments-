@@ -20,10 +20,11 @@ class TypographyExtracted(BaseModel):
     font_family: str | None = None
     font_size_body_pt: int | None = None
     font_size_heading_pt: int | None = None
-    heading_bold: bool | None = True
-    heading_all_caps: bool | None = True
     heading_1_case: Literal["UPPERCASE", "LOWERCASE", "SENTENCE_CASE", "TOGGLE_CASE"] | None = None
-    heading_2_case: Literal["UPPERCASE", "LOWERCASE", "SENTENCE_CASE", "TOGGLE_CASE"] | None = None
+    heading_2_case: Literal["UPPERCASE", "LOWERCASE", "SENTENCE_CASE", "TOGGLE_CASE"] | None = "SENTENCE_CASE"
+    heading_3_case: Literal["UPPERCASE", "LOWERCASE", "SENTENCE_CASE", "TOGGLE_CASE"] | None = "SENTENCE_CASE"
+    heading_4_case: Literal["UPPERCASE", "LOWERCASE", "SENTENCE_CASE", "TOGGLE_CASE"] | None = "SENTENCE_CASE"
+    heading_5_case: Literal["UPPERCASE", "LOWERCASE", "SENTENCE_CASE", "TOGGLE_CASE"] | None = "SENTENCE_CASE"
 
     @model_validator(mode="before")
     @classmethod
@@ -37,11 +38,7 @@ class TypographyExtracted(BaseModel):
             normalized["font_size_heading_pt"] = int(match.group()) if match else None
         if normalized.get("font_size_heading_pt") is None and normalized.get("font_size_body_pt") is not None:
             normalized["font_size_heading_pt"] = normalized["font_size_body_pt"]
-        if normalized.get("heading_bold") is None:
-            normalized["heading_bold"] = True
-        if normalized.get("heading_all_caps") is None:
-            normalized["heading_all_caps"] = True
-        for field in ("heading_1_case", "heading_2_case"):
+        for field in ("heading_1_case", "heading_2_case", "heading_3_case", "heading_4_case", "heading_5_case"):
             val = normalized.get(field)
             if isinstance(val, str):
                 normalized[field] = val.strip().upper()
@@ -61,7 +58,6 @@ class PageLayoutExtracted(BaseModel):
     margin_right_cm: float | None = None
     paper_size: str | None = None
     orientation: str | None = None
-    columns: int | None = None
 
 
 class PageLayoutInfo(PageLayoutExtracted):
@@ -72,8 +68,7 @@ class SpacingExtracted(BaseModel):
     line_spacing: float | None = None
     line_spacing_rule: str | None = None
     paragraph_alignment: str | None = None
-    first_line_indent_cm: float | None = None
-    heading_alignment: str = "CENTER"
+    heading_alignment: str = "CENTER"  # hanya berlaku untuk Heading 1; H2–H5 ikut paragraph_alignment
 
     _RULE_ALIASES: dict[str, str] = {
         "EXACT":          "EXACTLY",
@@ -185,6 +180,11 @@ class SectionItem(BaseModel):
 class DocumentStructureExtracted(BaseModel):
     sections: list[SectionItem] = []
     format_nama_file: str | None = None
+    lampiran_heading_separator: str | None = "."
+    # Separator antara nomor dan judul lampiran.
+    # "."  → "Lampiran 1. Biodata..."   (paling umum di PKM)
+    # ""   → "Lampiran 1 Biodata..."    (tanpa titik)
+    # Null → gunakan default "."
 
 
 class DocumentStructureInfo(DocumentStructureExtracted):
@@ -216,7 +216,9 @@ class FiguresTablesExtracted(BaseModel):
     figure_caption_position: str | None = None
     caption_format_figure: str | None = None
     caption_format_table: str | None = None
+    caption_format_lampiran: str | None = None
     budget_format_rules: "BudgetFormatRules | None" = None
+
 
 
 class BudgetItem(BaseModel):

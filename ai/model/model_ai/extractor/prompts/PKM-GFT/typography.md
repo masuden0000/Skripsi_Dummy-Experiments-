@@ -53,13 +53,13 @@ Jika salah satu bukti ada → `heading_bold = true`.
 Jika konteks secara eksplisit menyatakan "tidak tebal", "cetak normal", "bukan bold" → `heading_bold = false`.
 Jika tidak ada bukti sama sekali → `null`.
 
-**Langkah 4 — Inferensikan `heading_all_caps` dari contoh heading di konteks:**
+**Langkah 4 — Inferensikan `heading_1_case` dari contoh heading di konteks:**
 Cari contoh nyata heading BAB yang muncul di konteks (contoh aktual, bukan definisi aturan).
-Perhatikan apakah teks setelah nomor BAB ditulis ALL CAPS atau tidak:
+Perhatikan penulisan teks setelah nomor BAB:
 
-- Ditemukan "BAB 1. PENDAHULUAN", "BAB 2. GAGASAN" (huruf kapital semua) → `heading_all_caps = true`
-- Ditemukan "BAB 1. Pendahuluan", "BAB 2. Gagasan" (Title Case) → `heading_all_caps = false`
-- Ada pernyataan eksplisit "judul BAB menggunakan huruf kapital seluruhnya" → `heading_all_caps = true`
+- Ditemukan "BAB 1. PENDAHULUAN" (semua kapital) → `heading_1_case = "UPPERCASE"`
+- Ditemukan "BAB 1. Pendahuluan" (Title Case / Sentence Case) → `heading_1_case = "SENTENCE_CASE"`
+- Pernyataan eksplisit "judul BAB menggunakan huruf kapital seluruhnya" → `heading_1_case = "UPPERCASE"`
 - Tidak ada contoh maupun pernyataan → `null`
 
 **Langkah 5 — Terapkan default jika tidak ditemukan:**
@@ -67,17 +67,17 @@ Perhatikan apakah teks setelah nomor BAB ditulis ALL CAPS atau tidak:
 - `font_size_body_pt` tidak disebutkan → `null`
 - `font_size_heading_pt` tidak disebutkan, tapi `font_size_body_pt` ada → sama dengan `font_size_body_pt`
 - `heading_bold` tidak ada bukti → `null`
-- `heading_all_caps` tidak ada bukti → `null`
+- `heading_1_case` tidak ada bukti → `null`
 
 ## Normalization Rules
 - Gunakan JSON null (bukan string "null") untuk nilai yang tidak ditemukan
 - `font_size_heading_pt`: keluarkan sebagai integer pt (contoh: 12)
 - `heading_bold`: `true` atau `false` (bool, bukan string)
-- `heading_all_caps`: `true` atau `false` (bool, bukan string)
+- `heading_1_case`: salah satu dari `"UPPERCASE"`, `"LOWERCASE"`, `"SENTENCE_CASE"`, `"TOGGLE_CASE"`, atau `null`
 
 ## Output Fields
 - `font_family`: nama font utama dokumen (contoh: `"Times New Roman"`)
 - `font_size_body_pt`: ukuran font body dalam pt (integer)
 - `font_size_heading_pt`: ukuran font heading dalam pt (integer)
 - `heading_bold`: apakah judul BAB dicetak tebal/bold (bool)
-- `heading_all_caps`: apakah judul BAB ditulis ALL CAPS (bool)
+- `heading_1_case`: style kapitalisasi judul BAB (string enum atau null)
