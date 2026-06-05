@@ -302,7 +302,7 @@
     ],
     "font_family": "Times New Roman",
     "heading_bold": true,
-    "heading_all_caps": true,
+    "heading_1_case": "UPPERCASE",
     "font_size_body_pt": 12,
     "font_size_heading_pt": 12
   },

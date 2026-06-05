@@ -119,8 +119,12 @@ class DocumentWrapper(object):
 
         Urutan pencarian nilai:
           1. Paragraf itu sendiri (override manual)
-          2. Style chain (Normal → base style → dst)
+          2. Style chain paragraf (base_style → dst)
           3. docDefaults (default seluruh dokumen, tersimpan di styles.xml)
+          4. Style 'Normal' sebagai final fallback — Word menggunakannya sebagai
+             default universal ketika tidak ada lapisan lain yang mendefinisikan nilai.
+             Ini mencegah false-positive "inherited" warning pada style kustom
+             (mis. 'Lampiran') yang mewarisi JUSTIFY dari Normal secara implisit.
         """
         _except_attributes = ('tab_stops',)
 
@@ -131,10 +135,23 @@ class DocumentWrapper(object):
                     paragraph.paragraph_format.__getattribute__(attr) or
                     self._find_paragraph_attribute(
                         paragraph.style, 'paragraph_format', attr) or
-                    self._doc_defaults.get(attr)   # ← baca docDefaults
+                    self._doc_defaults.get(attr) or
+                    self._get_normal_style_attr(attr)   # ← final fallback ke Normal
                 )
                 fetched_attributes[attr] = self._convert_unit(value, unit)
         return fetched_attributes
+
+    def _get_normal_style_attr(self, attr):
+        """Baca nilai atribut paragraf dari style 'Normal' sebagai final fallback."""
+        try:
+            normal = self._document.styles['Normal']
+            value = normal.paragraph_format.__getattribute__(attr)
+            if value is not None:
+                return value
+            # Normal juga bisa mewarisi — traverse base_style-nya
+            return self._find_paragraph_attribute(normal, 'paragraph_format', attr)
+        except (KeyError, AttributeError):
+            return None
 
     def _find_paragraph_attribute(self, p_style, p_element, attr):
         value = p_style.__getattribute__(p_element).__getattribute__(attr)

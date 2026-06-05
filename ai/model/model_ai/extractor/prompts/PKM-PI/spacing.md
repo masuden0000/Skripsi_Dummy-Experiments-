@@ -3,7 +3,6 @@ queries:
   - "spasi baris paragraf rata kanan kiri justify indentasi menjorok"
   - "spasi antar baris 1.5 ganda tunggal multiple ketentuan penulisan"
   - "paragraf rata kanan kiri justify alignment format teks body"
-  - "indentasi baris pertama paragraf menjorok tab cm ketentuan"
 section_focus:
   - "SISTEMATIKA PENULISAN PROPOSAL"
   - "SISTEMATIKA PROPOSAL KEGIATAN"
@@ -59,12 +58,7 @@ Cari pernyataan tentang rata paragraf:
 
 Jika tidak disebutkan → `null`.
 
-**Langkah 4 — Identifikasi indentasi baris pertama (`first_line_indent_cm`):**
-Cari pernyataan tentang indentasi paragraf: "menjorok", "indentasi", "tab pertama", "masuk X cm".
-Ekstrak nilai dalam cm sebagai float.
-Jika tidak disebutkan → `null`.
-
-**Langkah 5 — Terapkan default jika tidak ditemukan:**
+**Langkah 4 — Terapkan default jika tidak ditemukan:**
 Semua field yang tidak ditemukan → `null`.
 Jangan mengarang nilai berdasarkan pengetahuan umum PKM.
 
@@ -79,4 +73,3 @@ Jangan mengarang nilai berdasarkan pengetahuan umum PKM.
 - `line_spacing_rule`: aturan spasi baris (string enum atau null)
 - `line_spacing`: nilai spasi numerik — hanya untuk MULTIPLE/AT_LEAST/EXACTLY (float atau null)
 - `paragraph_alignment`: rata paragraf (string enum atau null)
-- `first_line_indent_cm`: indentasi baris pertama dalam cm (float atau null)

@@ -12,7 +12,10 @@ from model_ai.extractor.models import DocumentMetadata
 from model_ai.validation.models import ValidationCheckResult, ValidationIssue
 from model_ai.validation.validocx.validator import validate as validocx_validate
 from model_ai.validation.validocx.debug_report import parse_entries, build_report
-from model_ai.validation.validocx_adapter import metadata_to_requirements
+from model_ai.validation.validocx_adapter import (
+    enrich_requirements_with_docx_styles,
+    metadata_to_requirements,
+)
 
 
 _SECTION_ATTR_KEYS = frozenset({
@@ -38,7 +41,25 @@ _HEADING_TITLE_MAP: dict[str, str] = {
 }
 _BAB_RE = re.compile(r'^BAB\s+(\d+)\b', re.IGNORECASE)
 _SUB_BAB_RE = re.compile(r'^(\d+)\.(\d+)\b')
-_LAMPIRAN_ITEM_RE = re.compile(r'^Lampiran\s+(\d+)\.?', re.IGNORECASE)
+# Default: wajib ada titik+spasi setelah nomor ("Lampiran 1. Judul").
+# Diperbarui secara dinamis via _build_lampiran_re() saat metadata tersedia.
+_LAMPIRAN_ITEM_RE = re.compile(r'^Lampiran\s+\d+\.\s', re.IGNORECASE)
+
+
+def _build_lampiran_re(separator: str | None) -> re.Pattern:
+    """Bangun regex deteksi judul lampiran berdasarkan separator dari metadata.
+
+    separator="."  → r'^Lampiran\\s+\\d+\\.\\s'   ("Lampiran 1. Judul")
+    separator=""   → r'^Lampiran\\s+\\d+\\s'        ("Lampiran 1 Judul")
+    separator=None → pakai default (titik)
+    """
+    sep = separator if separator is not None else "."
+    if sep:
+        escaped = re.escape(sep)
+        pattern = rf'^Lampiran\s+\d+{escaped}\s'
+    else:
+        pattern = r'^Lampiran\s+\d+\s'
+    return re.compile(pattern, re.IGNORECASE)
 
 # Pola deteksi caption gambar/tabel
 _FIG_DETECT_RE = re.compile(r'^Gambar\s+\d+', re.IGNORECASE)
@@ -376,7 +397,7 @@ def _check_heading_case(
     docx_path: Path,
     metadata: DocumentMetadata,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
-    """Validasi style huruf (case) pada Heading 1 dan Heading 2."""
+    """Validasi style huruf (case) pada Heading 1–5."""
     issues: list[ValidationIssue] = []
     checks: list[ValidationCheckResult] = []
 
@@ -384,42 +405,43 @@ def _check_heading_case(
     if t is None:
         return issues, checks
 
-    # Gunakan heading_1_case eksplisit jika ada; fallback dari heading_all_caps.
     h1_case = t.heading_1_case
-    if h1_case is None and t.heading_all_caps is True:
-        h1_case = "UPPERCASE"
 
-    h2_case = t.heading_2_case
+    # H2–H5 tidak ada fallback, hanya dari field eksplisit.
+    case_per_level: dict[int, str | None] = {
+        1: h1_case,
+        2: t.heading_2_case,
+        3: t.heading_3_case,
+        4: t.heading_4_case,
+        5: t.heading_5_case,
+    }
 
-    if h1_case is None and h2_case is None:
+    if all(v is None for v in case_per_level.values()):
         return issues, checks
 
     try:
         from docx import Document as DocxDocument
         doc = DocxDocument(str(docx_path))
 
-        h1_mismatches: list[str] = []
-        h2_mismatches: list[str] = []
+        mismatches_per_level: dict[int, list[str]] = {lvl: [] for lvl in case_per_level}
 
         for para in doc.paragraphs:
             style_name = para.style.name
             text = para.text.strip()
             if not text:
                 continue
-            if style_name == "Heading 1" and h1_case:
-                if not _text_matches_case_para(para, h1_case):
-                    h1_mismatches.append(text[:80])
-            elif style_name == "Heading 2" and h2_case:
-                if not _text_matches_case_para(para, h2_case):
-                    h2_mismatches.append(text[:80])
+            for level in range(1, 6):
+                case_style = case_per_level[level]
+                if case_style and style_name == f"Heading {level}":
+                    if not _text_matches_case_para(para, case_style):
+                        mismatches_per_level[level].append(text[:80])
+                    break
 
-        for level, case_style, mismatches in [
-            (1, h1_case, h1_mismatches),
-            (2, h2_case, h2_mismatches),
-        ]:
+        for level, case_style in case_per_level.items():
             if case_style is None:
                 continue
             field_name = f"heading_{level}_case"
+            mismatches = mismatches_per_level[level]
             if mismatches:
                 msg = (
                     f"Heading {level} harus {case_style}. "
@@ -745,6 +767,324 @@ def _build_content_elements(doc) -> tuple[list[tuple[str, object]], str]:
                 break
 
     return candidate[:cutoff], source
+
+
+def _check_lampiran_format(
+    docx_path: Path,
+    metadata: DocumentMetadata,
+) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
+    """Validasi judul lampiran via text-pattern, bukan style name.
+
+    Judul lampiran dideteksi dari teks yang diawali 'Lampiran <angka>'.
+    Aturan: sama dengan body (font family, font size, line spacing, alignment JUSTIFY).
+    Berlaku sebagai contingency jika style tidak bernama eksplisit 'Lampiran'.
+    """
+    issues: list[ValidationIssue] = []
+    checks: list[ValidationCheckResult] = []
+
+    t = metadata.typography
+    s = metadata.spacing
+    ds = metadata.document_structure_proposal
+    expected_font    = t.font_family if t else None
+    expected_size    = int(t.font_size_body_pt) if t and t.font_size_body_pt else None
+    expected_spacing = float(s.line_spacing) if s and s.line_spacing else None
+
+    # Separator dari payload; None → default "."
+    separator = ds.lampiran_heading_separator if ds else None
+    effective_sep = separator if separator is not None else "."
+
+    # Regex format yang DIHARAPKAN (dari metadata)
+    lampiran_re = _build_lampiran_re(effective_sep)
+
+    # Regex broad: tangkap SEMUA paragraf yang diawali "Lampiran <angka>"
+    # untuk mendeteksi judul yang memakai separator salah
+    _LAMPIRAN_BROAD_RE = re.compile(r'^Lampiran\s+\d+', re.IGNORECASE)
+
+    try:
+        from docx import Document as DocxDocument
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+        doc = DocxDocument(str(docx_path))
+
+        wrong_alignment:  list[str] = []
+        wrong_font:       list[str] = []
+        wrong_size:       list[str] = []
+        wrong_spacing:    list[str] = []
+        wrong_separator:  list[str] = []
+        total = 0
+
+        for para in doc.paragraphs:
+            text = para.text.strip()
+            if not text or not _LAMPIRAN_BROAD_RE.match(text):
+                continue
+
+            # ── Cek format separator ──────────────────────────────────────────
+            # Semua paragraf "Lampiran \d+..." dicek, termasuk style "Lampiran",
+            # karena format heading adalah tanggung jawab penulis dokumen.
+            if not lampiran_re.match(text):
+                wrong_separator.append(text[:70])
+
+            # Untuk cek atribut: skip style "Lampiran" eksplisit (dicek engine)
+            if para.style.name == "Lampiran":
+                continue
+
+            total += 1
+
+            # ── Alignment harus JUSTIFY ───────────────────────────────────────
+            align = para.paragraph_format.alignment
+            if align is None:
+                try:
+                    align = para.style.paragraph_format.alignment
+                except Exception:
+                    align = None
+            if align is not None and align != WD_ALIGN_PARAGRAPH.JUSTIFY:
+                wrong_alignment.append(text[:70])
+
+            # ── Font & size ───────────────────────────────────────────────────
+            for run in para.runs:
+                if expected_font and run.font.name and run.font.name != expected_font:
+                    wrong_font.append(text[:70])
+                    break
+                if expected_size and run.font.size:
+                    if round(run.font.size.pt) != expected_size:
+                        wrong_size.append(text[:70])
+                        break
+
+            # ── Line spacing ──────────────────────────────────────────────────
+            if expected_spacing:
+                ls = para.paragraph_format.line_spacing
+                if ls is not None:
+                    try:
+                        ls_val = round(float(ls), 2)
+                        if abs(ls_val - expected_spacing) > 0.05:
+                            wrong_spacing.append(text[:70])
+                    except (TypeError, ValueError):
+                        pass
+
+        if total == 0:
+            checks.append(ValidationCheckResult(
+                category="typography", field="lampiran_format",
+                status="skipped",
+                message="Tidak ada judul lampiran (non-Lampiran style) yang perlu diperiksa via text-pattern",
+                skip_reason="Semua lampiran pakai style eksplisit atau tidak ada",
+            ))
+            return issues, checks
+
+        # ── Emit: format separator ────────────────────────────────────────────
+        sep_display = f'titik (".")' if effective_sep == "." else (
+            f'"{effective_sep}"' if effective_sep else "tanpa titik"
+        )
+        if wrong_separator:
+            msg = (
+                f"{len(wrong_separator)} judul lampiran tidak menggunakan format yang diharapkan "
+                f"({sep_display} setelah nomor). Contoh: \"{wrong_separator[0]}\""
+            )
+            issues.append(ValidationIssue(
+                category="document_structure", field="lampiran_separator",
+                severity="warning", message=msg,
+                expected=effective_sep, actual=wrong_separator[0],
+            ))
+            checks.append(ValidationCheckResult(
+                category="document_structure", field="lampiran_separator",
+                status="warning", message=msg,
+                expected=effective_sep, actual=wrong_separator[0],
+            ))
+        else:
+            checks.append(ValidationCheckResult(
+                category="document_structure", field="lampiran_separator",
+                status="passed",
+                message=f"Format penulisan judul lampiran sesuai ({sep_display} setelah nomor)",
+                expected=effective_sep,
+            ))
+
+        # ── Emit: atribut (font, alignment, spacing) ─────────────────────────
+        all_ok = not any([wrong_alignment, wrong_font, wrong_size, wrong_spacing])
+        if all_ok and total > 0:
+            checks.append(ValidationCheckResult(
+                category="typography", field="lampiran_format",
+                status="passed",
+                message=f"Semua {total} judul lampiran (non-Lampiran style) sesuai format body",
+            ))
+        else:
+            for field, items, label, expected_val in [
+                ("lampiran_alignment",  wrong_alignment, "alignment",   "JUSTIFY"),
+                ("lampiran_font",       wrong_font,      "font family", expected_font),
+                ("lampiran_font_size",  wrong_size,      "font size",   f"{expected_size}pt"),
+                ("lampiran_spacing",    wrong_spacing,   "line spacing",f"{expected_spacing}"),
+            ]:
+                if not items:
+                    continue
+                msg = (
+                    f"{len(items)} judul lampiran {label} tidak sesuai "
+                    f"(ekspektasi: {expected_val}). Contoh: \"{items[0]}\""
+                )
+                issues.append(ValidationIssue(
+                    category="typography", field=field,
+                    severity="warning", message=msg,
+                    expected=str(expected_val), actual=items[0],
+                ))
+                checks.append(ValidationCheckResult(
+                    category="typography", field=field,
+                    status="warning", message=msg,
+                    expected=str(expected_val), actual=items[0],
+                ))
+
+    except Exception as exc:
+        checks.append(ValidationCheckResult(
+            category="typography", field="lampiran_format",
+            status="skipped",
+            message=f"Pengecekan format lampiran dilewati: {exc}",
+            skip_reason=str(exc),
+        ))
+
+    return issues, checks
+
+
+def _check_caption_format(
+    docx_path: Path,
+    metadata: DocumentMetadata,
+) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
+    """Validasi atribut caption gambar/tabel via text-pattern, bukan style name.
+
+    Caption dideteksi dari teks yang diawali 'Gambar <angka>' atau 'Tabel <angka>'.
+    Aturan: atribut sama dengan Normal (font family, font size) kecuali alignment = CENTER.
+    Style name diabaikan agar tidak false positive pada nama dinamis seperti 'Gambar (Lampiran)'.
+    """
+    issues: list[ValidationIssue] = []
+    checks: list[ValidationCheckResult] = []
+
+    t = metadata.typography
+    expected_font   = t.font_family if t else None
+    expected_size   = int(t.font_size_body_pt) if t and t.font_size_body_pt else None
+
+    try:
+        from docx import Document as DocxDocument
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+        doc = DocxDocument(str(docx_path))
+
+        wrong_alignment: list[str] = []
+        wrong_font:      list[str] = []
+        wrong_size:      list[str] = []
+
+        for para in doc.paragraphs:
+            text = para.text.strip()
+            if not text:
+                continue
+            if not (_FIG_DETECT_RE.match(text) or _TBL_DETECT_RE.match(text)):
+                continue
+
+            # ── Alignment harus CENTER ────────────────────────────────────────
+            align = para.paragraph_format.alignment
+            if align is None:
+                # Ambil dari style jika tidak di-override di paragraf
+                try:
+                    align = para.style.paragraph_format.alignment
+                except Exception:
+                    align = None
+            if align is not None and align != WD_ALIGN_PARAGRAPH.CENTER:
+                wrong_alignment.append(text[:70])
+
+            # ── Font family & size harus sama dengan body ─────────────────────
+            for run in para.runs:
+                if expected_font and run.font.name and run.font.name != expected_font:
+                    wrong_font.append(text[:70])
+                    break
+                if expected_size and run.font.size:
+                    run_pt = round(run.font.size.pt)
+                    if run_pt != expected_size:
+                        wrong_size.append(text[:70])
+                        break
+
+        total_captions = sum(
+            1 for para in doc.paragraphs
+            if (_FIG_DETECT_RE.match(para.text.strip()) or _TBL_DETECT_RE.match(para.text.strip()))
+            and para.text.strip()
+        )
+
+        # ── Emit results ──────────────────────────────────────────────────────
+        if wrong_alignment:
+            msg = (
+                f"{len(wrong_alignment)} caption tidak rata tengah. "
+                f'Contoh: "{wrong_alignment[0]}"'
+            )
+            issues.append(ValidationIssue(
+                category="figures_tables", field="caption_alignment",
+                severity="error", message=msg,
+                expected="CENTER", actual="bukan CENTER",
+            ))
+            checks.append(ValidationCheckResult(
+                category="figures_tables", field="caption_alignment",
+                status="error", message=msg,
+                expected="CENTER", actual="bukan CENTER",
+            ))
+        else:
+            checks.append(ValidationCheckResult(
+                category="figures_tables", field="caption_alignment",
+                status="passed" if total_captions > 0 else "skipped",
+                message=(
+                    f"Semua {total_captions} caption rata tengah"
+                    if total_captions > 0
+                    else "Tidak ada caption ditemukan"
+                ),
+                expected="CENTER",
+            ))
+
+        if wrong_font:
+            msg = (
+                f"{len(wrong_font)} caption font tidak sesuai (ekspektasi: {expected_font}). "
+                f'Contoh: "{wrong_font[0]}"'
+            )
+            issues.append(ValidationIssue(
+                category="figures_tables", field="caption_font",
+                severity="warning", message=msg,
+                expected=expected_font, actual=wrong_font[0],
+            ))
+            checks.append(ValidationCheckResult(
+                category="figures_tables", field="caption_font",
+                status="warning", message=msg,
+                expected=expected_font, actual=wrong_font[0],
+            ))
+        elif expected_font and total_captions > 0:
+            checks.append(ValidationCheckResult(
+                category="figures_tables", field="caption_font",
+                status="passed",
+                message=f"Font caption sesuai: {expected_font}",
+                expected=expected_font,
+            ))
+
+        if wrong_size:
+            msg = (
+                f"{len(wrong_size)} caption ukuran font tidak sesuai (ekspektasi: {expected_size}pt). "
+                f'Contoh: "{wrong_size[0]}"'
+            )
+            issues.append(ValidationIssue(
+                category="figures_tables", field="caption_font_size",
+                severity="warning", message=msg,
+                expected=str(expected_size), actual=wrong_size[0],
+            ))
+            checks.append(ValidationCheckResult(
+                category="figures_tables", field="caption_font_size",
+                status="warning", message=msg,
+                expected=str(expected_size), actual=wrong_size[0],
+            ))
+        elif expected_size and total_captions > 0:
+            checks.append(ValidationCheckResult(
+                category="figures_tables", field="caption_font_size",
+                status="passed",
+                message=f"Ukuran font caption sesuai: {expected_size}pt",
+                expected=str(expected_size),
+            ))
+
+    except Exception as exc:
+        checks.append(ValidationCheckResult(
+            category="figures_tables", field="caption_alignment",
+            status="skipped",
+            message=f"Pengecekan atribut caption dilewati: {exc}",
+            skip_reason=str(exc),
+        ))
+
+    return issues, checks
 
 
 def _check_figures_tables(
@@ -1359,6 +1699,131 @@ def _check_numbering(
     return issues, checks
 
 
+def _check_page_count(
+    docx_path: Path,
+    metadata: DocumentMetadata,
+) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
+    """Validasi jumlah halaman inti tidak melebihi batas maksimum.
+
+    Halaman inti dihitung dari section halaman_inti_mulai (default: bab)
+    sampai halaman_inti_selesai (default: daftar_pustaka), inklusif.
+    """
+    issues: list[ValidationIssue] = []
+    checks: list[ValidationCheckResult] = []
+
+    pc = metadata.page_count_limits
+    if pc is None or pc.proposal_halaman_inti_maks is None:
+        checks.append(ValidationCheckResult(
+            category="page_count", field="halaman_inti",
+            status="skipped",
+            message="Batas maksimum halaman inti tidak dikonfigurasi di metadata",
+            skip_reason="proposal_halaman_inti_maks tidak ada",
+        ))
+        return issues, checks
+
+    maks = pc.proposal_halaman_inti_maks
+    mulai_type  = pc.halaman_inti_mulai   # default: "bab"
+    selesai_type = pc.halaman_inti_selesai  # default: "daftar_pustaka"
+
+    try:
+        from docx import Document as DocxDocument
+        from docx.oxml.ns import qn
+
+        doc = DocxDocument(str(docx_path))
+
+        # ── Bangun peta halaman per paragraf ──────────────────────────────
+        current_page = 1
+        para_pages: list[tuple[int, str, str]] = []  # (page, style, text)
+
+        for para in doc.paragraphs:
+            para_xml = para._p
+            has_break = bool(
+                para_xml.findall(".//" + qn("w:lastRenderedPageBreak"))
+            ) or any(
+                br.get(qn("w:type")) == "page"
+                for br in para_xml.findall(".//" + qn("w:br"))
+            )
+            if has_break and para_pages:
+                current_page += 1
+            para_pages.append((current_page, para.style.name, para.text.strip()))
+
+        # ── Tentukan heading title untuk setiap section type ─────────────
+        _SECTION_HEADING_MAP = {
+            "bab":            _BAB_RE,
+            "daftar_isi":     re.compile(r"^DAFTAR\s+ISI$", re.IGNORECASE),
+            "daftar_gambar":  re.compile(r"^DAFTAR\s+GAMBAR$", re.IGNORECASE),
+            "daftar_tabel":   re.compile(r"^DAFTAR\s+TABEL$", re.IGNORECASE),
+            "daftar_lampiran":re.compile(r"^DAFTAR\s+LAMPIRAN$", re.IGNORECASE),
+            "daftar_pustaka": re.compile(r"^DAFTAR\s+PUSTAKA$", re.IGNORECASE),
+            "lampiran":       re.compile(r"^LAMPIRAN$", re.IGNORECASE),
+        }
+
+        def _find_first_page(section_type: str) -> int | None:
+            pattern = _SECTION_HEADING_MAP.get(section_type)
+            if pattern is None:
+                return None
+            for page, style, text in para_pages:
+                if "Heading" in style and pattern.match(text.upper()):
+                    return page
+            return None
+
+        page_mulai   = _find_first_page(mulai_type)
+        page_selesai = _find_first_page(selesai_type)
+
+        if page_mulai is None:
+            checks.append(ValidationCheckResult(
+                category="page_count", field="halaman_inti",
+                status="skipped",
+                message=f"Titik mulai halaman inti '{mulai_type}' tidak ditemukan di dokumen",
+                skip_reason=f"Section {mulai_type} tidak ada",
+            ))
+            return issues, checks
+
+        # Jika selesai tidak ditemukan, hitung sampai akhir dokumen
+        if page_selesai is None:
+            page_selesai = para_pages[-1][0] if para_pages else page_mulai
+
+        jumlah_halaman = page_selesai - page_mulai + 1
+
+        if jumlah_halaman > maks:
+            msg = (
+                f"Halaman inti melebihi batas maksimum: "
+                f"{jumlah_halaman} halaman (maks {maks}). "
+                f"Dihitung dari halaman {page_mulai} ({mulai_type}) "
+                f"sampai {page_selesai} ({selesai_type})."
+            )
+            issues.append(ValidationIssue(
+                category="page_count", field="halaman_inti",
+                severity="error", message=msg,
+                expected=str(maks), actual=str(jumlah_halaman),
+            ))
+            checks.append(ValidationCheckResult(
+                category="page_count", field="halaman_inti",
+                status="error", message=msg,
+                expected=str(maks), actual=str(jumlah_halaman),
+            ))
+        else:
+            msg = (
+                f"Jumlah halaman inti: {jumlah_halaman} halaman "
+                f"(maks {maks}) — sesuai."
+            )
+            checks.append(ValidationCheckResult(
+                category="page_count", field="halaman_inti",
+                status="passed", message=msg,
+                expected=str(maks), actual=str(jumlah_halaman),
+            ))
+
+    except Exception as exc:
+        checks.append(ValidationCheckResult(
+            category="page_count", field="halaman_inti",
+            status="skipped",
+            message=f"Pengecekan jumlah halaman dilewati: {exc}",
+            skip_reason=str(exc),
+        ))
+
+    return issues, checks
+
+
 def _check_start_section(
     start_at: str,
     doc,
@@ -1433,6 +1898,7 @@ def run_validocx(
     """
     path = Path(docx_path)
     requirements = metadata_to_requirements(metadata)
+    requirements = enrich_requirements_with_docx_styles(requirements, path)
     log_text = _capture_log(path, requirements)
 
     entries = parse_entries(log_text)
@@ -1444,11 +1910,14 @@ def run_validocx(
     known_styles = list(requirements.get("styles", {}).keys())
 
     issues, checks = _build_issues_checks(report, known_styles=known_styles)
-    case_issues, case_checks = _check_heading_case(path, metadata)
-    struct_issues, struct_checks = _check_document_structure(path, metadata)
-    fig_issues, fig_checks = _check_figures_tables(path, metadata)
-    num_issues, num_checks = _check_numbering(path, metadata)
+    case_issues, case_checks         = _check_heading_case(path, metadata)
+    struct_issues, struct_checks     = _check_document_structure(path, metadata)
+    fig_issues, fig_checks           = _check_figures_tables(path, metadata)
+    caption_issues, caption_checks   = _check_caption_format(path, metadata)
+    lampiran_issues, lampiran_checks = _check_lampiran_format(path, metadata)
+    num_issues, num_checks           = _check_numbering(path, metadata)
+    pgcount_issues, pgcount_checks   = _check_page_count(path, metadata)
 
-    all_issues = issues + case_issues + struct_issues + fig_issues + num_issues
-    all_checks = checks + case_checks + struct_checks + fig_checks + num_checks
+    all_issues = issues + case_issues + struct_issues + fig_issues + caption_issues + lampiran_issues + num_issues + pgcount_issues
+    all_checks = checks + case_checks + struct_checks + fig_checks + caption_checks + lampiran_checks + num_checks + pgcount_checks
     return all_issues, all_checks

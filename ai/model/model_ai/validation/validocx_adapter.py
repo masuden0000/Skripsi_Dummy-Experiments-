@@ -2,6 +2,9 @@
 
 Posisi pipeline: jembatan antara metadata Pydantic dan engine validocx (validate()).
 """
+from __future__ import annotations
+
+from pathlib import Path
 from typing import Any
 
 from model_ai.extractor.models import DocumentMetadata
@@ -53,10 +56,10 @@ def _resolve_line_spacing(metadata: DocumentMetadata) -> float:
 
 
 def _build_heading_font_attrs(metadata: DocumentMetadata, level: int) -> list[Any]:
-    """Font attributes untuk Heading 1–2 (mengikuti setting admin).
+    """Font attributes untuk Heading 1–5 (size + font family, tanpa bold).
 
-    Bold hanya dicek jika admin mengaktifkan heading_bold.
-    Heading 3–5 tidak menggunakan fungsi ini — mereka pakai normal font.
+    Semua level heading menggunakan font_size_heading_pt.
+    Bold tidak divalidasi karena konvensi dokumen bervariasi.
     """
     t = metadata.typography
     attrs: list[Any] = []
@@ -67,10 +70,6 @@ def _build_heading_font_attrs(metadata: DocumentMetadata, level: int) -> list[An
         attrs.append(int(size))
     if t.font_family:
         attrs.append(t.font_family)
-    # Bold hanya ditambahkan untuk H1–H2 jika admin mengaktifkannya.
-    # H3–H5 tidak pernah mewajibkan bold (normal_style tidak menyertakannya).
-    if level <= 2 and t.heading_bold:
-        attrs.append("bold")
     return attrs
 
 
@@ -91,11 +90,10 @@ def _build_normal_font_attrs(metadata: DocumentMetadata) -> list[Any]:
 def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
     """Bangun dict requirements (styles + sections) sesuai schema validocx.
 
-    Dua template digunakan:
-    ─ heading_style  : Heading 1–2, mengikuti setting admin (font, alignment,
-                       bold opsional). Tidak dicek line_spacing.
-    ─ normal_style   : Normal + Heading 3–5 + semua style paragraf lain.
-                       Font TNR 12pt, alignment JUSTIFY, line_spacing 1.15.
+    Semua heading H1–H5 dicek font, alignment, dan line_spacing. Bold tidak divalidasi.
+    ─ H1      : alignment CENTER (dari admin), font size heading.
+    ─ H2–H5   : alignment JUSTIFY (body), font size heading.
+    ─ Normal  : alignment JUSTIFY, font size body, line_spacing 1.15.
     """
     s = metadata.spacing
     l = metadata.page_layout
@@ -112,7 +110,10 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
     # Dipakai oleh: Normal, Heading 3–5, dan semua alias style paragraf.
     normal_font_attrs = _build_normal_font_attrs(metadata)
     normal_style: dict = {
-        "exclude": {"text_regex": r"^\s*(\d{1,3})?\s*$"},
+        # Exclude paragraf yang tidak perlu divalidasi via fallback Normal:
+        # (1) angka halaman saja
+        # (2) caption gambar/tabel — divalidasi terpisah via _check_caption_format
+        "exclude": {"text_regex": r"(^\s*(\d{1,3})?\s*$|^(Gambar|Tabel)\s+\d+)"},
         "font": {
             "unit": "pt",
             "attributes": normal_font_attrs,
@@ -126,9 +127,13 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
         },
     }
 
-    # ── Template Heading (H1–H2) ──────────────────────────────────────────────
-    # Alignment dari admin; tidak dicek line_spacing; bold hanya jika admin set.
+    # ── Template Heading H1–H5 ────────────────────────────────────────────────
+    # H1 : alignment CENTER (dari admin), size heading, line spacing dicek.
+    # H2 : alignment JUSTIFY (body), size heading, line spacing dicek.
+    # H3–H5: alignment JUSTIFY (body), size body, line spacing dicek.
+    # Bold tidak divalidasi di semua level.
     def _make_heading_style(level: int) -> dict:
+        alignment = heading_alignment if level == 1 else body_alignment
         return {
             "font": {
                 "unit": "pt",
@@ -137,8 +142,8 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
             "paragraph": {
                 "unit": "cm",
                 "attributes": {
-                    # H1 dan H2 sama-sama mengikuti alignment dari admin.
-                    "alignment": heading_alignment,
+                    "alignment": alignment,
+                    "line_spacing": line_spacing,
                 },
             },
         }
@@ -147,43 +152,22 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
         "Normal": normal_style,
     }
 
-    # H1–H2: template heading (ikut admin)
-    for level in (1, 2):
-        styles[f"Heading {level}"] = _make_heading_style(level)
+    # H1–H5 dan alias Judul N
+    for level in (1, 2, 3, 4, 5):
+        style_def = _make_heading_style(level)
+        styles[f"Heading {level}"] = style_def
+        styles[f"Judul{level}"]    = style_def
+        styles[f"Judul {level}"]   = style_def
 
-    # H3–H5: template normal (TNR 12pt 1.15 justify, tanpa bold)
-    for level in (3, 4, 5):
-        styles[f"Heading {level}"] = {
-            k: v for k, v in normal_style.items() if k != "exclude"
-        }
+    # ── Style Lampiran ────────────────────────────────────────────────────────
+    # Divalidasi sama seperti body (TNR, 12pt, 1.15, JUSTIFY).
+    # Alignment bisa diwarisi dari Normal — wrapper.py akan resolve via Normal fallback
+    # sehingga tidak memunculkan false-positive "inherited" warning.
+    lampiran_style = {k: v for k, v in normal_style.items() if k != "exclude"}
+    styles["Lampiran"] = lampiran_style
 
-    # ── Alias style template Word Indonesia (Judul1–5) ────────────────────────
-    # Dokumen PKM sering menggunakan style "JudulN" alih-alih "Heading N".
-    for level in (1, 2):
-        styles[f"Judul{level}"] = _make_heading_style(level)
-        styles[f"Judul {level}"] = _make_heading_style(level)
-    for level in (3, 4, 5):
-        no_exclude = {k: v for k, v in normal_style.items() if k != "exclude"}
-        styles[f"Judul{level}"] = no_exclude
-        styles[f"Judul {level}"] = no_exclude
-
-    # ── Caption tabel dan gambar — default CENTER ─────────────────────────────
-    # Caption biasanya berada di bawah/atas objek dan rata tengah.
-    # Tidak mewajibkan line_spacing karena caption umumnya satu baris.
-    caption_style: dict = {
-        "font": {
-            "unit": "pt",
-            "attributes": normal_font_attrs,
-        },
-        "paragraph": {
-            "unit": "cm",
-            "attributes": {
-                "alignment": _ALIGNMENT_MAP["CENTER"],
-            },
-        },
-    }
-    for name in ("Tabel", "Gambar", "TabelGambar", "Caption", "Figure", "Table"):
-        styles[name] = caption_style
+    # Caption tidak lagi divalidasi via style name — terlalu dinamis (Gambar, Gambar (Lampiran), dll).
+    # Validasi caption dilakukan di runner via text-pattern detection (_check_caption_format).
 
     section_attrs: dict[str, Any] = {}
     if l is not None:
@@ -211,3 +195,119 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
         requirements["sections"] = [{"unit": "cm", "attributes": {}}]
 
     return requirements
+
+
+_HEADING_NAME_TO_LEVEL: dict[str, int] = {
+    "Heading 1": 1, "Heading 2": 2, "Heading 3": 3, "Heading 4": 4, "Heading 5": 5,
+    "Judul 1": 1, "Judul 2": 2, "Judul 3": 3, "Judul 4": 4, "Judul 5": 5,
+    "Judul1": 1,  "Judul2": 2,  "Judul3": 3,  "Judul4": 4,  "Judul5": 5,
+}
+
+
+def _outline_level_from_style_xml(style) -> int | None:
+    """Baca <w:outlineLvl w:val="N"/> langsung dari definisi style di styles.xml.
+
+    Word menyimpan outline level (0-indexed) untuk style yang dipakai sebagai heading.
+    val=0 → Heading 1, val=1 → Heading 2, dst. Style biasa (body) tidak punya elemen ini.
+    """
+    try:
+        from docx.oxml.ns import qn
+        el = getattr(style, "_element", None)
+        if el is None:
+            return None
+        pPr = el.find(qn("w:pPr"))
+        if pPr is None:
+            return None
+        outline = pPr.find(qn("w:outlineLvl"))
+        if outline is None:
+            return None
+        val = outline.get(qn("w:val"))
+        if val is None:
+            return None
+        lvl = int(val)
+        if 0 <= lvl <= 8:
+            return lvl + 1
+    except (ValueError, AttributeError):
+        return None
+    return None
+
+
+def _heading_level_from_style(style, max_depth: int = 10) -> int | None:
+    """Deteksi level heading (1–5) dari sebuah style.
+
+    Strategi berlapis:
+      Layer A — Nama eksplisit ("Heading N", "JudulN")
+      Layer B — Inheritance chain (basedOn → ancestor adalah heading)
+      Layer C — Outline level dari styles.xml (<w:outlineLvl>)
+
+    Return 1–5 jika ditemukan, None jika style biasa.
+    """
+    seen: set[str] = set()
+    current = style
+    depth = 0
+    while current is not None and depth < max_depth:
+        name = current.name
+        if name in seen:
+            break
+        seen.add(name)
+
+        if name in _HEADING_NAME_TO_LEVEL:
+            return _HEADING_NAME_TO_LEVEL[name]
+
+        outline_level = _outline_level_from_style_xml(current)
+        if outline_level is not None:
+            return min(outline_level, 5)
+
+        current = getattr(current, "base_style", None)
+        depth += 1
+    return None
+
+
+def enrich_requirements_with_docx_styles(requirements: dict, docx_path: str | Path) -> dict:
+    """Tambahkan custom styles ke requirements berdasarkan deteksi heading H1–H5.
+
+    Dokumen sering memakai style buatan sendiri (misal "Sub Judul Bab") yang:
+      - mewarisi Heading N (inheritance), atau
+      - punya outline level (<w:outlineLvl>) di definisinya, atau
+      - bernama Judul1/Judul 2/dll.
+
+    Fungsi ini scan semua style di DOCX, mendeteksi levelnya, lalu mendaftarkannya
+    ke requirements memakai template yang sama dengan Heading N standar:
+      H1 → template heading (alignment dari admin, default CENTER)
+      H2 → template body (JUSTIFY, TNR 12, line spacing 1.15)
+      H3–H5 → template body (sama seperti H2)
+    """
+    from docx import Document
+
+    base_styles: dict = requirements.get("styles", {})
+
+    level_to_req: dict[int, dict] = {}
+    for level in (1, 2, 3, 4, 5):
+        req = base_styles.get(f"Heading {level}")
+        if req is not None:
+            level_to_req[level] = req
+
+    if not level_to_req:
+        return requirements
+
+    try:
+        doc = Document(str(docx_path))
+    except Exception:
+        return requirements
+
+    extra: dict[str, dict] = {}
+    for style in doc.styles:
+        name = style.name
+        if name in base_styles or name in extra:
+            continue
+        level = _heading_level_from_style(style)
+        if level is None:
+            continue
+        req = level_to_req.get(level)
+        if req is not None:
+            extra[name] = req
+
+    if not extra:
+        return requirements
+
+    return {**requirements, "styles": {**base_styles, **extra}}

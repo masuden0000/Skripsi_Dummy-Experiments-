@@ -423,13 +423,10 @@ export default function ProposalDocumentPage() {
       setUploadProgress(75)
 
       // Step 3: Confirm upload so AI backend starts the pipeline
-      const confirmFormData = new FormData()
-      confirmFormData.append("project_id", project_id)
-      confirmFormData.append("file_name", selectedFile.name)
-
       const confirmResponse = await fetch("/api/projects/confirm-upload", {
         method: "POST",
-        body: confirmFormData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id, file_name: selectedFile.name }),
       })
 
       setUploadProgress(90)

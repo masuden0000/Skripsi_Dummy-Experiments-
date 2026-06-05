@@ -24,13 +24,12 @@ SAMPLE_PAYLOAD = {
         "sources": [],
         "font_family": "Times New Roman",
         "heading_bold": True,
-        "heading_all_caps": False,
+        "heading_1_case": "UPPERCASE",
         "font_size_body_pt": 12,
         "font_size_heading_pt": 12,
     },
     "page_layout": {
         "sources": [],
-        "columns": 1,
         "paper_size": "A4",
         "orientation": "Portrait",
         "margin_top_cm": 3,
@@ -43,7 +42,6 @@ SAMPLE_PAYLOAD = {
         "line_spacing": 1.15,
         "line_spacing_rule": "MULTIPLE",
         "paragraph_alignment": "JUSTIFY",
-        "first_line_indent_cm": None,
     },
     "numbering": {
         "sources": [],
@@ -180,18 +178,18 @@ class MetadataRepositoryTests(unittest.TestCase):
         self.assertEqual(metadata.typography.font_family, "Times New Roman")
         self.assertEqual(metadata.page_layout.margin_left_cm, 4)
 
-    def test_coerce_document_metadata_defaults_heading_all_caps_to_true_when_missing(self):
+    def test_coerce_document_metadata_heading_1_case_normalized(self):
         payload = {
             **SAMPLE_PAYLOAD,
             "typography": {
                 **SAMPLE_PAYLOAD["typography"],
+                "heading_1_case": "uppercase",
             },
         }
-        payload["typography"].pop("heading_all_caps")
 
         metadata = coerce_document_metadata(payload)
 
-        self.assertTrue(metadata.typography.heading_all_caps)
+        self.assertEqual(metadata.typography.heading_1_case, "UPPERCASE")
 
 
 if __name__ == "__main__":
