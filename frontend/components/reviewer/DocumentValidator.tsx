@@ -191,18 +191,20 @@ function makeBulkItem(): BulkItem {
 function SummaryBar({
   result,
   viewMode,
+  skippedCount,
   onErrorClick,
   onWarningClick,
   onPassedClick,
 }: {
   result: ValidationResult
   viewMode: "error" | "warning" | "passed"
+  skippedCount: number
   onErrorClick: () => void
   onWarningClick: () => void
   onPassedClick: () => void
 }) {
   const errors   = result.issues?.filter((i) => i.severity === "error").length   ?? 0
-  const warnings = result.issues?.filter((i) => i.severity === "warning").length ?? 0
+  const warnings = (result.issues?.filter((i) => i.severity === "warning").length ?? 0) + skippedCount
   const passed   = result.summary?.passed ?? 0
 
   return (
@@ -310,11 +312,11 @@ function IssueListPanel({
   selectedIdx,
   onSelect,
 }: {
-  issues: ValidationIssue[]
+  issues: DisplayIssue[]
   selectedIdx: number | null
   onSelect: (idx: number) => void
 }) {
-  const grouped = issues.reduce<Record<string, Array<{ issue: ValidationIssue; idx: number }>>>(
+  const grouped = issues.reduce<Record<string, Array<{ issue: DisplayIssue; idx: number }>>>(
     (acc, issue, idx) => {
       const cat = issue.category ?? "other"
       if (!acc[cat]) acc[cat] = []
@@ -342,8 +344,9 @@ function IssueListPanel({
               </span>
             </div>
             {items.map(({ issue, idx }) => {
-              const isActive = selectedIdx === idx
-              const isError  = issue.severity === "error"
+              const isActive   = selectedIdx === idx
+              const isError    = issue.severity === "error"
+              const isSkipped  = issue._isSkipped === true
               return (
                 <button
                   key={idx}
@@ -355,8 +358,8 @@ function IssueListPanel({
                       : "hover:bg-gray-50/80 border-l-[3px] border-l-transparent",
                   ].join(" ")}
                 >
-                  <span className={["shrink-0 mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded", isError ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600"].join(" ")}>
-                    {isError ? "ERR" : "WARN"}
+                  <span className={["shrink-0 mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded", isError ? "bg-red-100 text-red-600" : isSkipped ? "bg-gray-100 text-gray-500" : "bg-amber-100 text-amber-600"].join(" ")}>
+                    {isError ? "ERR" : isSkipped ? "SKIP" : "WARN"}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm truncate ${isActive ? "font-semibold text-pkm-900" : "font-medium text-gray-800"}`}>
@@ -365,7 +368,7 @@ function IssueListPanel({
                     <p className="text-[11px] text-gray-400 truncate mt-0.5 leading-tight">{issue.message}</p>
                   </div>
                   {(issue.occurrences?.length ?? 0) > 0 && (
-                    <span className={["shrink-0 text-[11px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums", isError ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600"].join(" ")}>
+                    <span className={["shrink-0 text-[11px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums", isError ? "bg-red-100 text-red-600" : isSkipped ? "bg-gray-100 text-gray-500" : "bg-amber-100 text-amber-600"].join(" ")}>
                       {issue.occurrences!.length}×
                     </span>
                   )}
@@ -381,7 +384,7 @@ function IssueListPanel({
 
 // ─── Sub-komponen: LocationPanel ──────────────────────────────────────────────
 
-function LocationPanel({ issue }: { issue: ValidationIssue | null }) {
+function LocationPanel({ issue }: { issue: DisplayIssue | null }) {
   if (!issue) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[320px] bg-gray-50/60 gap-3">
@@ -638,6 +641,26 @@ function PassedDetailPanel({ check }: { check: ValidationCheck | null }) {
     </div>
   )
 }
+// ─── Helper: DisplayIssue (union ValidationIssue + skipped flag) ──────────────
+
+type DisplayIssue = ValidationIssue & { _isSkipped?: boolean }
+
+function skippedCheckToIssue(check: ValidationCheck): DisplayIssue {
+  return {
+    category: check.category,
+    field: check.field,
+    severity: "warning",
+    message: check.skip_reason
+      ? `Dilewati — ${check.skip_reason}`
+      : check.message || "Pengecekan dilewati",
+    location: check.location ?? null,
+    occurrences: null,
+    expected: check.expected ?? "",
+    actual: check.actual ?? "",
+    _isSkipped: true,
+  }
+}
+
 // ─── Sub-komponen: ValidationResultView ──────────────────────────────────────
 // Menampilkan hasil validasi satu dokumen (sama seperti tampilan lama).
 
@@ -649,10 +672,18 @@ function ValidationResultView({ result }: { result: ValidationResult }) {
   const [selectedCheckIdx, setSelectedCheckIdx] = useState<number | null>(null)
 
   const allIssues = result.issues ?? []
-  const filteredIssues = viewMode === "error"
+
+  const skippedChecks: ValidationCheck[] = Object.values(result.report ?? {})
+    .flat()
+    .filter((c) => c.status === "skipped")
+
+  const filteredIssues: DisplayIssue[] = viewMode === "error"
     ? allIssues.filter((i) => i.severity === "error")
     : viewMode === "warning"
-    ? allIssues.filter((i) => i.severity === "warning")
+    ? [
+        ...allIssues.filter((i) => i.severity === "warning"),
+        ...skippedChecks.map(skippedCheckToIssue),
+      ]
     : allIssues
 
   const passedChecks: ValidationCheck[] = Object.values(result.report ?? {})
@@ -691,6 +722,7 @@ function ValidationResultView({ result }: { result: ValidationResult }) {
         <SummaryBar
           result={result}
           viewMode={viewMode}
+          skippedCount={skippedChecks.length}
           onErrorClick={() => { setViewMode("error"); setSelectedIssueIdx(null) }}
           onWarningClick={() => { setViewMode((m) => m === "warning" ? "error" : "warning"); setSelectedIssueIdx(null) }}
           onPassedClick={() => { setViewMode((m) => m === "passed" ? "error" : "passed"); setSelectedCheckIdx(null) }}
