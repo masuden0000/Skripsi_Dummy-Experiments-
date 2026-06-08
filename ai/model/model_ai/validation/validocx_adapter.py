@@ -4,6 +4,7 @@ Posisi pipeline: jembatan antara metadata Pydantic dan engine validocx (validate
 """
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 from typing import Any
 
@@ -163,7 +164,7 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
     # Divalidasi sama seperti body (TNR, 12pt, 1.15, JUSTIFY).
     # Alignment bisa diwarisi dari Normal — wrapper.py akan resolve via Normal fallback
     # sehingga tidak memunculkan false-positive "inherited" warning.
-    lampiran_style = {k: v for k, v in normal_style.items() if k != "exclude"}
+    lampiran_style = copy.deepcopy({k: v for k, v in normal_style.items() if k != "exclude"})
     styles["Lampiran"] = lampiran_style
 
     # ── Style TOC & TOF ───────────────────────────────────────────────────────
@@ -174,12 +175,12 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
     # Exclude Normal sengaja tidak dipakai agar entri "Gambar N." / "Tabel N."
     # di halaman Daftar Gambar/Tabel tidak ter-skip (exclude itu untuk caption
     # inline di BAB yang sudah dicek terpisah via _check_caption_format).
-    toc_tof_style = {k: v for k, v in normal_style.items() if k != "exclude"}
-    for _toc_tof_name in (
-        "table of figures",
+    toc_tof_style = copy.deepcopy({k: v for k, v in normal_style.items() if k != "exclude"})
+    for name in (
+        "table of figures",  # Word built-in style name, must be lowercase
         "TOC 1", "TOC 2", "TOC 3", "TOC 4", "TOC 5",
     ):
-        styles[_toc_tof_name] = toc_tof_style
+        styles[name] = toc_tof_style
 
     # Caption tidak lagi divalidasi via style name — terlalu dinamis (Gambar, Gambar (Lampiran), dll).
     # Validasi caption dilakukan di runner via text-pattern detection (_check_caption_format).

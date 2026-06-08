@@ -67,3 +67,19 @@ def test_normal_exclude_pattern_still_present():
     assert "Gambar" in normal["exclude"]["text_regex"], (
         "Exclude pattern Normal tidak lagi menyaring caption Gambar"
     )
+
+
+def test_toc_tof_font_and_spacing_match_normal():
+    """Font dan line_spacing style TOC/TOF harus identik dengan Normal."""
+    req = metadata_to_requirements(_make_metadata())
+    styles = req["styles"]
+    normal = styles["Normal"]
+    for name in _TOC_TOF_STYLES:
+        assert styles[name]["font"] == normal["font"], (
+            f"Style '{name}' font tidak sama dengan Normal"
+        )
+        actual_spacing   = styles[name]["paragraph"]["attributes"]["line_spacing"]
+        expected_spacing = normal["paragraph"]["attributes"]["line_spacing"]
+        assert actual_spacing == expected_spacing, (
+            f"Style '{name}' line_spacing={actual_spacing}, seharusnya {expected_spacing}"
+        )
