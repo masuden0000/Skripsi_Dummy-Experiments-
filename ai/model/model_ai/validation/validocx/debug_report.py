@@ -67,84 +67,17 @@ def parse_entries_from_file(path):
         return parse_entries(f.read())
 
 
-def count_body_pages(body):
-    """Hitung halaman fisik untuk setiap paragraf di seluruh body dokumen.
-
-    Strategi: gunakan HANYA w:lastRenderedPageBreak sebagai penanda perpindahan.
-    Penanda ini ditulis Word saat dokumen disimpan dan sudah mencakup semua jenis
-    perpindahan halaman (manual Ctrl+Enter, section break, maupun konten penuh).
-
-    Keunggulan dibanding pendekatan lain:
-    - Tidak ada double-count (tidak menggabungkan dua jenis penanda berbeda)
-    - Tabel ditangani per BARIS, bukan per sel, sehingga tabel multi-kolom
-      tidak menggandakan hitungan
-
-    Returns:
-        tuple(dict, int):
-            dict  → {id(para_xml): nomor_halaman_fisik}  (top-level paragraf saja)
-            int   → total halaman fisik dokumen
-    """
-    from docx.oxml.ns import qn
-
-    _LR   = qn("w:lastRenderedPageBreak")
-    _W_P  = qn("w:p")
-    _W_TR = qn("w:tr")
-    _W_TC = qn("w:tc")
-
-    current_page  = 1
-    para_page_map = {}   # id(para_xml) → halaman fisik
-    first         = True
-
-    def _has_break(xml_el) -> bool:
-        return bool(xml_el.findall(".//" + _LR))
-
-    def _process_para(para_xml) -> None:
-        nonlocal current_page, first
-        if _has_break(para_xml) and not first:
-            current_page += 1
-        para_page_map[id(para_xml)] = current_page
-        first = False
-
-    def _process_table(tbl_xml) -> None:
-        """Hitung perpindahan halaman dalam tabel: satu kali per baris tabel.
-
-        Setiap baris yang dimulai di halaman baru punya w:lastRenderedPageBreak
-        di paragraf pertama sel pertamanya. Kita cek satu sel saja per baris
-        untuk menghindari penghitungan ganda pada tabel multi-kolom.
-        """
-        nonlocal current_page
-        for row in tbl_xml.findall(_W_TR):          # baris langsung (bukan bersarang)
-            for cell in row.findall(_W_TC):          # sel langsung
-                first_para = cell.find(_W_P)         # paragraf pertama di sel ini
-                if first_para is not None:
-                    if _has_break(first_para):
-                        current_page += 1
-                    break                            # cukup cek sel pertama yang punya paragraf
-
-    for child in body:
-        tag = child.tag
-        if tag == _W_P:
-            _process_para(child)
-        elif tag == qn("w:tbl"):
-            _process_table(child)
-
-    return para_page_map, current_page
-
-
 def _get_para_details(docx_path):
     """Muat semua paragraf dari docx, kembalikan dict {idx: detail}.
 
     Setiap entri menyertakan:
-      - page : nomor halaman fisik (dihitung via count_body_pages)
       - bab  : teks Heading 1 terakhir sebelum paragraf ini (atau None)
+      - page : selalu None (mekanisme penghitungan halaman dihapus)
     """
     try:
         from docx import Document
 
         doc = Document(docx_path)
-
-        # Hitung halaman untuk seluruh body — termasuk paragraf di dalam tabel
-        para_page_map, _ = count_body_pages(doc.element.body)
 
         result      = {}
         current_bab = None
@@ -155,9 +88,6 @@ def _get_para_details(docx_path):
 
             if style_name == "Heading 1" and text:
                 current_bab = text
-
-            # Ambil halaman dari peta; default 1 jika tidak ditemukan
-            page = para_page_map.get(id(para._p), 1)
 
             pf    = para.paragraph_format
             ls    = pf.line_spacing
@@ -185,7 +115,7 @@ def _get_para_details(docx_path):
                 "text"        : text[:100],
                 "full_text"   : text,
                 "runs"        : runs,
-                "page"        : page,
+                "page"        : None,
                 "bab"         : current_bab,
             }
 
@@ -292,10 +222,8 @@ def build_report(entries, docx_path=None, para_map=None):
     docx_path: opsional — jika diberikan, detail isi paragraf akan
                disertakan langsung di dalam setiap entri error/warning.
                Diabaikan jika para_map sudah diberikan secara eksplisit.
-    para_map:  opsional — dict {idx: detail} yang sudah dibangun dari luar
-               (misalnya oleh _get_para_details_structural() di validocx_runner
-               yang memakai penghitungan halaman struktural). Jika diberikan,
-               docx_path tidak dipakai untuk membangun para_map.
+    para_map:  opsional — dict {idx: detail} yang sudah dibangun dari luar.
+               Jika diberikan, docx_path tidak dipakai untuk membangun para_map.
     """
     if para_map is None:
         para_map = _get_para_details(docx_path) if docx_path else {}
