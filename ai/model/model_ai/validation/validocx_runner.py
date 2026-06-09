@@ -245,6 +245,9 @@ def _build_occurrences(
         # Lewati paragraf kosong (misal heading tanpa teks yang tidak sengaja diberi style)
         if not (detail.get("text") or "").strip():
             continue
+        # Jika actual_str tidak diberikan, coba ambil dari item itu sendiri
+        # (berguna untuk kasus di mana tiap paragraf punya actual value berbeda).
+        item_actual = actual_str if actual_str is not None else detail.get("actual")
         result.append({
             "page"      : detail.get("page"),
             "bab"       : detail.get("bab"),
@@ -252,7 +255,7 @@ def _build_occurrences(
             "style"     : detail.get("style"),
             "text"      : (detail.get("text") or "")[:100],
             "full_text" : detail.get("full_text") or "",
-            "actual"    : actual_str,
+            "actual"    : item_actual,
             "expected"  : expected_str,
         })
     return result
@@ -1005,37 +1008,43 @@ def _check_lampiran_format(
     docx_path: Path,
     metadata: DocumentMetadata,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
-    """Validasi judul lampiran via text-pattern, bukan style name.
+    """Validasi judul lampiran via text-pattern untuk SEMUA judul lampiran.
 
-    Judul lampiran dideteksi dari teks yang diawali 'Lampiran <angka>'.
-    Aturan: sama dengan body (font family, font size, line spacing, alignment JUSTIFY).
-    Berlaku sebagai contingency jika style tidak bernama eksplisit 'Lampiran'.
+    Mendeteksi paragraf yang teksnya diawali 'Lampiran <angka>' (_LAMPIRAN_BROAD_RE),
+    baik yang menggunakan style bernama 'Lampiran' maupun style lain (Normal, Body, dll).
+    Aturan atribut: font family, font size, line spacing, alignment JUSTIFY — sama dengan body.
     """
     issues: list[ValidationIssue] = []
     checks: list[ValidationCheckResult] = []
 
-    t = metadata.typography
-    s = metadata.spacing
+    t  = metadata.typography
     ds = metadata.document_structure_proposal
     expected_font    = t.font_family if t else None
     expected_size    = int(t.font_size_body_pt) if t and t.font_size_body_pt else None
-    expected_spacing = float(s.line_spacing) if s and s.line_spacing else None
+    expected_spacing = _resolve_line_spacing(metadata)
 
     # Separator dari payload; None → default "."
-    separator = ds.lampiran_heading_separator if ds else None
+    separator   = ds.lampiran_heading_separator if ds else None
     effective_sep = separator if separator is not None else "."
-
-    # Regex format yang DIHARAPKAN (dari metadata)
     lampiran_re = _build_lampiran_re(effective_sep)
+
+    # Rangkuman nilai yang diharapkan (dipakai di occurrences)
+    expected_summary = ", ".join(filter(None, [
+        expected_font or None,
+        f"{expected_size}pt" if expected_size else None,
+        f"spacing {expected_spacing}",
+        "JUSTIFY",
+    ]))
 
     try:
         doc = DocxDocument(str(docx_path))
 
-        wrong_alignment:  list[str] = []
-        wrong_font:       list[str] = []
-        wrong_size:       list[str] = []
-        wrong_spacing:    list[str] = []
-        wrong_separator:  list[str] = []
+        pass_items:      list[dict] = []
+        wrong_alignment: list[dict] = []
+        wrong_font:      list[dict] = []
+        wrong_size:      list[dict] = []
+        wrong_spacing:   list[dict] = []
+        wrong_separator: list[str]  = []
         total = 0
 
         for para in doc.paragraphs:
@@ -1043,19 +1052,22 @@ def _check_lampiran_format(
             if not text or not _LAMPIRAN_BROAD_RE.match(text):
                 continue
 
-            # ── Cek format separator ──────────────────────────────────────────
-            # Semua paragraf "Lampiran \d+..." dicek, termasuk style "Lampiran",
-            # karena format heading adalah tanggung jawab penulis dokumen.
+            # ── Separator (semua lampiran, termasuk yang pakai style "Lampiran") ──
             if not lampiran_re.match(text):
                 wrong_separator.append(text[:70])
 
-            # Untuk cek atribut: skip style "Lampiran" eksplisit (dicek engine)
-            if para.style.name == "Lampiran":
-                continue
-
             total += 1
+            para_info: dict = {
+                "text"      : text[:100],
+                "full_text" : text,
+                "style"     : para.style.name,
+                "page"      : None,
+                "bab"       : None,
+                "para_idx"  : None,
+            }
+            has_issue = False
 
-            # ── Alignment harus JUSTIFY ───────────────────────────────────────
+            # ── Alignment harus JUSTIFY ──────────────────────────────────────
             align = para.paragraph_format.alignment
             if align is None:
                 try:
@@ -1063,32 +1075,38 @@ def _check_lampiran_format(
                 except Exception:
                     align = None
             if align is not None and align != WD_ALIGN_PARAGRAPH.JUSTIFY:
-                wrong_alignment.append(text[:70])
+                _align_names = {0: "LEFT", 1: "CENTER", 2: "RIGHT", 3: "JUSTIFY"}
+                wrong_alignment.append({**para_info, "actual": _align_names.get(int(align), str(align))})
+                has_issue = True
 
-            # ── Font & size ───────────────────────────────────────────────────
+            # ── Font & size ──────────────────────────────────────────────────
             for run in para.runs:
                 if expected_font and run.font.name and run.font.name != expected_font:
-                    wrong_font.append(text[:70])
+                    wrong_font.append({**para_info, "actual": run.font.name})
+                    has_issue = True
                     break
                 if expected_size and run.font.size:
-                    if round(run.font.size.pt) != expected_size:
-                        wrong_size.append(text[:70])
+                    actual_pt = round(run.font.size.pt)
+                    if actual_pt != expected_size:
+                        wrong_size.append({**para_info, "actual": f"{actual_pt}pt"})
+                        has_issue = True
                         break
 
-            # ── Line spacing ──────────────────────────────────────────────────
-            if expected_spacing:
-                ls = para.paragraph_format.line_spacing
-                if ls is not None:
-                    try:
-                        ls_val = round(float(ls), 2)
-                        if abs(ls_val - expected_spacing) > 0.05:
-                            wrong_spacing.append(text[:70])
-                    except (TypeError, ValueError):
-                        pass
+            # ── Line spacing ─────────────────────────────────────────────────
+            ls = para.paragraph_format.line_spacing
+            if ls is not None:
+                try:
+                    ls_val = round(float(ls), 2)
+                    if abs(ls_val - expected_spacing) > 0.05:
+                        wrong_spacing.append({**para_info, "actual": str(ls_val)})
+                        has_issue = True
+                except (TypeError, ValueError):
+                    pass
 
-        # ── Emit: format separator ────────────────────────────────────────────
-        # Dicek sebelum early-return total==0 agar separator issue tidak terlewat
-        # meski semua lampiran pakai style eksplisit.
+            if not has_issue:
+                pass_items.append(para_info)
+
+        # ── Emit: format separator ───────────────────────────────────────────
         sep_display = f'titik (".")' if effective_sep == "." else (
             f'"{effective_sep}"' if effective_sep else "tanpa titik"
         )
@@ -1115,47 +1133,66 @@ def _check_lampiran_format(
                 expected=effective_sep,
             ))
 
-        # Jika tidak ada judul lampiran non-style, cek atribut dilewati
+        # Tidak ada judul lampiran sama sekali → skip atribut check
         if total == 0:
             checks.append(ValidationCheckResult(
                 category="typography", field="lampiran_format",
                 status="skipped",
-                message="Tidak ada judul lampiran (non-Lampiran style) yang perlu diperiksa via text-pattern",
-                skip_reason="Semua lampiran pakai style eksplisit atau tidak ada",
+                message="Tidak ada judul lampiran yang ditemukan di dokumen",
+                skip_reason="Tidak ada paragraf dengan pola 'Lampiran <angka>'",
             ))
             return issues, checks
 
-        # ── Emit: atribut (font, alignment, spacing) ─────────────────────────
+        # ── Emit: atribut lolos → passed check dengan occurrences ────────────
         all_ok = not any([wrong_alignment, wrong_font, wrong_size, wrong_spacing])
-        if all_ok and total > 0:
+        if pass_items:
+            n_pass = len(pass_items)
+            occs_pass = _build_occurrences(
+                pass_items,
+                actual_str=expected_summary,
+                expected_str=expected_summary,
+            ) or None
             checks.append(ValidationCheckResult(
                 category="typography", field="lampiran_format",
                 status="passed",
-                message=f"Semua {total} judul lampiran (non-Lampiran style) sesuai format body",
+                message=(
+                    f"Semua {total} judul lampiran sesuai format body"
+                    if all_ok else
+                    f"{n_pass} dari {total} judul lampiran sesuai format body"
+                ),
+                expected=expected_summary,
+                actual=expected_summary,
+                occurrences=occs_pass,
             ))
-        else:
-            for field, items, label, expected_val in [
-                ("lampiran_alignment",  wrong_alignment, "alignment",   "JUSTIFY"),
-                ("lampiran_font",       wrong_font,      "font family", expected_font),
-                ("lampiran_font_size",  wrong_size,      "font size",   f"{expected_size}pt"),
-                ("lampiran_spacing",    wrong_spacing,   "line spacing",f"{expected_spacing}"),
-            ]:
-                if not items:
-                    continue
-                msg = (
-                    f"{len(items)} judul lampiran {label} tidak sesuai "
-                    f"(ekspektasi: {expected_val}). Contoh: \"{items[0]}\""
-                )
-                issues.append(ValidationIssue(
-                    category="typography", field=field,
-                    severity="warning", message=msg,
-                    expected=str(expected_val), actual=items[0],
-                ))
-                checks.append(ValidationCheckResult(
-                    category="typography", field=field,
-                    status="warning", message=msg,
-                    expected=str(expected_val), actual=items[0],
-                ))
+
+        # ── Emit: atribut gagal → warning check + issue per atribut ──────────
+        for field, items, label, expected_val in [
+            ("lampiran_alignment", wrong_alignment, "alignment",    "JUSTIFY"),
+            ("lampiran_font",      wrong_font,      "font family",  expected_font or ""),
+            ("lampiran_font_size", wrong_size,      "font size",    f"{expected_size}pt"),
+            ("lampiran_spacing",   wrong_spacing,   "line spacing", str(expected_spacing)),
+        ]:
+            if not items:
+                continue
+            first_actual = items[0].get("actual", "")
+            msg = (
+                f"{len(items)} judul lampiran {label} tidak sesuai "
+                f"(ekspektasi: {expected_val}). Contoh: \"{items[0]['text']}\""
+            )
+            # actual_str=None → _build_occurrences akan pakai "actual" tiap item
+            occs_fail = _build_occurrences(items, expected_str=str(expected_val)) or None
+            issues.append(ValidationIssue(
+                category="typography", field=field,
+                severity="warning", message=msg,
+                expected=str(expected_val), actual=first_actual,
+                occurrences=occs_fail,
+            ))
+            checks.append(ValidationCheckResult(
+                category="typography", field=field,
+                status="warning", message=msg,
+                expected=str(expected_val), actual=first_actual,
+                occurrences=occs_fail,
+            ))
 
     except Exception as exc:
         checks.append(ValidationCheckResult(
