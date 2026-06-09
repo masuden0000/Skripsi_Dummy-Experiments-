@@ -33,6 +33,12 @@ _GRUP_A_LINE_SPACING: dict[str, float] = {
     # line_spacing=1.15 langsung dan ditangani via cabang else di bawah.
 }
 
+# AT_LEAST / EXACTLY: admin input dalam pt, python-docx membaca sebagai Length
+# dan wrapper.py mengonversinya ke cm via .cm. Konversi pt → cm agar setara.
+_PT_TO_CM = 2.54 / 72  # 1 pt = 25.4mm / 72 = 0.03528 cm
+
+_GRUP_C_LINE_SPACING = frozenset({"AT_LEAST", "EXACTLY"})
+
 _PAPER_SIZE_DIMS: dict[str, tuple[float, float]] = {
     "A4":     (21.0, 29.7),
     "F4":     (21.0, 33.0),
@@ -55,6 +61,9 @@ def _resolve_line_spacing(metadata: DocumentMetadata) -> float:
     rule = (s.line_spacing_rule or "").upper()
     if rule in _GRUP_A_LINE_SPACING:
         return _GRUP_A_LINE_SPACING[rule]
+    if rule in _GRUP_C_LINE_SPACING and s.line_spacing is not None:
+        # AT_LEAST / EXACTLY: admin input pt, docx dibaca dalam cm oleh wrapper.
+        return s.line_spacing * _PT_TO_CM
     return s.line_spacing if s.line_spacing is not None else 1.15
 
 
