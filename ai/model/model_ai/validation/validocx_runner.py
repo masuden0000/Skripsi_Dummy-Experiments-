@@ -19,6 +19,7 @@ from model_ai.validation.validocx.debug_report import parse_entries, build_repor
 from model_ai.validation.validocx_adapter import (
     enrich_requirements_with_docx_styles,
     metadata_to_requirements,
+    _resolve_line_spacing,
 )
 
 
@@ -1187,7 +1188,9 @@ def _check_body_content(
     expected_align   = WD_ALIGN_PARAGRAPH.JUSTIFY
     expected_font    = t.font_family if t else None
     expected_size    = int(t.font_size_body_pt) if t and t.font_size_body_pt else None
-    expected_spacing = float(s.line_spacing) if s and s.line_spacing else None
+    # Gunakan _resolve_line_spacing agar rule seperti ONE_POINT_FIVE/SINGLE/DOUBLE
+    # juga menghasilkan nilai float yang benar (bukan None).
+    expected_spacing = _resolve_line_spacing(metadata)
 
     try:
         from model_ai.validation.validocx.wrapper import DocumentWrapper
@@ -1276,7 +1279,11 @@ def _check_body_content(
             # ── Line spacing ──────────────────────────────────────────────────
             if expected_spacing:
                 ls = para.paragraph_format.line_spacing
-                if ls is not None:
+                if ls is None:
+                    # Inherited dari style/dokumen default — anggap lolos,
+                    # konsisten dengan penanganan font/size yang juga None = lolos.
+                    spacing_pass.append(para_info)
+                else:
                     try:
                         ls_val = round(float(ls), 2)
                         if abs(ls_val - expected_spacing) > 0.05:
