@@ -217,6 +217,11 @@ class FiguresTablesExtracted(BaseModel):
     caption_format_figure: str | None = None
     caption_format_table: str | None = None
     caption_format_lampiran: str | None = None
+    # Alignment caption per tipe — CENTER | LEFT | RIGHT | JUSTIFY.
+    # Null berarti gunakan CENTER sebagai default (backward-compatible).
+    caption_alignment_figure:   str | None = None
+    caption_alignment_table:    str | None = None
+    caption_alignment_lampiran: str | None = None
     budget_format_rules: "BudgetFormatRules | None" = None
 
 
