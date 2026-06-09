@@ -171,13 +171,6 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
         styles[f"Judul{level}"]    = style_def
         styles[f"Judul {level}"]   = style_def
 
-    # ── Style Lampiran ────────────────────────────────────────────────────────
-    # Divalidasi sama seperti body (TNR, 12pt, 1.15, JUSTIFY).
-    # Alignment bisa diwarisi dari Normal — wrapper.py akan resolve via Normal fallback
-    # sehingga tidak memunculkan false-positive "inherited" warning.
-    lampiran_style = copy.deepcopy({k: v for k, v in normal_style.items() if k != "exclude"})
-    styles["Lampiran"] = lampiran_style
-
     # ── Style TOC & TOF ───────────────────────────────────────────────────────
     # "table of figures" → entri Daftar Gambar, Daftar Tabel, Daftar Lampiran
     # "TOC 1"–"TOC 5"    → entri Daftar Isi per level
