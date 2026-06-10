@@ -831,6 +831,16 @@ def _check_document_structure(
         expected_display_req = f"Wajib: {req_part} | Opsional: {opt_part}"
         actual_display_req   = ', '.join(actual_section_texts) if actual_section_texts else "Tidak ada"
 
+        # Occurrences: semua major section yang ditemukan di dokumen
+        # (ditampilkan baik pada passed maupun failed agar reviewer lihat gambaran penuh)
+        actual_major_found = [s for s in actual_classified if s["type"] in major_types_set]
+        occ_req = _build_occurrences(
+            [{"text": s["text"][:100], "full_text": s["text"],
+              "style": "", "page": None, "bab": None, "para_idx": None}
+             for s in actual_major_found],
+            actual_str=None, expected_str=None,
+        ) or None
+
         missing_required = required_types - actual_types_set
         if missing_required:
             # Deduplikasi label yang hilang
@@ -850,15 +860,9 @@ def _check_document_structure(
                 category="document_structure", field="required_section",
                 status="failed", message=msg,
                 expected=expected_display_req, actual=actual_display_req,
+                occurrences=occ_req,
             ))
         else:
-            actual_major_found = [s for s in actual_classified if s["type"] in major_types_set]
-            occ_req = _build_occurrences(
-                [{"text": s["text"][:100], "full_text": s["text"],
-                  "style": "", "page": None, "bab": None, "para_idx": None}
-                 for s in actual_major_found],
-                actual_str=None, expected_str=None,
-            ) or None
             checks.append(ValidationCheckResult(
                 category="document_structure", field="required_section",
                 status="passed",
@@ -1595,8 +1599,8 @@ def _check_caption_format(
 
         wrong_fig_alignment: list[str] = []
         wrong_tbl_alignment: list[str] = []
-        wrong_font:          list[str] = []
-        wrong_size:          list[str] = []
+        wrong_font_items:    list[dict] = []   # dict dengan field "actual" per item
+        wrong_size_items:    list[dict] = []   # dict dengan field "actual" per item
         fig_total = 0
         tbl_total = 0
         fig_pass_align_items: list[dict] = []
@@ -1646,16 +1650,20 @@ def _check_caption_format(
                 if not run.text.strip():
                     continue
                 if expected_font and run.font.name:
-                    if run.font.name != expected_font:
-                        wrong_font.append(text[:70])
+                    actual_font = run.font.name
+                    item = {**para_info, "actual": actual_font}
+                    if actual_font != expected_font:
+                        wrong_font_items.append(item)
                     else:
-                        font_pass_items.append(para_info)
+                        font_pass_items.append(item)
                 if expected_size and run.font.size:
                     run_pt = round(run.font.size.pt)
+                    actual_size_str = f"{run_pt}pt"
+                    item = {**para_info, "actual": actual_size_str}
                     if run_pt != expected_size:
-                        wrong_size.append(text[:70])
+                        wrong_size_items.append(item)
                     else:
-                        size_pass_items.append(para_info)
+                        size_pass_items.append(item)
                 break  # cukup satu run
 
         # ── Emit alignment gambar ─────────────────────────────────────────────
@@ -1712,20 +1720,25 @@ def _check_caption_format(
 
         # ── Emit font (gabungan gambar + tabel) ───────────────────────────────
         total_captions = fig_total + tbl_total
-        if wrong_font:
+        if wrong_font_items:
+            first_actual = wrong_font_items[0].get("actual", "")
             msg = (
-                f"{len(wrong_font)} caption font tidak sesuai (ekspektasi: {expected_font}). "
-                f'Contoh: "{wrong_font[0]}"'
+                f"{len(wrong_font_items)} caption font tidak sesuai "
+                f"(seharusnya: {expected_font}). "
+                f'Contoh: "{wrong_font_items[0]["text"]}"'
             )
             issues.append(ValidationIssue(
                 category="figures_tables", field="caption_font",
                 severity="error", message=msg,
-                expected=expected_font, actual=wrong_font[0],
+                expected=expected_font, actual=first_actual,
             ))
             checks.append(ValidationCheckResult(
                 category="figures_tables", field="caption_font",
                 status="failed", message=msg,
-                expected=expected_font, actual=wrong_font[0],
+                expected=expected_font, actual=first_actual,
+                occurrences=_build_occurrences(
+                    wrong_font_items, actual_str=None, expected_str=expected_font
+                ),
             ))
         elif expected_font and total_captions > 0:
             checks.append(ValidationCheckResult(
@@ -1733,32 +1746,40 @@ def _check_caption_format(
                 status="passed",
                 message=f"Font caption sesuai: {expected_font}",
                 expected=expected_font,
-                occurrences=_build_occurrences(font_pass_items),
+                occurrences=_build_occurrences(
+                    font_pass_items, actual_str=None, expected_str=None
+                ),
             ))
 
-        if wrong_size:
+        if wrong_size_items:
+            first_actual_size = wrong_size_items[0].get("actual", "")
             msg = (
-                f"{len(wrong_size)} caption ukuran font tidak sesuai "
-                f"(ekspektasi: {expected_size}pt). "
-                f'Contoh: "{wrong_size[0]}"'
+                f"{len(wrong_size_items)} caption ukuran font tidak sesuai "
+                f"(seharusnya: {expected_size}pt). "
+                f'Contoh: "{wrong_size_items[0]["text"]}"'
             )
             issues.append(ValidationIssue(
                 category="figures_tables", field="caption_font_size",
                 severity="error", message=msg,
-                expected=str(expected_size), actual=wrong_size[0],
+                expected=f"{expected_size}pt", actual=first_actual_size,
             ))
             checks.append(ValidationCheckResult(
                 category="figures_tables", field="caption_font_size",
                 status="failed", message=msg,
-                expected=str(expected_size), actual=wrong_size[0],
+                expected=f"{expected_size}pt", actual=first_actual_size,
+                occurrences=_build_occurrences(
+                    wrong_size_items, actual_str=None, expected_str=f"{expected_size}pt"
+                ),
             ))
         elif expected_size and total_captions > 0:
             checks.append(ValidationCheckResult(
                 category="figures_tables", field="caption_font_size",
                 status="passed",
                 message=f"Ukuran font caption sesuai: {expected_size}pt",
-                expected=str(expected_size),
-                occurrences=_build_occurrences(size_pass_items),
+                expected=f"{expected_size}pt",
+                occurrences=_build_occurrences(
+                    size_pass_items, actual_str=None, expected_str=None
+                ),
             ))
 
         if total_captions == 0:
