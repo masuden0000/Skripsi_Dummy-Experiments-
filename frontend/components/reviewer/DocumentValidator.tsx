@@ -92,6 +92,8 @@ const FIELD_LABELS: Record<string, string> = {
   required_section        : "Section wajib",
   section_order           : "Urutan section",
   bab_order               : "Urutan BAB",
+  awal_start              : "Titik mulai penomoran romawi (halaman preliminary)",
+  isi_start               : "Titik mulai penomoran arab (halaman isi/BAB)",
 }
 
 const PARAM_LABELS: Record<string, string> = {

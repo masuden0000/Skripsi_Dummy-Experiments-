@@ -784,8 +784,19 @@ def _check_document_structure(
 
         # Ambil hanya major sections dari metadata sebagai expected order
         expected_major = [s for s in ds.sections if s.is_major_section]
-        required_types = {s.type for s in expected_major if s.required is True}
+        # required_types: hanya untuk non-BAB (BAB dicek per nomor agar BAB 1 ≠ BAB 2)
+        required_non_bab_types = {
+            s.type for s in expected_major if s.required is True and s.type != "bab"
+        }
+        required_bab_nums = {
+            s.number for s in expected_major
+            if s.type == "bab" and s.required is True and s.number is not None
+        }
         actual_types_set = {s["type"] for s in actual_classified}
+        actual_bab_nums  = {
+            s["number"] for s in actual_classified
+            if s["type"] == "bab" and "number" in s
+        }
 
         # 1. Cek section wajib hadir
         def _req_label(section_type: str, title: str | None) -> str:
@@ -831,8 +842,7 @@ def _check_document_structure(
         expected_display_req = f"Wajib: {req_part} | Opsional: {opt_part}"
         actual_display_req   = ', '.join(actual_section_texts) if actual_section_texts else "Tidak ada"
 
-        # Occurrences: semua major section yang ditemukan di dokumen
-        # (ditampilkan baik pada passed maupun failed agar reviewer lihat gambaran penuh)
+        # Occurrences: semua major section yang ditemukan (tampil di passed & failed)
         actual_major_found = [s for s in actual_classified if s["type"] in major_types_set]
         occ_req = _build_occurrences(
             [{"text": s["text"][:100], "full_text": s["text"],
@@ -841,16 +851,29 @@ def _check_document_structure(
             actual_str=None, expected_str=None,
         ) or None
 
-        missing_required = required_types - actual_types_set
-        if missing_required:
-            # Deduplikasi label yang hilang
-            seen_ml: set[str] = set()
+        # Hitung yang hilang — non-BAB by type, BAB by nomor individual
+        missing_non_bab = required_non_bab_types - actual_types_set
+        missing_bab_nums = required_bab_nums - actual_bab_nums
+        total_required   = len(required_non_bab_types) + len(required_bab_nums)
+
+        if missing_non_bab or missing_bab_nums:
             missing_labels: list[str] = []
+            # Non-BAB hilang
+            seen_ml: set[str] = set()
             for s in expected_major:
-                if s.type in missing_required and s.type not in seen_ml:
+                if s.type != "bab" and s.type in missing_non_bab and s.type not in seen_ml:
                     seen_ml.add(s.type)
                     missing_labels.append(_req_label(s.type, s.title))
-            msg = f"{len(missing_required)} section wajib tidak ditemukan: {', '.join(missing_labels)}"
+            # BAB hilang — tampilkan nama individual
+            for s in sorted(
+                [x for x in expected_major if x.type == "bab" and x.number in missing_bab_nums],
+                key=lambda x: x.number or 0,
+            ):
+                lbl = f"BAB {s.number} {s.title.upper()}" if s.title else f"BAB {s.number}"
+                missing_labels.append(lbl)
+
+            total_missing = len(missing_non_bab) + len(missing_bab_nums)
+            msg = f"{total_missing} section wajib tidak ditemukan: {', '.join(missing_labels)}"
             issues.append(ValidationIssue(
                 category="document_structure", field="required_section",
                 severity="error", message=msg,
@@ -866,7 +889,7 @@ def _check_document_structure(
             checks.append(ValidationCheckResult(
                 category="document_structure", field="required_section",
                 status="passed",
-                message=f"Semua {len(required_types)} section wajib ditemukan",
+                message=f"Semua {total_required} section wajib ditemukan",
                 expected=expected_display_req,
                 actual=actual_display_req,
                 occurrences=occ_req,
@@ -1646,24 +1669,44 @@ def _check_caption_format(
                         tbl_pass_align_items.append(para_info)
 
             # ── Font family & size (run pertama non-empty saja) ──────────────
+            # Font/size sering di-inherit dari style, bukan eksplisit di run.
+            # Fallback: run → paragraph style → None.
             for run in para.runs:
                 if not run.text.strip():
                     continue
-                if expected_font and run.font.name:
-                    actual_font = run.font.name
+
+                actual_font: str | None = run.font.name
+                if actual_font is None:
+                    try:
+                        actual_font = para.style.font.name
+                    except Exception:
+                        pass
+
+                actual_size_pt: int | None = None
+                if run.font.size is not None:
+                    actual_size_pt = round(run.font.size.pt)
+                else:
+                    try:
+                        if para.style.font.size is not None:
+                            actual_size_pt = round(para.style.font.size.pt)
+                    except Exception:
+                        pass
+
+                if expected_font and actual_font:
                     item = {**para_info, "actual": actual_font}
                     if actual_font != expected_font:
                         wrong_font_items.append(item)
                     else:
                         font_pass_items.append(item)
-                if expected_size and run.font.size:
-                    run_pt = round(run.font.size.pt)
-                    actual_size_str = f"{run_pt}pt"
+
+                if expected_size and actual_size_pt is not None:
+                    actual_size_str = f"{actual_size_pt}pt"
                     item = {**para_info, "actual": actual_size_str}
-                    if run_pt != expected_size:
+                    if actual_size_pt != expected_size:
                         wrong_size_items.append(item)
                     else:
                         size_pass_items.append(item)
+
                 break  # cukup satu run
 
         # ── Emit alignment gambar ─────────────────────────────────────────────
@@ -2677,7 +2720,7 @@ def _check_start_section(
     if bab_m:
         target_num = int(bab_m.group(1))
         found = any(
-            para.style.name == "Heading 1"
+            _heading_level_from_style(para.style) is not None
             and (m := _BAB_RE.match(para.text.strip().upper())) is not None
             and int(m.group(1)) == target_num
             for para in doc.paragraphs
@@ -2688,7 +2731,7 @@ def _check_start_section(
         # Cari heading yang cocok dengan tipe section
         expected_title = _HEADING_TITLE_MAP_INV.get(start_at, start_at.upper().replace("_", " "))
         found = any(
-            para.style.name == "Heading 1"
+            _heading_level_from_style(para.style) is not None
             and para.text.strip().upper() == expected_title
             for para in doc.paragraphs
         )
