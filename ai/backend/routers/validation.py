@@ -14,9 +14,15 @@ import tempfile
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
+from pydantic import BaseModel
 
 from services.database import get_supabase
 from services.job_processor import process_bulk_session, save_temp_file
+
+
+class SummarizeRequest(BaseModel):
+    issues: list[dict] = []
+    schema_name: str | None = None
 
 router = APIRouter()
 
@@ -167,6 +173,26 @@ async def run_validation(
         pass
 
     return result_dict
+
+
+# ─── POST /summarize — ringkasan naratif LLM dari issue ──────────────────────
+
+@router.post("/summarize")
+async def summarize_validation(body: SummarizeRequest):
+    """Buat catatan ringkas bergaya penilai dosen dari daftar issue."""
+    if not body.issues:
+        return {"summary": "", "generated_at": _utcnow()}
+
+    try:
+        from model_ai.validation.summarizer import summarize_issues  # noqa: PLC0415
+        summary = summarize_issues(body.issues, body.schema_name)
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Gagal membuat ringkasan: {str(e)}",
+        )
+
+    return {"summary": summary, "generated_at": _utcnow()}
 
 
 # ─── POST /bulk — validasi banyak dokumen (async) ────────────────────────────

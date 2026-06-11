@@ -93,6 +93,25 @@ router.post("/validation/bulk", async (req, res, next) => {
   }
 })
 
+// POST /api/pkm/validation/summarize - Proxy JSON body ke FastAPI untuk ringkasan LLM
+router.post("/validation/summarize", async (req, res, next) => {
+  try {
+    const aiResponse = await fetch(`${env.AI_BACKEND_URL}/api/validation/summarize`, {
+      method: "POST",
+      body: JSON.stringify(req.body ?? {}),
+      headers: { "Content-Type": "application/json" },
+    })
+
+    const { data, status } = await parseAiResponse(aiResponse)
+    res.status(status).json(data)
+  } catch (error) {
+    console.error("[PkmRoute] Error proxying summarize:", error)
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Gagal terhubung ke AI backend.",
+    })
+  }
+})
+
 // GET /api/pkm/validation/jobs/:jobId - Proxy status polling ke FastAPI ai-backend
 router.get("/validation/jobs/:jobId", async (req, res, next) => {
   try {
