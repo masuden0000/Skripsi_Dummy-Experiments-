@@ -242,6 +242,49 @@ export async function runDocumentValidation(
   }
 }
 
+// ── summarizeValidation ──────────────────────────────────────────────────────
+export interface ValidationSummary {
+  summary: string
+  generated_at: string
+}
+
+export async function summarizeValidation(
+  issues: ValidationIssue[],
+  schemaName?: string
+): Promise<{ data: ValidationSummary | null; error: string | null }> {
+  try {
+    const response = await fetch("/api/pkm/validation/summarize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ issues, schema_name: schemaName ?? null }),
+    })
+
+    const json = await response.json()
+
+    if (!response.ok) {
+      return {
+        data: null,
+        error: json.detail || json.error || `Request gagal (${response.status})`,
+      }
+    }
+
+    return {
+      data: {
+        summary: String(json.summary ?? ""),
+        generated_at: String(json.generated_at ?? ""),
+      },
+      error: null,
+    }
+  } catch (err) {
+    const message =
+      err instanceof TypeError && err.message.includes("fetch")
+        ? "Tidak dapat menjangkau server."
+        : "Terjadi kesalahan tidak terduga."
+    return { data: null, error: message }
+  }
+}
+
 // ── runBulkValidation ────────────────────────────────────────────────────────
 export async function runBulkValidation(
   items: BulkValidationItem[]

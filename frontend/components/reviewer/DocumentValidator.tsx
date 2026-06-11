@@ -28,6 +28,7 @@ import {
   runDocumentValidation,
   runBulkValidation,
   checkSessionStatus,
+  summarizeValidation,
   getPkmSchemas,
   getPkmSchemeLabel,
   type ValidationResult,
@@ -667,6 +668,131 @@ function skippedCheckToIssue(check: ValidationCheck): DisplayIssue {
   }
 }
 
+// ─── Sub-komponen: ValidationLLMSummarySection ───────────────────────────────
+// Section di atas hasil validasi: ringkasan naratif LLM bergaya penilai dosen,
+// copyable, di-generate manual via tombol. Reset saat result berubah (key prop).
+
+function ValidationLLMSummarySection({
+  issues,
+  schemaName,
+}: {
+  issues: ValidationIssue[]
+  schemaName?: string
+}) {
+  const [summary, setSummary] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState<string | null>(null)
+  const [copied,  setCopied]  = useState(false)
+
+  const hasIssues = issues.length > 0
+
+  const handleGenerate = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    const res = await summarizeValidation(issues, schemaName)
+    setLoading(false)
+    if (res.error) {
+      setError(res.error)
+      return
+    }
+    setSummary(res.data?.summary ?? "")
+  }, [issues, schemaName])
+
+  const handleCopy = useCallback(async () => {
+    if (!summary) return
+    try {
+      await navigator.clipboard.writeText(summary)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      setError("Gagal menyalin ke clipboard.")
+    }
+  }, [summary])
+
+  return (
+    <div className="px-6 pb-4">
+      <div className="rounded-md border border-border bg-muted/30 p-4">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="text-sm font-medium text-foreground">
+            Catatan Penilai (Ringkasan LLM)
+          </div>
+          {hasIssues && (
+            <div className="flex items-center gap-2">
+              {summary !== null && !loading && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleCopy}
+                    disabled={!summary}
+                  >
+                    {copied ? "Tersalin" : "Salin"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleGenerate}
+                  >
+                    Regenerate
+                  </Button>
+                </>
+              )}
+              {summary === null && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleGenerate}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2Icon className="size-3.5 animate-spin mr-1.5" />
+                      Memproses...
+                    </>
+                  ) : (
+                    "Generate Ringkasan"
+                  )}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {!hasIssues && (
+          <p className="text-sm text-muted-foreground select-text">
+            Tidak ada catatan — dokumen sudah sesuai format.
+          </p>
+        )}
+
+        {hasIssues && loading && (
+          <div className="space-y-2">
+            <div className="h-3 w-11/12 rounded bg-muted animate-pulse" />
+            <div className="h-3 w-10/12 rounded bg-muted animate-pulse" />
+            <div className="h-3 w-9/12  rounded bg-muted animate-pulse" />
+          </div>
+        )}
+
+        {hasIssues && !loading && summary !== null && (
+          <p className="text-sm leading-relaxed whitespace-pre-wrap select-text text-foreground">
+            {summary || "(Ringkasan kosong)"}
+          </p>
+        )}
+
+        {hasIssues && !loading && summary === null && !error && (
+          <p className="text-sm text-muted-foreground">
+            Klik <span className="font-medium">Generate Ringkasan</span> untuk
+            membuat catatan ringkas dari {issues.length} kesalahan yang ditemukan.
+          </p>
+        )}
+
+        {error && (
+          <p className="mt-2 text-sm text-destructive">{error}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Sub-komponen: ValidationResultView ──────────────────────────────────────
 // Menampilkan hasil validasi satu dokumen (sama seperti tampilan lama).
 
@@ -718,6 +844,11 @@ function ValidationResultView({ result }: { result: ValidationResult }) {
           </Alert>
         )}
       </div>
+
+      <ValidationLLMSummarySection
+        key={result.validated_at ?? "summary"}
+        issues={allIssues}
+      />
 
       <div className="border-t border-border">
         <SummaryBar

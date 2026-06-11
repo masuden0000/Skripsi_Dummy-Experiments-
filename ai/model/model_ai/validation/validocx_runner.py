@@ -110,7 +110,6 @@ _CAPTION_ALIGN_MAP: dict[str, "WD_ALIGN_PARAGRAPH"] = {
 
 # Keyword untuk mendeteksi heading dari style name / inheritance chain.
 _HEADING_STYLE_KEYWORDS: frozenset[str] = frozenset({"heading", "judul"})
-_HEADING_PARAM_KEYWORDS: frozenset[str] = frozenset({"heading", "judul"})
 
 # Format nomor halaman
 _NUM_FORMAT_DISPLAY: dict[str, str] = {
@@ -292,43 +291,6 @@ def _coerce_paras(paras) -> list[dict]:
 
 
 _ALIGN_LABEL: dict[int, str] = {0: "LEFT", 1: "CENTER", 2: "RIGHT", 3: "JUSTIFY"}
-
-
-def _lookup_expected(requirements: dict, param: str, style: str) -> str | None:
-    """Ambil nilai expected untuk satu parameter dari requirements dict.
-
-    Dipakai saat membangun passed checks agar field 'expected' terisi
-    dan bisa ditampilkan di frontend section Lulus.
-
-    Jika style tidak terdaftar di requirements (mis. 'List Paragraph',
-    'table of figures'), gunakan 'Normal' sebagai fallback — sesuai perilaku
-    validator.py yang melakukan hal yang sama saat memvalidasi paragraf.
-    """
-    styles = requirements.get("styles", {})
-    style_req = styles.get(style)
-    if not isinstance(style_req, dict):
-        # Fallback ke Normal — validator.py juga pakai Normal untuk style tak dikenal
-        style_req = styles.get("Normal")
-    if not isinstance(style_req, dict):
-        return None
-
-    if param == "alignment":
-        attrs = style_req.get("paragraph", {}).get("attributes", {})
-        val = attrs.get("alignment") if isinstance(attrs, dict) else None
-        return _ALIGN_LABEL.get(val) if val is not None else None
-
-    if param == "line_spacing":
-        attrs = style_req.get("paragraph", {}).get("attributes", {})
-        val = attrs.get("line_spacing") if isinstance(attrs, dict) else None
-        return str(val) if val is not None else None
-
-    if param == "font":
-        font_attrs = style_req.get("font", {}).get("attributes") or []
-        if font_attrs:
-            return ", ".join(str(a) for a in font_attrs if a is not None)
-        return None
-
-    return None
 
 
 def _normal_formatting_label(requirements: dict) -> str | None:
@@ -536,75 +498,12 @@ def _build_issues_checks(
             occurrences=occurrences,
         ))
 
-    # ── Parameter summary sebagai check (heading only) ───────────────────────
-    # Non-heading summary digantikan oleh _check_body_content() yang mengagregasi
-    # per nilai parameter. Di sini tampilkan hasil heading (Heading 1–5, Judul*):
-    #   - lolos semua / lolos semua (ada inherited) → check passed saja
-    #   - ada yang gagal → check failed (elemen gagal) + check passed (elemen lolos)
-    #     Keduanya ditampilkan agar user tahu berapa yang lolos dan berapa yang error.
-    for ps in report.get("parameter_summary", []):
-        param_match = re.match(r'^(\S+)\s+\((.+)\)$', ps["parameter"])
-        style_in_param = (param_match.group(2) if param_match else "").lower()
-        if not any(k in style_in_param for k in _HEADING_PARAM_KEYWORDS):
-            continue
-
-        expected_val: str | None = None
-        if requirements and param_match:
-            expected_val = _lookup_expected(
-                requirements, param_match.group(1), param_match.group(2)
-            )
-
-        field = f"validocx_param.{ps['parameter'].replace(' ', '_')}"
-
-        # ── Elemen yang lolos → selalu emit passed check ──────────────────────
-        # Gunakan len(raw_pass) bukan ps["pass"] karena ps["pass"] menghitung
-        # baris log per run (bisa >1 per paragraf), sedangkan raw_pass berisi
-        # satu entry per paragraf unik — konsisten dengan jumlah lokasi yang ditampilkan.
-        if ps["pass"] > 0 or ps["status"] in ("lolos semua", "lolos semua (ada inherited)"):
-            raw_pass = ps.get("paragraph_details_pass", [])
-            n_pass = len(raw_pass)
-            occs_pass = _build_occurrences(raw_pass) or None
-            checks.append(ValidationCheckResult(
-                category="typography",
-                field=field,
-                status="passed",
-                message=f"{ps['parameter']}: {n_pass} elemen lolos",
-                expected=expected_val,
-                actual=expected_val,
-                occurrences=occs_pass,
-            ))
-
-        # ── Elemen yang gagal → emit failed check + issue ─────────────────────
-        if ps["status"] == "ada yang gagal":
-            raw_fail = ps.get("paragraph_details_fail", [])
-            n_fail  = len(raw_fail)
-            n_total = len(ps.get("paragraph_details_pass", [])) + n_fail
-            occs_fail = _build_occurrences(raw_fail, expected_str=expected_val) or None
-            # Ambil actual dari elemen pertama yang gagal (jika tersedia)
-            first_fail_actual: str | None = None
-            if raw_fail and isinstance(raw_fail[0], dict):
-                first_fail_actual = raw_fail[0].get("actual")
-            actual_summary = first_fail_actual or "Tidak sesuai"
-            msg = (
-                f"{ps['parameter']}: {n_fail} dari {n_total} elemen gagal"
-                + (f" (expected: {expected_val})" if expected_val else "")
-            )
-            issues.append(ValidationIssue(
-                category="typography",
-                field=field,
-                severity="error",
-                message=msg,
-                occurrences=occs_fail,
-            ))
-            checks.append(ValidationCheckResult(
-                category="typography",
-                field=field,
-                status="failed",
-                message=msg,
-                expected=expected_val,
-                actual=actual_summary,
-                occurrences=occs_fail,
-            ))
+    # ── Parameter summary heading: DINONAKTIFKAN ─────────────────────────────
+    # Sebelumnya loop ini meng-emit field `validocx_param.<param>_(Heading X)`
+    # untuk style heading. Dihapus atas permintaan reviewer karena nilai yang
+    # sama sudah ditampilkan oleh mekanisme lain (typography/spacing dari body
+    # content check + per-attribute issue) — entri validocx_param.* tampak
+    # sebagai duplikat di UI.
 
     # ── Summary check ────────────────────────────────────────────────────────
     s = report["summary"]
@@ -2956,12 +2855,21 @@ def _build_displayed_page_map(doc) -> dict[int, int]:
                     continue
 
             # Cek page break (kecuali paragraf pertama section)
+            # Strategi: jika dokumen memiliki w:lastRenderedPageBreak (lrpb),
+            # gunakan HANYA lrpb — explicit page break (w:br type="page") TIDAK
+            # dijadikan fallback karena lrpb di paragraf berikutnya sudah
+            # merepresentasikan transisi yang sama (double-counting).
+            # Contoh: paragraf kosong dengan explicit break diikuti DAFTAR PUSTAKA
+            # yang memiliki lrpb → keduanya menandai SATU transisi halaman;
+            # menghitung keduanya akan menambah 1 halaman palsu.
+            # Fallback ke explicit break hanya dipakai saat dokumen belum pernah
+            # di-render Word (tidak ada lrpb sama sekali).
             if not first_in_section:
                 has_break = False
                 if has_any_lrpb:
                     if p_elem.findall(".//" + qn("w:lastRenderedPageBreak")):
                         has_break = True
-                if not has_break:
+                else:
                     for br in p_elem.findall(".//" + qn("w:br")):
                         if br.get(qn("w:type")) == "page":
                             has_break = True
@@ -3028,7 +2936,8 @@ def _check_page_count(
     """Validasi jumlah halaman inti tidak melebihi batas maksimum.
 
     Halaman inti dihitung dari section halaman_inti_mulai (default: bab)
-    sampai halaman_inti_selesai (default: daftar_pustaka), inklusif.
+    hingga halaman SEBELUM halaman_inti_selesai (default: daftar_pustaka).
+    halaman_inti_selesai adalah batas EKSKLUSIF: halamannya tidak dihitung.
     Penghitungan halaman menggunakan penanda struktural di XML:
     w:lastRenderedPageBreak (utama), explicit page break, dan inline sectPr.
     """
@@ -3097,7 +3006,9 @@ def _check_page_count(
         page_map   = _build_displayed_page_map(doc)
         start_page = page_map.get(start_idx, 1)
         end_page   = page_map.get(end_idx, 1)
-        count      = end_page - start_page + 1
+        # end_page adalah halaman DAFTAR PUSTAKA (batas eksklusif):
+        # halaman inti = start_page...(end_page-1), jadi count = end_page - start_page
+        count      = end_page - start_page
 
         if count <= 0:
             checks.append(ValidationCheckResult(
@@ -3160,7 +3071,7 @@ def _check_page_count(
                 status="passed",
                 message=(
                     f"Jumlah halaman inti {count} halaman "
-                    f"(halaman {start_page}–{end_page}): "
+                    f"(halaman {start_page}–{end_page - 1}): "
                     f"sesuai batas maksimum {maks} halaman"
                 ),
                 expected=expected_str,
@@ -3170,7 +3081,7 @@ def _check_page_count(
         else:
             msg = (
                 f"Jumlah halaman inti {count} halaman "
-                f"(halaman {start_page}–{end_page}) "
+                f"(halaman {start_page}–{end_page - 1}) "
                 f"melebihi batas maksimum {maks} halaman."
             )
             issues.append(ValidationIssue(
