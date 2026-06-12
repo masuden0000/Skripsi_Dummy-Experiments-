@@ -3,6 +3,8 @@
 Posisi pipeline: payload (DocumentMetadata) → adapter → validocx.validate() →
 parse_entries/build_report → ValidationIssue + ValidationCheckResult.
 """
+from __future__ import annotations
+
 import io
 import logging
 import re
@@ -569,6 +571,7 @@ def _text_matches_case_para(para, case_style: str) -> bool:
 def _check_heading_case(
     docx_path: Path,
     metadata: DocumentMetadata,
+    doc: DocxDocument | None = None,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
     """Validasi style huruf (case) pada Heading 1–5."""
     issues: list[ValidationIssue] = []
@@ -593,7 +596,7 @@ def _check_heading_case(
         return issues, checks
 
     try:
-        doc = DocxDocument(str(docx_path))
+        doc = doc or DocxDocument(str(docx_path))
 
         pass_per_level:     dict[int, list[dict]] = {lvl: [] for lvl in case_per_level}
         mismatch_per_level: dict[int, list[dict]] = {lvl: [] for lvl in case_per_level}
@@ -713,6 +716,7 @@ def _classify_heading(
 def _check_document_structure(
     docx_path: Path,
     metadata: DocumentMetadata,
+    doc: DocxDocument | None = None,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
     """Validasi urutan dan kehadiran section dokumen berdasarkan document_structure_proposal."""
     issues: list[ValidationIssue] = []
@@ -729,7 +733,7 @@ def _check_document_structure(
         return issues, checks
 
     try:
-        doc = DocxDocument(str(docx_path))
+        doc = doc or DocxDocument(str(docx_path))
 
         # Build lampiran regex dari metadata agar sesuai separator per skema.
         _ds_sep = ds.lampiran_heading_separator if ds else None
@@ -1167,6 +1171,7 @@ def _build_content_elements(doc) -> tuple[list[tuple[str, object]], str]:
 def _check_lampiran_format(
     docx_path: Path,
     metadata: DocumentMetadata,
+    doc: DocxDocument | None = None,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
     """Validasi judul lampiran via text-pattern untuk SEMUA judul lampiran.
 
@@ -1197,7 +1202,7 @@ def _check_lampiran_format(
     ]))
 
     try:
-        doc = DocxDocument(str(docx_path))
+        doc = doc or DocxDocument(str(docx_path))
 
         pass_items:      list[dict] = []
         sep_pass_items:  list[dict] = []
@@ -1388,6 +1393,7 @@ def _check_lampiran_format(
 def _check_body_content(
     docx_path: Path,
     metadata: DocumentMetadata,
+    doc: DocxDocument | None = None,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
     """Validasi konten non-heading via content-based check.
 
@@ -1417,7 +1423,7 @@ def _check_body_content(
     try:
         from model_ai.validation.validocx.wrapper import DocumentWrapper
 
-        doc     = DocxDocument(str(docx_path))
+        doc     = doc or DocxDocument(str(docx_path))
         wrapper = DocumentWrapper(doc)
 
         align_pass:   list[dict] = []
@@ -1590,6 +1596,7 @@ def _check_body_content(
 def _check_caption_format(
     docx_path: Path,
     metadata: DocumentMetadata,
+    doc: DocxDocument | None = None,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
     """Validasi atribut caption gambar/tabel via text-pattern, bukan style name.
 
@@ -1614,7 +1621,7 @@ def _check_caption_format(
     tbl_align_val = _CAPTION_ALIGN_MAP.get(tbl_align_str, WD_ALIGN_PARAGRAPH.CENTER)
 
     try:
-        doc = DocxDocument(str(docx_path))
+        doc = doc or DocxDocument(str(docx_path))
 
         wrong_fig_alignment: list[dict] = []
         wrong_tbl_alignment: list[dict] = []
@@ -1853,6 +1860,7 @@ def _check_caption_format(
 def _check_figures_tables(
     docx_path: Path,
     metadata: DocumentMetadata,
+    doc: DocxDocument | None = None,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
     """Validasi posisi caption dan format penomoran gambar/tabel + lampiran.
 
@@ -1896,7 +1904,7 @@ def _check_figures_tables(
         return issues, checks
 
     try:
-        doc = DocxDocument(str(docx_path))
+        doc = doc or DocxDocument(str(docx_path))
 
         fig_fmt_re  = _template_to_regex(fig_fmt_tpl)  if fig_fmt_tpl  else None
         tbl_fmt_re  = _template_to_regex(tbl_fmt_tpl)  if tbl_fmt_tpl  else None
@@ -2521,6 +2529,7 @@ def _classify_sections_by_metadata(
 def _check_numbering(
     docx_path: Path,
     metadata: DocumentMetadata,
+    doc: DocxDocument | None = None,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
     """Validasi format dan posisi nomor halaman (preliminary vs content)."""
     issues: list[ValidationIssue] = []
@@ -2549,7 +2558,7 @@ def _check_numbering(
         return issues, checks
 
     try:
-        doc = DocxDocument(str(docx_path))
+        doc = doc or DocxDocument(str(docx_path))
 
         # Klasifikasi section berdasarkan format yang diexpect dari metadata.
         # Lebih andal daripada pendekatan sebelumnya karena tidak bergantung
@@ -2955,6 +2964,7 @@ def _find_section_para_idx(
 def _check_page_count(
     docx_path: Path,
     metadata: DocumentMetadata,
+    doc: DocxDocument | None = None,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
     """Validasi jumlah halaman inti tidak melebihi batas maksimum.
 
@@ -2981,7 +2991,7 @@ def _check_page_count(
     selesai_type = pc.halaman_inti_selesai  # default "daftar_pustaka"
 
     try:
-        doc = DocxDocument(str(docx_path))
+        doc = doc or DocxDocument(str(docx_path))
         para_list = list(doc.paragraphs)
 
         # ── Cari heading START ────────────────────────────────────────────────
@@ -3236,6 +3246,10 @@ def run_validocx(
         Tuple (issues, checks) siap masuk ke ValidationResult.
     """
     path = Path(docx_path)
+    # Load dokumen SEKALI di sini; semua helper menerima objek doc yang sama
+    # agar tidak perlu buka/parse ZIP berulang kali.
+    doc  = DocxDocument(str(path))
+
     requirements = metadata_to_requirements(metadata)
     requirements = enrich_requirements_with_docx_styles(requirements, path)
     log_text = _capture_log(path, requirements)
@@ -3249,14 +3263,14 @@ def run_validocx(
     known_styles = list(requirements.get("styles", {}).keys())
 
     issues, checks = _build_issues_checks(report, known_styles=known_styles, requirements=requirements)
-    case_issues, case_checks         = _check_heading_case(path, metadata)
-    struct_issues, struct_checks     = _check_document_structure(path, metadata)
-    fig_issues, fig_checks           = _check_figures_tables(path, metadata)
-    caption_issues, caption_checks   = _check_caption_format(path, metadata)
-    lampiran_issues, lampiran_checks = _check_lampiran_format(path, metadata)
-    num_issues, num_checks           = _check_numbering(path, metadata)
-    pgcount_issues, pgcount_checks   = _check_page_count(path, metadata)
-    body_issues, body_checks         = _check_body_content(path, metadata)
+    case_issues, case_checks         = _check_heading_case(path, metadata, doc)
+    struct_issues, struct_checks     = _check_document_structure(path, metadata, doc)
+    fig_issues, fig_checks           = _check_figures_tables(path, metadata, doc)
+    caption_issues, caption_checks   = _check_caption_format(path, metadata, doc)
+    lampiran_issues, lampiran_checks = _check_lampiran_format(path, metadata, doc)
+    num_issues, num_checks           = _check_numbering(path, metadata, doc)
+    pgcount_issues, pgcount_checks   = _check_page_count(path, metadata, doc)
+    body_issues, body_checks         = _check_body_content(path, metadata, doc)
 
     all_issues = (issues + case_issues + struct_issues + fig_issues
                   + caption_issues + lampiran_issues + num_issues

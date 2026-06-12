@@ -302,7 +302,10 @@ def build_report(entries, docx_path=None, para_map=None):
     # ── Attr inherited ─────────────────────────────────────────────────────
     inh_data = defaultdict(lambda: {"count": 0, "paragraphs": []})
     for msg in buckets.get(CAT_ATTR_INHERITED, []):
-        m = re.search(r"paragraph '([\w_]+)' \(([\w ]+)\)", msg)
+        # [^']+ agar nama atribut boleh mengandung non-word chars (future-proof).
+        # (.+?) non-greedy dengan anchor ") is not set" agar style name boleh
+        # mengandung tanda kurung nested, mis. "Heading (Custom)".
+        m = re.search(r"paragraph '([^']+)' \((.+?)\) is not set", msg)
         if m:
             key = f"{m.group(2)}.{m.group(1)}"
             inh_data[key]["count"] += 1
