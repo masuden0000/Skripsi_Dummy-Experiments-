@@ -58,6 +58,10 @@ _LAMPIRAN_BROAD_RE = re.compile(r'^Lampiran\s+\d+', re.IGNORECASE)
 # Faktor pengali untuk mendeteksi "dokumen belum dirender Word".
 # Bila hitung halaman > maks × faktor ini, hasil dianggap tidak realistis.
 _UNREALISTIC_PAGE_FACTOR = 10
+# Namespace logger untuk seluruh engine validocx.
+# Dipakai di _capture_log agar handler hanya menerima log dari paket ini,
+# bukan dari library eksternal (lxml, docx, jsonschema, django, dll.).
+_VALIDOCX_LOG_NAMESPACE = "model_ai.validation.validocx"
 
 # Style TOC/TOF — dipakai sebagai filter di _check_lampiran_format dan
 # _check_body_content (agar entri daftar yang teksnya diawali "Gambar/Tabel/Lampiran"
@@ -252,18 +256,21 @@ def _capture_log(docx_path: Path, requirements: dict) -> str:
     # Filter log hanya dari thread ini — isolasi antar-user di lingkungan concurrent.
     handler.addFilter(_ThreadFilter())
 
-    # Attach ke root logger global agar tidak ada log validocx yang lolos.
-    # Pendekatan ini sama dengan validate.py di Extractor Document aslinya.
-    root = logging.getLogger()
-    orig_level = root.level
-    root.addHandler(handler)
-    root.setLevel(logging.DEBUG)
+    # Attach ke logger SPESIFIK paket validocx — bukan root logger global.
+    # Root logger menyebabkan library eksternal (lxml, jsonschema, docx, dll.)
+    # ikut masuk ke buffer sehingga membengkak ribuan baris tak relevan dan
+    # memperlambat parse_entries(). Engine validocx hanya emit INFO/WARNING/ERROR,
+    # tidak ada DEBUG — sehingga setLevel(INFO) sudah mencakup semua log yang dibutuhkan.
+    target = logging.getLogger(_VALIDOCX_LOG_NAMESPACE)
+    orig_level = target.level
+    target.addHandler(handler)
+    target.setLevel(logging.INFO)
 
     try:
         validocx_validate(str(docx_path), requirements)
     finally:
-        root.removeHandler(handler)
-        root.setLevel(orig_level)
+        target.removeHandler(handler)
+        target.setLevel(orig_level)
 
     return buf.getvalue()
 
