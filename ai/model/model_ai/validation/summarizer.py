@@ -238,8 +238,10 @@ def _humanize_value(raw: Any, hint: str = "") -> Any:
     if sl in _BOOL_LABEL:
         return _BOOL_LABEL[sl]
 
-    # Alignment — berdasarkan hint atau nilai itu sendiri
-    if "align" in hint_l or sl in _ALIGN_LABEL or sl.upper() in ("LEFT", "CENTER", "RIGHT", "JUSTIFY"):
+    # Alignment — berdasarkan hint atau nama enum arah teks yang eksplisit.
+    # Tidak pakai 'sl in _ALIGN_LABEL' karena "none" ada di dict itu dan bisa
+    # salah ter-translate jika hint bukan alignment (mis. field bold = None).
+    if "align" in hint_l or sl.upper() in ("LEFT", "CENTER", "RIGHT", "JUSTIFY"):
         label = _ALIGN_LABEL.get(sl) or _ALIGN_LABEL.get(sl.lower()) or _ALIGN_LABEL.get(sl.upper())
         if label:
             return label
@@ -415,10 +417,17 @@ def _strip_scratchpad(text: str) -> str:
     Model diminta berpikir di dalam tag ini (CoT scratchpad); reviewer
     hanya perlu melihat poin-poin akhir di luar tag tersebut.
     Toleran terhadap variasi kapitalisasi dan spasi ekstra.
+
+    Dua pass untuk menangani tag penutup yang lupa ditulis model:
+      Pass 1 — hapus blok tersegel <pikiran>...</pikiran> (normal case).
+      Pass 2 — buang sisa <pikiran> tanpa penutup beserta seluruh teks di
+                belakangnya; tanpa ini draf berpikir bocor ke output reviewer.
     """
     import re
-    # Hapus blok <pikiran> beserta isinya (case-insensitive, multiline)
+    # Pass 1: blok tersegel
     cleaned = re.sub(r"<pikiran>.*?</pikiran>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    # Pass 2: sisa <pikiran> tanpa </pikiran> — greedy, buang sampai akhir teks
+    cleaned = re.sub(r"<pikiran>.*", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
     # Bersihkan baris kosong berlebih yang tersisa
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()
