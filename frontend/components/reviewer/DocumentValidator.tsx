@@ -48,6 +48,7 @@ import { YearPicker } from "@/components/ui/year-picker"
 const MAX_FILE_SIZE     = 10 * 1024 * 1024   // 10 MB
 const SESSION_STORAGE_KEY  = "validation_bulk_session_id"
 const SINGLE_RESULT_KEY    = "validation_single_result"
+const SINGLE_META_KEY      = "validation_single_meta"
 const POLL_INTERVAL_MS = 3000
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -1181,6 +1182,7 @@ export function DocumentValidator() {
   const [loading, setLoading]                   = useState(false)
   const [singleResult, setSingleResult]         = useState<ValidationResult | null>(null)
   const [singleError, setSingleError]           = useState<string | null>(null)
+  const [restoredKetua, setRestoredKetua]       = useState<string>("")
 
   // ── State mode bulk — form ────────────────────────────────────────────────
   const [bulkItems, setBulkItems] = useState<BulkItem[]>([makeBulkItem()])
@@ -1206,6 +1208,20 @@ export function DocumentValidator() {
         setSingleResult(JSON.parse(savedResult))
       } catch {
         localStorage.removeItem(SINGLE_RESULT_KEY)
+      }
+    }
+
+    // Restore info dokumen (skema, tahun, nama pengusul) agar Informasi Dokumen
+    // tetap tampil meski File object sudah tidak bisa di-restore dari localStorage
+    const savedMeta = localStorage.getItem(SINGLE_META_KEY)
+    if (savedMeta) {
+      try {
+        const { schemaId, year, ketua } = JSON.parse(savedMeta)
+        if (schemaId) setSelectedSchemaId(schemaId)
+        if (year)     setSelectedYear(year)
+        if (ketua)    setRestoredKetua(ketua)
+      } catch {
+        localStorage.removeItem(SINGLE_META_KEY)
       }
     }
 
@@ -1278,17 +1294,29 @@ export function DocumentValidator() {
       setSingleError(res.error)
     } else {
       setSingleResult(res.data)
-      if (res.data) localStorage.setItem(SINGLE_RESULT_KEY, JSON.stringify(res.data))
+      if (res.data) {
+        localStorage.setItem(SINGLE_RESULT_KEY, JSON.stringify(res.data))
+        // Simpan info dokumen agar tetap tampil saat halaman di-refresh
+        const ketua = parseFileName(file.name, pkmSchemes).ketua
+        localStorage.setItem(SINGLE_META_KEY, JSON.stringify({
+          schemaId: selectedSchemaId,
+          year:     selectedYear,
+          ketua,
+        }))
+        setRestoredKetua(ketua)
+      }
     }
   }
 
   const handleSingleReset = () => {
     localStorage.removeItem(SINGLE_RESULT_KEY)
+    localStorage.removeItem(SINGLE_META_KEY)
     setSelectedSchemaId("")
     setSelectedYear("")
     setFile(null)
     setSingleResult(null)
     setSingleError(null)
+    setRestoredKetua("")
   }
 
   // ── Handlers mode bulk ────────────────────────────────────────────────────
@@ -1429,7 +1457,7 @@ export function DocumentValidator() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Nama Pengusul</p>
-                  <p className="text-sm font-medium text-gray-800">{file ? parseFileName(file.name, pkmSchemes).ketua : "—"}</p>
+                  <p className="text-sm font-medium text-gray-800">{file ? parseFileName(file.name, pkmSchemes).ketua : (restoredKetua || "—")}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Skema PKM</p>
