@@ -323,42 +323,43 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
               value={data.typography.font_size_body_pt}
               onChange={(v) => patch("typography", { font_size_body_pt: v })}
             />
-            <NumberFieldInput
-              label="Ukuran Heading (pt)"
-              value={data.typography.font_size_heading_pt}
-              onChange={(v) => patch("typography", { font_size_heading_pt: v })}
-            />
+            {isArtikel ? (
+              <>
+                <NumberFieldInput
+                  label="Ukuran Judul Artikel (pt)"
+                  value={data.typography.font_size_title_pt ?? null}
+                  onChange={(v) => patch("typography", { font_size_title_pt: v })}
+                />
+                <NumberFieldInput
+                  label="Ukuran Nama Penulis (pt)"
+                  value={data.typography.font_size_author_pt ?? null}
+                  onChange={(v) => patch("typography", { font_size_author_pt: v })}
+                />
+                <NumberFieldInput
+                  label="Ukuran Abstrak (pt)"
+                  value={data.typography.font_size_abstract_pt ?? null}
+                  onChange={(v) => patch("typography", { font_size_abstract_pt: v })}
+                />
+                <SelectFieldInput
+                  label="Gaya Judul Artikel"
+                  value={data.typography.title_style ?? null}
+                  options={[
+                    { value: "BOLD_UPPERCASE", label: "Bold + UPPERCASE" },
+                    { value: "BOLD",           label: "Bold" },
+                    { value: "UPPERCASE",      label: "UPPERCASE" },
+                    { value: "NORMAL",         label: "Normal" },
+                  ]}
+                  onChange={(v) => patch("typography", { title_style: v as ExtractionPayload["typography"]["title_style"] })}
+                />
+              </>
+            ) : (
+              <NumberFieldInput
+                label="Ukuran Heading (pt)"
+                value={data.typography.font_size_heading_pt}
+                onChange={(v) => patch("typography", { font_size_heading_pt: v })}
+              />
+            )}
           </FieldRow>
-          {isArtikel && (
-            <FieldRow className="mt-3">
-              <NumberFieldInput
-                label="Ukuran Judul Artikel (pt)"
-                value={data.typography.font_size_title_pt ?? null}
-                onChange={(v) => patch("typography", { font_size_title_pt: v })}
-              />
-              <NumberFieldInput
-                label="Ukuran Nama Penulis (pt)"
-                value={data.typography.font_size_author_pt ?? null}
-                onChange={(v) => patch("typography", { font_size_author_pt: v })}
-              />
-              <NumberFieldInput
-                label="Ukuran Abstrak (pt)"
-                value={data.typography.font_size_abstract_pt ?? null}
-                onChange={(v) => patch("typography", { font_size_abstract_pt: v })}
-              />
-              <SelectFieldInput
-                label="Gaya Judul Artikel"
-                value={data.typography.title_style ?? null}
-                options={[
-                  { value: "BOLD_UPPERCASE", label: "Bold + UPPERCASE" },
-                  { value: "BOLD",           label: "Bold" },
-                  { value: "UPPERCASE",      label: "UPPERCASE" },
-                  { value: "NORMAL",         label: "Normal" },
-                ]}
-                onChange={(v) => patch("typography", { title_style: v as ExtractionPayload["typography"]["title_style"] })}
-              />
-            </FieldRow>
-          )}
         </div>
       </div>
 
