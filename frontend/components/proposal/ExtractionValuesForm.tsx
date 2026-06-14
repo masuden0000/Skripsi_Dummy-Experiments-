@@ -73,12 +73,18 @@ export type ExtractionPayload = {
     line_spacing_rule: string | null
     paragraph_alignment: string | null
   }
-  document_structure_proposal: {
+  document_structure_proposal?: {
     sections: SectionItem[]
     format_nama_file: string | null
     lampiran_heading_separator: string | null
     user_placeholders?: Record<string, string>
-  }
+  } | null
+  document_structure_artikel?: {
+    sections: SectionItem[]
+    format_nama_file: string | null
+    lampiran_heading_separator: string | null
+    user_placeholders?: Record<string, string>
+  } | null
   numbering: {
     preliminary: PageNumberConfig | null
     content: PageNumberConfig | null
@@ -272,6 +278,11 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
   const [showSectionModal, setShowSectionModal] = useState(false)
   const [showFormatInfo, setShowFormatInfo] = useState(false)
 
+  const docStructureKey = data.document_structure_artikel != null
+    ? "document_structure_artikel" as const
+    : "document_structure_proposal" as const
+  const docStructure = data.document_structure_artikel ?? data.document_structure_proposal
+
   // Helper: update satu field nested di ExtractionPayload dan propagate ke parent
   // Parent (page.tsx) menyimpan hasilnya ke Supabase document_metadata.payload
   function patch<K extends keyof ExtractionPayload>(
@@ -424,8 +435,8 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
         <div className="mt-3 px-1 gap-4">
           <TextFieldInput
             label="Format Nama File"
-            value={data.document_structure_proposal.format_nama_file}
-            onChange={(v) => patch("document_structure_proposal", { format_nama_file: v })}
+            value={docStructure?.format_nama_file ?? null}
+            onChange={(v) => patch(docStructureKey, { format_nama_file: v })}
           />
 
           <div>
@@ -440,13 +451,13 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
                 Edit
               </Button>
             </div>
-            {data.document_structure_proposal.sections.length > 0 ? (
+            {(docStructure?.sections?.length ?? 0) > 0 ? (
               <div className="rounded-md bg-muted/30 text-xs max-h-48 overflow-y-auto">
                 <div className="sticky top-0 flex gap-2 bg-muted/60 px-3 py-1.5 font-medium text-[10px] uppercase tracking-wide text-muted-foreground">
                   <span className="w-28 shrink-0">Jenis</span>
                   <span>Nilai</span>
                 </div>
-                {data.document_structure_proposal.sections.map((s, i) => {
+                {docStructure!.sections.map((s, i) => {
                   // Renderer docx menerapkan .title() pada item_lampiran dan sub_bab
                   // agar preview frontend sesuai dengan tampilan di dokumen
                   const usesTitleCase = s.type === "item_lampiran" || s.type === "sub_bab"
@@ -473,12 +484,12 @@ export function ExtractionValuesForm({ data, onChange, projectId }: Props) {
 
           {showSectionModal && (
             <ModalSectionEditor
-              sections={data.document_structure_proposal.sections}
-              userPlaceholders={data.document_structure_proposal.user_placeholders ?? {}}
+              sections={docStructure?.sections ?? []}
+              userPlaceholders={docStructure?.user_placeholders ?? {}}
               projectId={projectId}
               chapterFormat={data.numbering.chapter_format}
               onSave={(newSections, newPlaceholders) => {
-                patch("document_structure_proposal", {
+                patch(docStructureKey, {
                   sections: newSections,
                   user_placeholders: newPlaceholders,
                 })
