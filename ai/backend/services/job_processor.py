@@ -5,23 +5,25 @@ Alur:
   1. Caller menyimpan file ke jobs_temp via save_temp_file()
   2. Caller membuat baris di validation_sessions + validation_results via Supabase
   3. FastAPI BackgroundTasks memanggil process_bulk_session()
-  4. process_bulk_session() memproses setiap item secara berurut:
-     - Update status item → 'processing'
-     - Ambil metadata dari Supabase (sama seperti validasi tunggal)
-     - Jalankan validasi di thread terpisah (CPU-bound)
-     - Simpan hasil / pesan error ke DB
-     - Hapus file sementara
-  5. Update completed_items dan status session setelah semua selesai
+  4. process_bulk_session() memproses semua item secara paralel (maks 5 serentak,
+     sisanya antri) menggunakan asyncio.Semaphore.
+  5. Setiap item memperbarui completed_items setelah selesai.
+  6. Session ditandai 'completed' setelah semua task selesai.
 """
 import asyncio
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
 
 from services.database import get_supabase
 
+logger = logging.getLogger(__name__)
+
 JOBS_TEMP_DIR = Path(__file__).resolve().parent.parent / "jobs_temp"
+
+_BULK_SEMAPHORE = asyncio.Semaphore(5)
 
 
 def _utcnow() -> str:
@@ -44,14 +46,12 @@ def _delete_temp(session_id: str, position: int) -> None:
         p.unlink()
 
 
-def _run_validation_sync(tmp_path: str, payload: dict) -> dict:
-    """
-    Wrapper sinkron untuk validate_document — dipanggil via asyncio.to_thread()
-    agar tidak memblokir event loop FastAPI.
-    """
-    from model_ai.validation import validate_document  # noqa: PLC0415
+def build_validation_dict(result) -> dict:
+    """Konversi ValidationResult ke dict format frontend.
 
-    result = validate_document(tmp_path, metadata_dict=payload)
+    Dipakai oleh validation.py (POST /run) dan _run_validation_sync (POST /bulk)
+    agar format response konsisten antara single dan bulk validation.
+    """
     d = result.to_dict()
     d["valid"] = d.get("status") == "pass"
 
@@ -64,14 +64,91 @@ def _run_validation_sync(tmp_path: str, payload: dict) -> dict:
         "passed":       passed,
         "failed":       failed,
         "warnings":     warnings,
-        "errors":       failed,
     }
     return d
 
 
+def _run_validation_sync(tmp_path: str, payload: dict) -> dict:
+    """Wrapper sinkron untuk validate_document — dipanggil via asyncio.to_thread()."""
+    from model_ai.validation import validate_document  # noqa: PLC0415
+
+    result = validate_document(tmp_path, metadata_dict=payload)
+    return build_validation_dict(result)
+
+
+async def _validate_item(session_id: str, meta: dict, sb) -> None:
+    """Validasi satu dokumen; maks 5 berjalan serentak via _BULK_SEMAPHORE."""
+    pos       = meta["position"]
+    schema_id = meta["schema_id"]
+    tahun     = meta["tahun"]
+
+    def _upd(fields: dict) -> None:
+        sb.table("validation_results").update(
+            {**fields, "updated_at": _utcnow()}
+        ).eq("session_id", session_id).eq("position", pos).execute()
+
+    _upd({"status": "processing"})
+    try:
+        proj = (
+            sb.table("projects")
+            .select("id")
+            .eq("skema", schema_id)
+            .eq("tahun", tahun)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not proj.data:
+            raise ValueError(
+                f"Data referensi untuk {schema_id} tahun {tahun} belum tersedia."
+            )
+
+        meta_row = (
+            sb.table("document_metadata")
+            .select("payload")
+            .eq("project_id", proj.data[0]["id"])
+            .limit(1)
+            .execute()
+        )
+        if not meta_row.data:
+            raise ValueError("Metadata format dokumen belum tersedia.")
+
+        payload = meta_row.data[0]["payload"]
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+
+        tmp = str(_temp_path(session_id, pos))
+        if not os.path.exists(tmp):
+            raise ValueError("File sementara tidak ditemukan di server.")
+
+        async with _BULK_SEMAPHORE:
+            result = await asyncio.to_thread(_run_validation_sync, tmp, payload)
+
+        _upd({"status": "completed", "result": result})
+
+    except Exception as exc:
+        _upd({"status": "failed", "error_message": str(exc)})
+
+    finally:
+        _delete_temp(session_id, pos)
+
+    # Perbarui hitungan progress setelah item ini selesai (completed atau failed)
+    rows = (
+        sb.table("validation_results")
+        .select("status")
+        .eq("session_id", session_id)
+        .execute()
+    )
+    done = sum(1 for r in rows.data if r["status"] in ("completed", "failed"))
+    sb.table("validation_sessions").update(
+        {"completed_items": done, "updated_at": _utcnow()}
+    ).eq("id", session_id).execute()
+
+
 async def process_bulk_session(session_id: str, items_meta: list[dict]) -> None:
     """
-    Background task: validasi setiap item secara berurut.
+    Background task: validasi semua item secara paralel, maks 5 serentak.
+    Dokumen ke-6 dan seterusnya akan antri hingga slot tersedia.
 
     items_meta: list of { position, file_name, schema_id, tahun }
     """
@@ -82,82 +159,16 @@ async def process_bulk_session(session_id: str, items_meta: list[dict]) -> None:
             {**fields, "updated_at": _utcnow()}
         ).eq("id", session_id).execute()
 
-    def _upd_result(position: int, fields: dict) -> None:
-        sb.table("validation_results").update(
-            {**fields, "updated_at": _utcnow()}
-        ).eq("session_id", session_id).eq("position", position).execute()
-
-    def _refresh_completed_count() -> None:
-        rows = (
-            sb.table("validation_results")
-            .select("status")
-            .eq("session_id", session_id)
-            .execute()
-        )
-        done = sum(
-            1 for r in rows.data
-            if r["status"] in ("completed", "failed")
-        )
-        _upd_session({"completed_items": done})
-
     try:
         _upd_session({"status": "processing"})
 
-        for meta in sorted(items_meta, key=lambda x: x["position"]):
-            pos       = meta["position"]
-            schema_id = meta["schema_id"]
-            tahun     = meta["tahun"]
-
-            _upd_result(pos, {"status": "processing"})
-
-            try:
-                # 1. Cari project referensi
-                proj = (
-                    sb.table("projects")
-                    .select("id")
-                    .eq("skema", schema_id)
-                    .eq("tahun", tahun)
-                    .order("created_at", desc=True)
-                    .limit(1)
-                    .execute()
-                )
-                if not proj.data:
-                    raise ValueError(
-                        f"Data referensi untuk {schema_id} tahun {tahun} belum tersedia."
-                    )
-
-                # 2. Ambil payload document_metadata
-                meta_row = (
-                    sb.table("document_metadata")
-                    .select("payload")
-                    .eq("project_id", proj.data[0]["id"])
-                    .limit(1)
-                    .execute()
-                )
-                if not meta_row.data:
-                    raise ValueError("Metadata format dokumen belum tersedia.")
-
-                payload = meta_row.data[0]["payload"]
-                if isinstance(payload, str):
-                    payload = json.loads(payload)
-
-                # 3. Jalankan validasi di thread terpisah
-                tmp = str(_temp_path(session_id, pos))
-                if not os.path.exists(tmp):
-                    raise ValueError("File sementara tidak ditemukan di server.")
-
-                result = await asyncio.to_thread(_run_validation_sync, tmp, payload)
-                _upd_result(pos, {"status": "completed", "result": result})
-
-            except Exception as exc:
-                _upd_result(pos, {"status": "failed", "error_message": str(exc)})
-
-            finally:
-                _delete_temp(session_id, pos)
-
-            _refresh_completed_count()
+        tasks = [_validate_item(session_id, meta, sb) for meta in items_meta]
+        await asyncio.gather(*tasks)
 
         _upd_session({"status": "completed"})
 
-    except Exception:
+    except Exception as exc:
+        logger.exception(
+            "process_bulk_session gagal untuk session_id=%s: %s", session_id, exc
+        )
         _upd_session({"status": "failed"})

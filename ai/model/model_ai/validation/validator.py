@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from model_ai.extractor.models import DocumentMetadata
-from model_ai.validation.models import ValidationCheckResult, ValidationResult
+from model_ai.validation.models import ValidationCheckResult, ValidationIssue, ValidationResult
 from model_ai.validation.validocx_runner import run_validocx
 
 
@@ -39,14 +39,18 @@ def validate_document(
     try:
         issues, checks = run_validocx(path, metadata)
     except Exception as exc:
-        checks = [ValidationCheckResult(
-            category="typography",
-            field="validocx_runner",
-            status="skipped",
-            message=f"validocx tidak berhasil dijalankan: {exc}",
-            skip_reason="validocx runtime error",
+        issues = [ValidationIssue(
+            category="system",
+            field="engine_error",
+            severity="error",
+            message=f"Engine validasi gagal dijalankan: {exc}",
         )]
-        issues = []
+        checks = [ValidationCheckResult(
+            category="system",
+            field="engine_error",
+            status="failed",
+            message=f"validocx tidak berhasil dijalankan: {exc}",
+        )]
 
     status = "pass"
     if any(i.severity == "error" for i in issues):

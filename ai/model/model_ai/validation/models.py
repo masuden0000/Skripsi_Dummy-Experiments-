@@ -17,6 +17,7 @@ class ValidationCheckResult(BaseModel):
         "numbering",
         "figures_tables",
         "page_count",
+        "system",
     ]
     field: str = Field(description="Nama properti yang dicek")
     status: Literal["passed", "failed", "warning", "skipped"] = Field(
@@ -54,6 +55,7 @@ class ValidationIssue(BaseModel):
         "numbering",
         "figures_tables",
         "page_count",
+        "system",
     ] = Field(
         description="Category of the validation issue"
     )

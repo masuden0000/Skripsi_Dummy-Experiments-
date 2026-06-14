@@ -10,8 +10,10 @@ Endpoint:
 
 Digunakan oleh: backend/src/routes/pkm.routes.js (sebagai proxy)
 """
+import asyncio
 import io
 import json
+import logging
 import os
 import tempfile
 from datetime import datetime, timezone
@@ -22,7 +24,12 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from services.database import get_supabase
-from services.job_processor import process_bulk_session, save_temp_file
+from services.job_processor import build_validation_dict, process_bulk_session, save_temp_file
+
+logger = logging.getLogger(__name__)
+
+MAX_DOCX_SIZE  = 20 * 1024 * 1024  # 20 MB
+MAX_BULK_ITEMS = 20
 
 
 class SummarizeRequest(BaseModel):
@@ -76,25 +83,6 @@ async def _fetch_metadata(schema_id: str, tahun: str) -> dict:
     return payload
 
 
-def _build_result_dict(result) -> dict:
-    """Konversi ValidationResult ke dict dengan format yang diharapkan frontend."""
-    d = result.to_dict()
-    d["valid"] = d.get("status") == "pass"
-
-    passed   = d.pop("passed_count",  0)
-    failed   = d.pop("error_count",   0)
-    warnings = d.pop("warning_count", 0)
-    skipped  = d.pop("skipped_count", 0)
-    d["summary"] = {
-        "total_checks": passed + failed + warnings + skipped,
-        "passed":       passed,
-        "failed":       failed,
-        "warnings":     warnings,
-        "errors":       failed,
-    }
-    return d
-
-
 # ─── POST /run — validasi satu dokumen ───────────────────────────────────────
 
 @router.post("/run")
@@ -127,6 +115,9 @@ async def run_validation(
         raise HTTPException(status_code=500, detail=f"Gagal mengambil data dari database: {str(e)}")
 
     content = await file.read()
+    if len(content) > MAX_DOCX_SIZE:
+        raise HTTPException(status_code=400, detail="Ukuran file melebihi batas maksimum 20 MB.")
+
     tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
@@ -143,7 +134,7 @@ async def run_validation(
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
-    result_dict = _build_result_dict(result)
+    result_dict = build_validation_dict(result)
 
     # Simpan hasil ke Supabase (session tunggal)
     try:
@@ -176,9 +167,9 @@ async def run_validation(
                 "created_at":  now,
                 "updated_at":  now,
             }).execute()
-    except Exception:
+    except Exception as db_exc:
         # Gagal menyimpan ke DB tidak boleh menggagalkan response ke frontend
-        pass
+        logger.warning("Gagal menyimpan hasil validasi ke DB: %s", db_exc)
 
     return result_dict
 
@@ -224,7 +215,7 @@ async def export_bulk_summary(session_id: str, schema_name: str | None = None):
       Kolom B — Ringkasan kekurangan dari LLM (kosong jika tidak ada issue)
 
     schema_name: singkatan skema PKM (mis. "PKM-KC"), diteruskan ke summarize_issues
-                 sebagai konteks tambahan.
+                 sebagai konteks tambahan. Semua dokumen diproses paralel via asyncio.gather.
     """
     import openpyxl  # noqa: PLC0415
 
@@ -243,30 +234,11 @@ async def export_bulk_summary(session_id: str, schema_name: str | None = None):
             detail="Session tidak ditemukan atau belum ada hasil validasi.",
         )
 
-    # ── Build workbook ────────────────────────────────────────────────────────
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Ringkasan Validasi"
-
-    # Header row
-    ws.append(["Nama Pemilik Proposal", "Ringkasan Kekurangan"])
-
-    # Style header: bold
-    from openpyxl.styles import Font  # noqa: PLC0415
-    for cell in ws[1]:
-        cell.font = Font(bold=True)
-
-    # Lebar kolom yang nyaman dibaca
-    ws.column_dimensions["A"].width = 28
-    ws.column_dimensions["B"].width = 80
-
-    # ── Isi baris per dokumen ─────────────────────────────────────────────────
     from model_ai.validation.summarizer import summarize_issues  # noqa: PLC0415
 
-    for item in results_row.data:
+    async def _summarize_item(item: dict) -> tuple[str, str]:
         ketua = _extract_ketua(item.get("file_name") or "unknown")
 
-        # result bisa berupa dict (Supabase JSONB) atau string JSON — normalkan ke dict
         result_raw = item.get("result") or {}
         if isinstance(result_raw, str):
             try:
@@ -277,15 +249,35 @@ async def export_bulk_summary(session_id: str, schema_name: str | None = None):
 
         if issues and item.get("status") == "completed":
             try:
-                summary = summarize_issues(issues, schema_name)
+                summary = await asyncio.to_thread(summarize_issues, issues, schema_name)
             except Exception as exc:
                 summary = f"[Gagal generate ringkasan: {exc}]"
         else:
             summary = ""
 
+        return ketua, summary
+
+    rows_with_summaries: list[tuple[str, str]] = await asyncio.gather(
+        *[_summarize_item(item) for item in results_row.data]
+    )
+
+    # ── Build workbook ────────────────────────────────────────────────────────
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Ringkasan Validasi"
+
+    ws.append(["Nama Pemilik Proposal", "Ringkasan Kekurangan"])
+
+    from openpyxl.styles import Font  # noqa: PLC0415
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    ws.column_dimensions["A"].width = 28
+    ws.column_dimensions["B"].width = 80
+
+    for ketua, summary in rows_with_summaries:
         ws.append([ketua, summary])
 
-    # ── Wrap text di kolom B ──────────────────────────────────────────────────
     from openpyxl.styles import Alignment  # noqa: PLC0415
     for row in ws.iter_rows(min_row=2, min_col=2, max_col=2):
         for cell in row:
@@ -331,8 +323,11 @@ async def run_bulk_validation(request: Request, background_tasks: BackgroundTask
     if count < 1:
         raise HTTPException(status_code=400, detail="Minimal satu dokumen harus diupload.")
 
-    if count > 20:
-        raise HTTPException(status_code=400, detail="Maksimal 20 dokumen per batch.")
+    if count > MAX_BULK_ITEMS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Maksimal {MAX_BULK_ITEMS} dokumen per batch.",
+        )
 
     # Validasi dan baca semua file sebelum membuat session
     items_bytes: list[dict] = []
@@ -356,6 +351,12 @@ async def run_bulk_validation(request: Request, background_tasks: BackgroundTask
             )
 
         content = await upload.read()
+        if len(content) > MAX_DOCX_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Dokumen ke-{i + 1} ({filename}) melebihi batas maksimum 20 MB.",
+            )
+
         items_bytes.append({
             "position":  i,
             "file_name": filename,
@@ -432,7 +433,7 @@ async def get_session_status(session_id: str):
 
     session_row = (
         supabase.table("validation_sessions")
-        .select("*")
+        .select("id, type, status, total_items, completed_items, created_at, updated_at")
         .eq("id", session_id)
         .limit(1)
         .execute()
@@ -444,7 +445,7 @@ async def get_session_status(session_id: str):
 
     results_row = (
         supabase.table("validation_results")
-        .select("*")
+        .select("id, position, file_name, schema_id, tahun, status, result, error_message")
         .eq("session_id", session_id)
         .order("position", desc=False)
         .execute()

@@ -914,6 +914,294 @@
         <mxCell id="edge_7" edge="1" parent="1" source="r_projects_skema" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERmandOne;startArrow=ERmany;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endFill=0;startFill=0;fontSize=11;fillColor=#f5f5f5;strokeColor=#666666;" target="r_pkm_schemas_singkatan" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+
+        <!-- ============================================================ -->
+        <!-- AUTH DOMAIN (External Supabase) -->
+        <!-- ============================================================ -->
+        <mxCell id="band_4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;dashed=1;opacity=30;pointerEvents=0;fillColor=#e1d5e7;strokeColor=#9673a6;" value="" vertex="1">
+          <mxGeometry height="110" width="265" x="20" y="-200" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_4" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontStyle=1;fontSize=13;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#9673a6;" value="Auth Domain (Supabase Built-in)" vertex="1">
+          <mxGeometry height="22" width="222.5" x="41.25" y="-175" as="geometry" />
+        </mxCell>
+        <mxCell id="t_auth_users" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#9673a6;" tooltip="Tabel bawaan Supabase Auth - dikelola oleh Supabase" value="auth.users" vertex="1">
+          <mxGeometry height="54" width="240" x="30" y="-150" as="geometry" />
+        </mxCell>
+        <mxCell id="r_auth_users_id" parent="t_auth_users" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="" vertex="1">
+          <mxGeometry height="24" width="240" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r_auth_users_id_l" parent="r_auth_users_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#e1d5e7;strokeColor=#9673a6;" value="PK" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_auth_users_id_r" parent="r_auth_users_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=5;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" value="id : uuid" vertex="1">
+          <mxGeometry height="24" width="200" x="40" as="geometry">
+            <mxRectangle height="24" width="200" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_auth_profiles" edge="1" parent="1" source="r_profiles_id" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERmandOne;startArrow=ERmandOne;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endFill=0;startFill=0;fontSize=11;fillColor=#e1d5e7;strokeColor=#9673a6;" target="r_auth_users_id" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ============================================================ -->
+        <!-- VALIDATION DOMAIN -->
+        <!-- ============================================================ -->
+        <mxCell id="band_5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;dashed=1;opacity=30;pointerEvents=0;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="630" width="300" x="1380" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_5" parent="1" style="text;html=0;align=center;verticalAlign=middle;fontStyle=1;fontSize=13;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="Validation Domain" vertex="1">
+          <mxGeometry height="22" width="250" x="1405" y="-10" as="geometry" />
+        </mxCell>
+
+        <!-- TABLE: validation_sessions -->
+        <mxCell id="t_validation_sessions" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" tooltip="Satu baris per sesi validasi (bulk/single). Menyimpan status keseluruhan dan jumlah dokumen." value="validation_sessions" vertex="1">
+          <mxGeometry height="198" width="270" x="1390" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vs_id" parent="t_validation_sessions" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vs_id_l" parent="r_vs_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="PK" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_id_r" parent="r_vs_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=5;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="id : uuid" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_type" parent="t_validation_sessions" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="54" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vs_type_l" parent="r_vs_type" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_type_r" parent="r_vs_type" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="type : text (single/bulk)" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_status" parent="t_validation_sessions" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vs_status_l" parent="r_vs_status" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_status_r" parent="r_vs_status" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="status : text (default 'pending')" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_total_items" parent="t_validation_sessions" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="102" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vs_total_items_l" parent="r_vs_total_items" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_total_items_r" parent="r_vs_total_items" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="total_items : int4 (default 0)" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_completed_items" parent="t_validation_sessions" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="126" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vs_completed_items_l" parent="r_vs_completed_items" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_completed_items_r" parent="r_vs_completed_items" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="completed_items : int4 (default 0)" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_created_at" parent="t_validation_sessions" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vs_created_at_l" parent="r_vs_created_at" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_created_at_r" parent="r_vs_created_at" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="created_at : timestamptz" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_updated_at" parent="t_validation_sessions" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="174" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vs_updated_at_l" parent="r_vs_updated_at" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vs_updated_at_r" parent="r_vs_updated_at" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="updated_at : timestamptz" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- TABLE: validation_results -->
+        <mxCell id="t_validation_results" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" tooltip="Satu baris per dokumen yang divalidasi. session_id nullable untuk validasi tunggal tanpa sesi." value="validation_results" vertex="1">
+          <mxGeometry height="294" width="270" x="1390" y="258" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_id" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_id_l" parent="r_vr_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="PK" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_id_r" parent="r_vr_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=5;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="id : uuid" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_session_id" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="54" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_session_id_l" parent="r_vr_session_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="FK" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_session_id_r" parent="r_vr_session_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=2;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="session_id : uuid?" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_position" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="78" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_position_l" parent="r_vr_position" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_position_r" parent="r_vr_position" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="position : int4 (default 0)" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_file_name" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="102" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_file_name_l" parent="r_vr_file_name" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_file_name_r" parent="r_vr_file_name" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="file_name : text" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_schema_id" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="126" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_schema_id_l" parent="r_vr_schema_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_schema_id_r" parent="r_vr_schema_id" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="schema_id : text" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_tahun" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_tahun_l" parent="r_vr_tahun" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_tahun_r" parent="r_vr_tahun" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="tahun : text" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_status" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="174" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_status_l" parent="r_vr_status" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_status_r" parent="r_vr_status" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="status : text (default 'pending')" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_result" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="198" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_result_l" parent="r_vr_result" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_result_r" parent="r_vr_result" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=2;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="result : jsonb?" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_error_message" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="222" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_error_message_l" parent="r_vr_error_message" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_error_message_r" parent="r_vr_error_message" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=2;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="error_message : text?" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_created_at" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="246" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_created_at_l" parent="r_vr_created_at" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_created_at_r" parent="r_vr_created_at" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="created_at : timestamptz" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_updated_at" parent="t_validation_results" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;top=0;left=0;right=0;bottom=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="270" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="r_vr_updated_at_l" parent="r_vr_updated_at" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;fontStyle=1;overflow=hidden;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="" vertex="1">
+          <mxGeometry height="24" width="40" as="geometry">
+            <mxRectangle height="24" width="40" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_vr_updated_at_r" parent="r_vr_updated_at" style="shape=partialRectangle;connectable=0;top=0;left=0;bottom=0;right=0;overflow=hidden;fontStyle=0;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="updated_at : timestamptz" vertex="1">
+          <mxGeometry height="24" width="230" x="40" as="geometry">
+            <mxRectangle height="24" width="230" as="alternateBounds" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Edge: validation_results.session_id → validation_sessions.id (nullable FK) -->
+        <mxCell id="edge_8" edge="1" parent="1" source="r_vr_session_id" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERmandOne;startArrow=ERmany;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endFill=0;startFill=0;fontSize=11;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;" target="r_vs_id" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
