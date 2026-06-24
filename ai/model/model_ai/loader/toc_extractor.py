@@ -21,10 +21,11 @@ _SUBBAB_PREFIX = re.compile(r"^(?:[A-Z]\.|[a-z]\.|[IVXLC]{1,5}\.|[0-9]+\.|Lampir
 
 
 def _strip_markdown(line: str) -> str:
+    line = re.sub(r"<[^>]+>", " ", line)
     line = re.sub(r"\*\*(.*?)\*\*", r"\1", line)
     line = re.sub(r"__(.*?)__", r"\1", line)
     line = re.sub(r"^#{1,6}\s+", "", line)
-    return line.strip()
+    return " ".join(line.split())
 
 
 def _strip_table_cell(line: str) -> str:
