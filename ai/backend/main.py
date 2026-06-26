@@ -1,8 +1,12 @@
 import sys
 from pathlib import Path
 
-# Tambahkan ai/model/ ke sys.path agar model_ai package bisa diimport dari backend
+# Tambahkan ai/model/ dan ai/backend/ ke sys.path agar package bisa diimport dengan benar
+_BACKEND_DIR = str(Path(__file__).resolve().parent)
 _MODEL_DIR = str(Path(__file__).resolve().parent.parent / "model")
+
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
 if _MODEL_DIR not in sys.path:
     sys.path.insert(0, _MODEL_DIR)
 
