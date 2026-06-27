@@ -27,17 +27,13 @@ _ORIENTATION_MAP: dict[str, int] = {
     "landscape": 1,
 }
 
-_GRUP_A_LINE_SPACING: dict[str, float] = {
-    "SINGLE":         1.0,   # Word "Single"      → 1.0×  (w:line="240")
-    "ONE_POINT_FIVE": 1.5,   # Word "1.5 lines"   → 1.5×  (w:line="360")
-    "DOUBLE":         2.0,   # Word "Double"       → 2.0×  (w:line="480")
-    # Catatan: 1.15× (Multiple 1.15) bukan named rule — disimpan sebagai
-    # line_spacing=1.15 langsung dan ditangani via cabang else di bawah.
-}
+    "SINGLE":         1.0,
+    "ONE_POINT_FIVE": 1.5,
+    "DOUBLE":         2.0,
 
-# AT_LEAST / EXACTLY: admin input dalam pt, python-docx membaca sebagai Length
-# dan wrapper.py mengonversinya ke cm via .cm. Konversi pt → cm agar setara.
-_PT_TO_CM = 2.54 / 72  # 1 pt = 25.4mm / 72 = 0.03528 cm
+
+_PT_TO_CM = 2.54 / 72
+
 
 _GRUP_C_LINE_SPACING = frozenset({"AT_LEAST", "EXACTLY"})
 
@@ -64,13 +60,13 @@ def _resolve_line_spacing(metadata: DocumentMetadata) -> float:
     if rule in _GRUP_A_LINE_SPACING:
         return _GRUP_A_LINE_SPACING[rule]
     if rule in _GRUP_C_LINE_SPACING and s.line_spacing is not None:
-        # AT_LEAST / EXACTLY: admin input pt, docx dibaca dalam cm oleh wrapper.
         return s.line_spacing * _PT_TO_CM
+
     return s.line_spacing if s.line_spacing is not None else 1.15
 
 
 def _build_heading_font_attrs(metadata: DocumentMetadata, level: int) -> list[Any]:
-    """Font attributes untuk Heading 1–5 (size + font family + bold sesuai metadata)."""
+
     t = metadata.typography
     attrs: list[Any] = []
     if t is None:
@@ -89,7 +85,7 @@ def _build_heading_font_attrs(metadata: DocumentMetadata, level: int) -> list[An
 
 
 def _build_normal_font_attrs(metadata: DocumentMetadata) -> list[Any]:
-    """Font attributes untuk style Normal dan H3–H5 (TNR 12pt tanpa bold)."""
+
     t = metadata.typography
     attrs: list[Any] = []
     if t is None:
@@ -98,15 +94,12 @@ def _build_normal_font_attrs(metadata: DocumentMetadata) -> list[Any]:
         attrs.append(int(t.font_size_body_pt))
     if t.font_family:
         attrs.append(t.font_family)
-    # Tidak ada bold — normal paragraf tidak pernah diwajibkan bold.
     return attrs
 
 
-def _resolve_heading_alignment(spacing, level: int) -> Any:
-    """Resolusi alignment untuk heading level tertentu.
 
-    Prioritas: heading_{level}_alignment → heading_alignment (H1) / paragraph_alignment (H2–H5).
-    """
+def _resolve_heading_alignment(spacing, level: int) -> Any:
+
     if spacing is None:
         return _resolve_alignment(None, default="CENTER" if level == 1 else "JUSTIFY")
     per_level = getattr(spacing, f"heading_{level}_alignment", None)
@@ -118,13 +111,7 @@ def _resolve_heading_alignment(spacing, level: int) -> Any:
 
 
 def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
-    """Bangun dict requirements (styles + sections) sesuai schema validocx.
 
-    Semua heading H1–H5 dicek font (termasuk bold), alignment, dan line_spacing.
-    ─ H1      : alignment CENTER by default (bisa dioverride per metadata).
-    ─ H2–H5   : alignment JUSTIFY by default (bisa dioverride per metadata).
-    ─ Normal  : alignment JUSTIFY, font size body, line_spacing 1.15.
-    """
     s = metadata.spacing
     l = metadata.page_layout
 
@@ -133,14 +120,10 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
     )
     line_spacing = _resolve_line_spacing(metadata)
 
-    # ── Template Normal ───────────────────────────────────────────────────────
-    # Dipakai oleh: Normal, Heading 3–5, dan semua alias style paragraf.
     normal_font_attrs = _build_normal_font_attrs(metadata)
     normal_style: dict = {
-        # Exclude paragraf yang tidak perlu divalidasi via fallback Normal:
-        # (1) angka halaman saja
-        # (2) caption gambar/tabel — divalidasi terpisah via _check_caption_format
         "exclude": {"text_regex": r"(^\s*(\d{1,3})?\s*$|^(Gambar|Tabel)\s+\d+)"},
+
         "font": {
             "unit": "pt",
             "attributes": normal_font_attrs,
@@ -154,10 +137,7 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
         },
     }
 
-    # ── Template Heading H1–H5 ────────────────────────────────────────────────
-    # H1      : alignment default CENTER, bold dari metadata.heading_1_bold.
-    # H2–H5   : alignment default JUSTIFY, bold dari metadata.heading_{n}_bold.
-    # Alignment bisa dioverride per level via heading_{n}_alignment di spacing.
+
     def _make_heading_style(level: int) -> dict:
         alignment = _resolve_heading_alignment(s, level)
         return {
@@ -178,30 +158,22 @@ def metadata_to_requirements(metadata: DocumentMetadata) -> dict:
         "Normal": normal_style,
     }
 
-    # H1–H5 dan alias Judul N
+
     for level in (1, 2, 3, 4, 5):
         style_def = _make_heading_style(level)
         styles[f"Heading {level}"] = style_def
         styles[f"Judul{level}"]    = style_def
         styles[f"Judul {level}"]   = style_def
 
-    # ── Style TOC & TOF ───────────────────────────────────────────────────────
-    # "table of figures" → entri Daftar Gambar, Daftar Tabel, Daftar Lampiran
-    # "TOC 1"–"TOC 5"    → entri Daftar Isi per level
-    #
-    # Aturan: identik dengan Normal (JUSTIFY, 12pt, TNR, 1.15) TANPA exclude.
-    # Exclude Normal sengaja tidak dipakai agar entri "Gambar N." / "Tabel N."
-    # di halaman Daftar Gambar/Tabel tidak ter-skip (exclude itu untuk caption
-    # inline di BAB yang sudah dicek terpisah via _check_caption_format).
+
     toc_tof_style = copy.deepcopy({k: v for k, v in normal_style.items() if k != "exclude"})
     for name in (
-        "table of figures",  # Word built-in style name, must be lowercase
+        "table of figures",
         "TOC 1", "TOC 2", "TOC 3", "TOC 4", "TOC 5",
     ):
         styles[name] = toc_tof_style
 
-    # Caption tidak lagi divalidasi via style name — terlalu dinamis (Gambar, Gambar (Lampiran), dll).
-    # Validasi caption dilakukan di runner via text-pattern detection (_check_caption_format).
+
 
     section_attrs: dict[str, Any] = {}
     if l is not None:
@@ -237,24 +209,17 @@ _HEADING_NAME_TO_LEVEL: dict[str, int] = {
     "Judul1": 1,  "Judul2": 2,  "Judul3": 3,  "Judul4": 4,  "Judul5": 5,
 }
 
-# Cache hasil traversal _heading_level_from_style per style name.
-# Thread-local agar tiap thread (request) punya cache sendiri dan tidak
-# terkontaminasi oleh dokumen lain yang diproses thread berbeda.
-# Di-reset oleh clear_style_level_cache() di awal setiap run_validocx().
+
 _style_level_local: threading.local = threading.local()
 
 
 def clear_style_level_cache() -> None:
-    """Reset cache level heading — dipanggil sekali di awal setiap run validasi."""
+
     _style_level_local.cache = {}
 
 
 def _outline_level_from_style_xml(style) -> int | None:
-    """Baca <w:outlineLvl w:val="N"/> langsung dari definisi style di styles.xml.
 
-    Word menyimpan outline level (0-indexed) untuk style yang dipakai sebagai heading.
-    val=0 → Heading 1, val=1 → Heading 2, dst. Style biasa (body) tidak punya elemen ini.
-    """
     try:
         from docx.oxml.ns import qn
         el = getattr(style, "_element", None)
@@ -278,15 +243,7 @@ def _outline_level_from_style_xml(style) -> int | None:
 
 
 def _heading_level_from_style(style, max_depth: int = 10) -> int | None:
-    """Deteksi level heading (1–5) dari sebuah style.
 
-    Strategi berlapis:
-      Layer A — Nama eksplisit ("Heading N", "JudulN")
-      Layer B — Inheritance chain (basedOn → ancestor adalah heading)
-      Layer C — Outline level dari styles.xml (<w:outlineLvl>)
-
-    Return 1–5 jika ditemukan, None jika style biasa.
-    """
     style_name = style.name
     cache: dict = getattr(_style_level_local, "cache", None)
     if cache is None:
@@ -322,19 +279,7 @@ def _heading_level_from_style(style, max_depth: int = 10) -> int | None:
 
 
 def enrich_requirements_with_docx_styles(requirements: dict, docx_path: str | Path, doc=None) -> dict:
-    """Tambahkan custom styles ke requirements berdasarkan deteksi heading H1–H5.
 
-    Dokumen sering memakai style buatan sendiri (misal "Sub Judul Bab") yang:
-      - mewarisi Heading N (inheritance), atau
-      - punya outline level (<w:outlineLvl>) di definisinya, atau
-      - bernama Judul1/Judul 2/dll.
-
-    Fungsi ini scan semua style di DOCX, mendeteksi levelnya, lalu mendaftarkannya
-    ke requirements memakai template yang sama dengan Heading N standar:
-      H1 → template heading (alignment dari admin, default CENTER)
-      H2 → template body (JUSTIFY, TNR 12, line spacing 1.15)
-      H3–H5 → template body (sama seperti H2)
-    """
     from docx import Document
 
     base_styles: dict = requirements.get("styles", {})

@@ -47,7 +47,7 @@ def _utcnow() -> str:
 # ─── Helper bersama: ambil metadata validasi dari Supabase ───────────────────
 
 async def _fetch_metadata(schema_id: str, tahun: str) -> dict:
-    """Ambil payload document_metadata untuk skema + tahun tertentu."""
+
     supabase = get_supabase()
 
     proj = (
@@ -92,13 +92,7 @@ async def run_validation(
     tahun: str = Form(...),
     file: UploadFile = File(...),
 ):
-    """
-    Validasi format DOCX proposal mahasiswa terhadap aturan yang tersimpan
-    di document_metadata untuk skema dan tahun yang dipilih reviewer.
 
-    schema_id: slug PKM (mis. "PKM-KC") yang cocok dengan projects.skema.
-    tahun: tahun referensi (mis. "2025") yang cocok dengan projects.tahun.
-    """
     schema_id = schema_id.strip().upper()
     tahun     = tahun.strip()
 
@@ -137,7 +131,7 @@ async def run_validation(
 
     result_dict = build_validation_dict(result)
 
-    # Simpan hasil ke Supabase (session tunggal)
+
     try:
         supabase = get_supabase()
         now = _utcnow()
@@ -169,7 +163,7 @@ async def run_validation(
                 "updated_at":  now,
             }).execute()
     except Exception as db_exc:
-        # Gagal menyimpan ke DB tidak boleh menggagalkan response ke frontend
+
         logger.warning("Gagal menyimpan hasil validasi ke DB: %s", db_exc)
 
     return result_dict
@@ -179,7 +173,7 @@ async def run_validation(
 
 @router.post("/summarize")
 async def summarize_validation(body: SummarizeRequest):
-    """Buat catatan ringkas bergaya penilai dosen dari daftar issue."""
+
     if not body.issues:
         return {"summary": "", "generated_at": _utcnow()}
 
@@ -198,26 +192,13 @@ async def summarize_validation(body: SummarizeRequest):
 # ─── GET /export/{session_id} — Excel ringkasan LLM per dokumen ─────────────
 
 def _extract_ketua(file_name: str) -> str:
-    """Ekstrak nama ketua dari nama file.
 
-    Replikasi logika parseFileName() di DocumentValidator.tsx baris 152–167:
-    Ambil segmen pertama sebelum '_' dari nama file tanpa ekstensi.
-    Contoh: "Budi_Santoso_PKMKC.docx" → "Budi"
-    """
     return Path(file_name).stem.split("_")[0]
 
 
 @router.get("/export/{session_id}")
 async def export_bulk_summary(session_id: str, schema_name: str | None = None):
-    """Generate file Excel ringkasan LLM untuk semua dokumen dalam satu bulk session.
 
-    Setiap baris mewakili satu dokumen:
-      Kolom A — Nama Pemilik Proposal (dari file_name)
-      Kolom B — Ringkasan kekurangan dari LLM (kosong jika tidak ada issue)
-
-    schema_name: singkatan skema PKM (mis. "PKM-KC"), diteruskan ke summarize_issues
-                 sebagai konteks tambahan. Semua dokumen diproses paralel via asyncio.gather.
-    """
     import openpyxl  # noqa: PLC0415
 
     supabase = get_supabase()
@@ -303,18 +284,7 @@ async def export_bulk_summary(session_id: str, schema_name: str | None = None):
 
 @router.post("/bulk")
 async def run_bulk_validation(request: Request, background_tasks: BackgroundTasks):
-    """
-    Terima sejumlah file DOCX beserta metadata-nya, buat validation session,
-    simpan file ke storage sementara, dan jalankan validasi di background.
 
-    Frontend mengirim FormData dengan field:
-      count          : jumlah dokumen
-      schema_id_{i}  : schema_id dokumen ke-i
-      tahun_{i}      : tahun dokumen ke-i
-      file_{i}       : UploadFile dokumen ke-i
-
-    Kembalikan: { session_id: string }
-    """
     try:
         form = await request.form()
         count = int(form.get("count") or 0)
@@ -330,7 +300,7 @@ async def run_bulk_validation(request: Request, background_tasks: BackgroundTask
             detail=f"Maksimal {MAX_BULK_ITEMS} dokumen per batch.",
         )
 
-    # Validasi dan baca semua file sebelum membuat session
+
     items_bytes: list[dict] = []
     for i in range(count):
         schema_id = str(form.get(f"schema_id_{i}") or "").strip().upper()
@@ -366,7 +336,7 @@ async def run_bulk_validation(request: Request, background_tasks: BackgroundTask
             "content":   content,
         })
 
-    # Buat session + result rows di Supabase
+
     supabase = get_supabase()
     now = _utcnow()
 
@@ -387,7 +357,7 @@ async def run_bulk_validation(request: Request, background_tasks: BackgroundTask
 
     session_id = session_row.data[0]["id"]
 
-    # Buat baris per item di validation_results
+
     result_rows = [
         {
             "session_id": session_id,
@@ -403,11 +373,11 @@ async def run_bulk_validation(request: Request, background_tasks: BackgroundTask
     ]
     supabase.table("validation_results").insert(result_rows).execute()
 
-    # Simpan file ke storage sementara
+
     for item in items_bytes:
         save_temp_file(session_id, item["position"], item["content"])
 
-    # Jadwalkan background task
+
     items_meta = [
         {
             "position":  item["position"],
@@ -426,10 +396,7 @@ async def run_bulk_validation(request: Request, background_tasks: BackgroundTask
 
 @router.get("/sessions/{session_id}")
 async def get_session_status(session_id: str):
-    """
-    Kembalikan status session dan semua result-nya.
-    Frontend polling endpoint ini setiap beberapa detik untuk update progres.
-    """
+
     supabase = get_supabase()
 
     session_row = (

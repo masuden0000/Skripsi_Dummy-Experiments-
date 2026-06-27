@@ -65,11 +65,6 @@ def build_embedder() -> GoogleGenerativeAIEmbeddings:
 
 
 def _embed_documents_with_retry(contents: list[str]) -> list[list[float]]:
-    """Embed batch dokumen dengan key rotation + retry saat rate limit.
-
-    Siklus: coba semua Google key satu per satu → jika semua exhausted, tunggu
-    EMBED_RATE_LIMIT_WAIT detik → ulangi. Max EMBED_MAX_RETRY_CYCLES siklus.
-    """
     num_keys = len(CONFIG.google_api_keys)
     for cycle in range(EMBED_MAX_RETRY_CYCLES):
         for key_attempt in range(num_keys):

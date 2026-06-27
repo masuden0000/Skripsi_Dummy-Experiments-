@@ -41,22 +41,10 @@ def run_validocx(
     docx_path: str | Path,
     metadata: DocumentMetadata,
 ) -> tuple[list[ValidationIssue], list[ValidationCheckResult]]:
-    """Jalankan engine validocx penuh dan kembalikan issues + checks.
 
-    Alur:
-      DocumentMetadata → requirements (via adapter) →
-      validocx.validate() → log capture → parse_entries → build_report →
-      ValidationIssue + ValidationCheckResult
-
-    Returns:
-        Tuple (issues, checks) siap masuk ke ValidationResult.
-    """
-    # Reset cache style level agar hasil dokumen sebelumnya tidak terbawa.
     clear_style_level_cache()
 
     path = Path(docx_path)
-    # Load dokumen SEKALI di sini; semua helper menerima objek doc yang sama
-    # agar tidak perlu buka/parse ZIP berulang kali.
     doc  = DocxDocument(str(path))
 
     requirements = metadata_to_requirements(metadata)
@@ -66,9 +54,6 @@ def run_validocx(
     entries = parse_entries(log_text)
     report  = build_report(entries, doc=doc)
 
-    # Ekstrak daftar style yang dikenali dari requirements untuk ditampilkan
-    # sebagai nilai "Seharusnya" pada warning undefined_style.
-    # Contoh hasil: ["Normal", "Heading 1", "Heading 2", "Heading 3"]
     known_styles = list(requirements.get("styles", {}).keys())
 
     issues, checks = _build_issues_checks(report, known_styles=known_styles, requirements=requirements)

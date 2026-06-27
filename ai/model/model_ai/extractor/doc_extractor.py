@@ -69,10 +69,6 @@ _MODEL_MAP: list[tuple[str, Type[BaseModel], Type[BaseModel]]] = [
 def _build_key_registry(
     skema: str,
 ) -> list[tuple[str, PromptConfig, Type[BaseModel], Type[BaseModel]]]:
-    """Bangun registry ekstraksi berdasarkan skema PKM.
-
-    Hanya key yang punya prompt tersedia yang dimasukkan ke registry.
-    """
     prompts = load_prompts_for_skema(skema)
     return [
         (key, prompts[key], extracted_cls, info_cls)
@@ -95,7 +91,6 @@ def build_sources(chunks: list[dict]) -> list[Source]:
 
 
 def render_prompt(template: str, chunks: list[dict]) -> str:
-    """Ganti {context} di template dengan gabungan teks chunks."""
     context = "\n\n---\n\n".join(c["content"] for c in chunks)
     return template.replace("{context}", context)
 
@@ -104,7 +99,6 @@ def render_prompt(template: str, chunks: list[dict]) -> str:
 
 
 def _build_llm():
-    """Build LLM client with Groq-first + Gemini fallback rotation."""
     CONFIG.disable_blackhole_proxies()
     api_key, model_name = CONFIG.get_llm_api_key()
     if model_name.startswith("gemini"):
@@ -129,11 +123,6 @@ def _build_embedder() -> GoogleGenerativeAIEmbeddings:
 
 
 def _embed_query_with_retry(query: str) -> list[float]:
-    """Embed query dengan key rotation + retry saat rate limit.
-
-    Siklus: coba semua Google key satu per satu → jika semua exhausted, tunggu
-    EMBED_RATE_LIMIT_WAIT detik → ulangi. Max EMBED_MAX_RETRY_CYCLES siklus.
-    """
     num_keys = len(CONFIG.google_api_keys)
     for cycle in range(EMBED_MAX_RETRY_CYCLES):
         for key_attempt in range(num_keys):
@@ -169,12 +158,6 @@ def _build_supabase() -> Client:
 
 
 def _expand_to_full_headers(seed_chunks: list[dict], client: Client) -> list[dict]:
-    """Expand seed chunks ke seluruh chunk dalam header (chunk_parent) yang sama.
-
-    Setelah vector search menemukan chunk yang relevan, fungsi ini mengambil
-    semua chunk lain yang berada dalam section (chunk_parent) yang sama dari
-    Supabase. Ini memastikan konteks satu section tidak terpotong oleh chunking.
-    """
     if not seed_chunks:
         return seed_chunks
 
@@ -203,10 +186,6 @@ def _retrieve_by_section_focus(
     section_focus: list[str],
     project_id: str | None,
 ) -> list[dict] | None:
-    """Ambil semua chunk dari chunk_parent yang cocok dengan salah satu keyword section_focus.
-
-    Returns None jika tidak ada parent yang cocok — caller harus fallback ke vector search.
-    """
     client = _build_supabase()
 
     query = client.table("document_chunks").select("chunk_parent")
@@ -237,14 +216,6 @@ def _retrieve_by_section_focus(
 
 
 def _retrieve_chunks_multi(queries: list[str], top_k: int, project_id: str | None = None) -> list[dict]:
-    """Embed setiap query, retrieve top-K chunks dari Supabase.
-
-    Alur:
-    1. Untuk setiap query: embed → vector RPC → kumpulkan chunk unik (dedup by chunk_index)
-    2. Sort by chunk_index agar konteks berurutan.
-
-    Catatan: expand ke full chunk_parent dinonaktifkan — konteks dibatasi pada top_k chunk saja.
-    """
     client = _build_supabase()
 
     rpc_params: dict = {
@@ -277,7 +248,6 @@ def _extract_key(
     info_cls: Type[BaseModel],
     project_id: str | None = None,
 ) -> Any:
-    """Jalankan satu siklus ekstraksi: retrieve → prompt → LLM → merge sources."""
     top_k = prompt_cfg.top_k if prompt_cfg.top_k > 0 else CONFIG.rag_top_k
 
     chunks: list[dict] | None = None

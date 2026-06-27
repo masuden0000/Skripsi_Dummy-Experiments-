@@ -36,7 +36,7 @@ def _temp_path(session_id: str, position: int) -> Path:
 
 
 def save_temp_file(session_id: str, position: int, content: bytes) -> None:
-    """Simpan bytes file ke folder sementara sebelum diproses background task."""
+
     JOBS_TEMP_DIR.mkdir(parents=True, exist_ok=True)
     _temp_path(session_id, position).write_bytes(content)
 
@@ -48,11 +48,7 @@ def _delete_temp(session_id: str, position: int) -> None:
 
 
 def build_validation_dict(result) -> dict:
-    """Konversi ValidationResult ke dict format frontend.
 
-    Dipakai oleh validation.py (POST /run) dan _run_validation_sync (POST /bulk)
-    agar format response konsisten antara single dan bulk validation.
-    """
     d = result.to_dict()
     d["valid"] = d.get("status") == "pass"
 
@@ -70,7 +66,7 @@ def build_validation_dict(result) -> dict:
 
 
 def _run_validation_sync(tmp_path: str, payload: dict) -> dict:
-    """Wrapper sinkron untuk validate_document — dipanggil via asyncio.to_thread()."""
+
     from model_ai.validation import validate_document  # noqa: PLC0415
 
     result = validate_document(tmp_path, metadata_dict=payload)
@@ -78,7 +74,7 @@ def _run_validation_sync(tmp_path: str, payload: dict) -> dict:
 
 
 async def _validate_item(session_id: str, meta: dict, sb) -> None:
-    """Validasi satu dokumen; maks 5 berjalan serentak via _BULK_SEMAPHORE."""
+
     pos       = meta["position"]
     schema_id = meta["schema_id"]
     tahun     = meta["tahun"]
@@ -133,7 +129,7 @@ async def _validate_item(session_id: str, meta: dict, sb) -> None:
     finally:
         _delete_temp(session_id, pos)
 
-    # Perbarui hitungan progress setelah item ini selesai (completed atau failed)
+
     rows = (
         sb.table("validation_results")
         .select("status")
@@ -147,12 +143,7 @@ async def _validate_item(session_id: str, meta: dict, sb) -> None:
 
 
 async def process_bulk_session(session_id: str, items_meta: list[dict]) -> None:
-    """
-    Background task: validasi semua item secara paralel, maks 5 serentak.
-    Dokumen ke-6 dan seterusnya akan antri hingga slot tersedia.
 
-    items_meta: list of { position, file_name, schema_id, tahun }
-    """
     sb = get_supabase()
 
     def _upd_session(fields: dict) -> None:

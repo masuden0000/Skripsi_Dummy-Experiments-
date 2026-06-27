@@ -17,11 +17,7 @@ def get_supabase_client():
 
 
 async def upload_file(bucket_name: str, file_content: bytes, file_name: str, project_id: str) -> str:
-    """
-    Upload file to Supabase Storage.
-    Bucket dibuat via migration SQL — tidak perlu dibuat di sini.
-    Returns the public URL of the uploaded file.
-    """
+
     try:
         client = get_supabase_client()
         storage_path = f"{project_id}/{file_name}"
@@ -48,9 +44,7 @@ async def upload_file(bucket_name: str, file_content: bytes, file_name: str, pro
 
 
 async def delete_file(bucket_name: str, file_path: str) -> bool:
-    """
-    Delete file from Supabase Storage.
-    """
+
     try:
         client = get_supabase_client()
         client.storage.from_(bucket_name).remove([file_path])
@@ -61,10 +55,7 @@ async def delete_file(bucket_name: str, file_path: str) -> bool:
 
 
 async def delete_folder(bucket_name: str, folder_prefix: str) -> bool:
-    """
-    Delete all files under a folder prefix in a bucket.
-    folder_prefix: e.g. "{project_id}/" — lists and removes every file inside.
-    """
+
     try:
         client = get_supabase_client()
         files = client.storage.from_(bucket_name).list(folder_prefix)
@@ -78,10 +69,7 @@ async def delete_folder(bucket_name: str, folder_prefix: str) -> bool:
 
 
 async def download_file(bucket_name: str, file_path: str) -> bytes:
-    """
-    Download file from Supabase Storage.
-    Returns file content as bytes.
-    """
+
     try:
         client = get_supabase_client()
         response = client.storage.from_(bucket_name).download(file_path)
@@ -91,9 +79,7 @@ async def download_file(bucket_name: str, file_path: str) -> bytes:
 
 
 async def get_signed_url(bucket_name: str, file_path: str, expires_in: int = 3600) -> str:
-    """
-    Get a signed URL for downloading a file.
-    """
+
     try:
         client = get_supabase_client()
         response = client.storage.from_(bucket_name).create_signed_url(file_path, expires_in)

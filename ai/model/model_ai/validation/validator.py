@@ -12,21 +12,7 @@ def validate_document(
     metadata: DocumentMetadata | None = None,
     metadata_dict: dict | None = None,
 ) -> ValidationResult:
-    """Validasi dokumen DOCX menggunakan engine validocx.
 
-    Args:
-        docx_path: Path ke file DOCX yang akan divalidasi.
-        metadata: DocumentMetadata berisi rules (dari payload).
-                  Jika None, metadata_dict harus diberikan.
-        metadata_dict: Alternatif metadata sebagai dict; dikonversi ke DocumentMetadata.
-
-    Returns:
-        ValidationResult berisi status, issues, dan checks.
-
-    Raises:
-        FileNotFoundError: Jika file DOCX tidak ditemukan.
-        ValueError: Jika metadata maupun metadata_dict tidak diberikan.
-    """
     path = Path(docx_path)
     if not path.exists():
         raise FileNotFoundError(f"DOCX file not found: {path}")
@@ -89,12 +75,12 @@ def validate_document_simple(
     docx_path: str | Path,
     rules: dict,
 ) -> ValidationResult:
-    """Validasi dengan raw rules dict (dari DocumentMetadata.payload)."""
+
     return validate_document(docx_path=docx_path, metadata_dict=rules)
 
 
 def print_validation_result(result: ValidationResult) -> None:
-    """Cetak ValidationResult ke stdout dalam format human-readable."""
+
     print(f"\n{'='*60}")
     print("VALIDATION RESULT")
     print(f"{'='*60}")
@@ -129,7 +115,7 @@ def validate_and_print(
     docx_path: str | Path,
     metadata_dict: dict,
 ) -> ValidationResult:
-    """Validasi dokumen dan langsung cetak hasilnya."""
+
     result = validate_document(docx_path=docx_path, metadata_dict=metadata_dict)
     print_validation_result(result)
     return result

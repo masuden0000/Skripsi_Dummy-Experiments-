@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.get("/schemas")
 async def list_pkm_schemas():
-    """Kembalikan daftar semua skema PKM dari tabel pkm_schemas."""
+
     try:
         supabase = get_supabase()
         result = (
